@@ -12,13 +12,15 @@ This Dockerfile creates a Neo4j 2.2 container that is ready to run and can link 
 
 ### Setup
 
-1. Run:
+1. Build & Run:
 
-	`docker run --rm -i -t -d --name neo4j -v </path/to/neo4j/data-dir>:/data -p <external port>:7474 neo4j-contrib/docker-neo4j:debian-stable`
-
-e.g.:
-
-    `docker run --rm -i -t -d --name neo4j -v /home/Downloads/neo4j/data:/data -p 17474:7474 neo4j-contrib/docker-neo4j:debian-stable`
+```
+git clone https://github.com/neo4j-contrib/docker-neo4j
+cd docker-neo4j
+docker build .
+# note the image-id
+docker run -i -t --rm --name neo4j -v </path/to/neo4j/data-dir>:/data -p <external port>:7474 <image-id>
+```
 
 2. Open in browser
 
