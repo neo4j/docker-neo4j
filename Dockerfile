@@ -6,7 +6,7 @@ MAINTAINER Michael Hunger, <michael.hunger@neotechnology.com>
 
 # Install latest Neo4j Community Stable Version from http://debian.neo4j.org
 RUN apt-get install -y curl
-RUN curl http://dist.neo4j.org/neo4j-community-2.2.2-unix.tar.gz -o - | tar xzf - -C /var/lib && ln -s /var/lib/neo4j-* /var/lib/neo4j
+RUN curl http://dist.neo4j.org/neo4j-community-2.2.3-unix.tar.gz -o - | tar xzf - -C /var/lib && ln -s /var/lib/neo4j-* /var/lib/neo4j
 
 ## add launcher and set execute property
 # enable shell server on all network interfaces
