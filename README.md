@@ -33,7 +33,7 @@ docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8476:7474 <image
 
      `http://localhost:8474` 
 
-On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP from `$DOCKERHOST` instead.
+On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP from `$DOCKER_HOST` instead. Tip: you can use `boot2docker ip` to get it.
 
 ### Authentication
 
