@@ -2,8 +2,8 @@
 
 **Note: this is just _work in progress_ alpha state, not suited for production/serious use**
 
-Neo4j is an highly scalable, robust (fully ACID) native graph database. 
-It is used in mission-critical apps by thousands of leading, startups, enterprises, and governments around the world.
+Neo4j is an highly scalable, robust (fully ACID) native graph database.
+It is used in mission-critical apps by thousands of leading startups, enterprises, and governments around the world.
 
 Learn more on http://neo4j.com and get started with http://neo4j.com/developer
 
@@ -31,12 +31,11 @@ docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8476:7474 <image
 
 2. Open in browser
 
-     `http://localhost:8474` 
+     `http://localhost:8474`
 
 On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP from `$DOCKERHOST` instead.
 
 ### Authentication
-
 
 Please note that Neo4j 2.2.2 requires authentication.
 You have to login with `neo4j/neo4j` at the first connection and set a new password.
@@ -54,3 +53,5 @@ You can also mount a `conf` (`-v $HOME/my-neo-conf:/conf`) directory whose conte
 
 * Provide initial password externally
 * Memory Tuning Options (esp. page-cache)
+* Remote shell, remote debug ?
+* "docker stop" needs to execute graceful shutdown
