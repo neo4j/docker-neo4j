@@ -1,6 +1,6 @@
-## Container for Neo4j 2.2
+## Container for Neo4j 2.2 Community Edition
 
-**Note: this is just _work in progress_ alpha state, not suited for production/serious use**
+**Note: this is just _work in progress_ Beta state, not suited for production/serious use**
 
 Neo4j is an highly scalable, robust (fully ACID) native graph database. 
 It is used in mission-critical apps by thousands of leading, startups, enterprises, and governments around the world.
