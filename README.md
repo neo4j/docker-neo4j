@@ -2,7 +2,7 @@
 
 **Note: this is just _work in progress_ Beta state, not suited for production/serious use**
 
-Neo4j is an highly scalable, robust (fully ACID) native graph database. 
+Neo4j is an highly scalable, robust (fully ACID) native graph database.
 It is used in mission-critical apps by thousands of leading, startups, enterprises, and governments around the world.
 
 Learn more on http://neo4j.com and get started with http://neo4j.com/developer
@@ -31,7 +31,7 @@ docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8476:7474 <image
 
 2. Open in browser
 
-     `http://localhost:8474` 
+     `http://localhost:8474`
 
 On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP from `$DOCKER_HOST` instead. Tip: you can use `boot2docker ip` to get it.
 
@@ -39,7 +39,14 @@ On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP
 
 
 Please note that Neo4j 2.2.2 requires authentication.
-You have to login with `neo4j/neo4j` at the first connection and set a new password.
+
+Providing your own password :
+
+You can provide your own password when starting the container with the `NEO4J_AUTH` environment variable :
+
+docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8476:7474 -e NEO4J_AUTH=myPassword <image-id>
+
+If you don't provided a password as environment variable when starting the container, you'll have to login with `neo4j/neo4j` at the first connection and set a new password.
 The auth credentials are stored in the `/data/dbms/auth` file, which will reside in your external directory.
 
 You can also access the Neo4j log-files in `data/log` and `data/graph.db/messages.log`

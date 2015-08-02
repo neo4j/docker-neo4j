@@ -4,8 +4,11 @@
 FROM java:openjdk-8-jdk
 MAINTAINER Michael Hunger, <michael.hunger@neotechnology.com>
 
-# Install latest Neo4j Community Stable Version from http://debian.neo4j.org
+# Install 2.2.2 Enterprise Version available from http://debian.neo4j.org
+RUN apt-get update
 RUN apt-get install -y curl
+RUN apt-get install -y lsof
+RUN apt-get install -y net-tools
 RUN curl http://dist.neo4j.org/neo4j-community-2.2.3-unix.tar.gz -o - | tar xzf - -C /var/lib && ln -s /var/lib/neo4j-* /var/lib/neo4j
 
 ## add launcher and set execute property
