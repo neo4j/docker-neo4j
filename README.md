@@ -7,7 +7,7 @@ It is used in mission-critical apps by thousands of leading startups, enterprise
 
 Learn more on http://neo4j.com and get started with http://neo4j.com/developer
 
-This Dockerfile creates a container for Neo4j 2.2.3 community edition that is ready to run and can link to your external data directories.
+This Dockerfile creates a container for Neo4j 2.2.4 community edition that is ready to run and can link to your external data directories.
 
 ### Setup
 
@@ -37,7 +37,7 @@ On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP
 
 ### Authentication
 
-Please note that Neo4j 2.2.3 requires authentication.
+Please note that Neo4j 2.2.4 requires authentication.
 You have to login with `neo4j/neo4j` at the first connection and set a new password.
 The auth credentials are stored in the `/data/dbms/auth` file, which will reside in your external directory.
 
