@@ -26,7 +26,7 @@ docker build .
 # docker run -i -t --rm --name neo4j -v </path/to/neo4j/data-dir>:/data -p <external port>:7474 <image-id>
 # for example:
 
-docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8476:7474 <image-id>
+docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8474:7474 <image-id>
 ```
 
 2. Open in browser
