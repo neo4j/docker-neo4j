@@ -6,18 +6,19 @@ MAINTAINER Michael Hunger <michael.hunger@neotechnology.com>
 
 ENV PATH $PATH:/var/lib/neo4j/bin
 
-ENV NEO4J_VERSION 2.2.4
-ENV NEO4J_DOWNLOAD_SHA256 b3fa5d547e50c3f619e39290266979e72f7222be7644fbb3bad2fc31d074aab9
+ENV NEO4J_VERSION 2.2.5
+ENV NEO4J_DOWNLOAD_SHA256 7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998
 
 RUN apt-get update \
     && apt-get install -y curl \
     && curl -fSL -o neo4j-community.tar.gz http://dist.neo4j.org/neo4j-community-$NEO4J_VERSION-unix.tar.gz \
     && apt-get purge -y --auto-remove curl && rm -rf /var/lib/apt/lists/* \
+    && sha256sum neo4j-community.tar.gz \
     && echo "$NEO4J_DOWNLOAD_SHA256 neo4j-community.tar.gz" | sha256sum -c - \
     && tar xzf neo4j-community.tar.gz -C /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && ln -s /var/lib/neo4j/data /data \
-    && mkdir /tmp/rrd \
+    && touch /tmp/rrd \
     && rm neo4j-community.tar.gz
 
 RUN sed -i -e "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=512M|g" /var/lib/neo4j/conf/neo4j.properties \

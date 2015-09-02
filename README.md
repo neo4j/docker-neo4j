@@ -7,7 +7,7 @@ It is used in mission-critical apps by thousands of leading startups, enterprise
 
 Learn more on http://neo4j.com and get started with http://neo4j.com/developer
 
-This Dockerfile creates a container for Neo4j 2.2.4 community edition that is ready to run and can link to your external data directories.
+This Dockerfile creates a container for Neo4j 2.2.5 community edition that is ready to run and can link to your external data directories.
 
 ### Setup
 
@@ -35,9 +35,11 @@ docker run -i -t --rm --name neo4j -v $HOME/neo4j-data:/data -p 8476:7474 <image
 
 On OSX use http://boot2docker.io/[boot2docker] and replace localhost with the IP from `$DOCKER_HOST` instead. Tip: you can use `boot2docker ip` to get it.
 
+Please note that there is an exception printed for recreating the RDD database, this is just informative and shouldn't have been reported by Neo4j in this format.
+
 ### Authentication
 
-Please note that Neo4j 2.2.4 requires authentication.
+Please note that Neo4j 2.2.5 requires authentication.
 You have to login with `neo4j/neo4j` at the first connection and set a new password.
 The auth credentials are stored in the `/data/dbms/auth` file, which will reside in your external directory.
 
