@@ -4,12 +4,6 @@ set -e
 NEO4J_HOME=/var/lib/neo4j
 cd $NEO4J_HOME
 
-if [ -n "$NEO4J_OPEN_FILES" ]; then
-	ulimit -n $NEO4J_OPEN_FILES > /dev/null
-else
-	ulimit -n 40000 > /dev/null
-fi
-
 # NEO4J_HEAP_MEMORY=2G
 if [ -n "$NEO4J_HEAP_MEMORY" ]; then
 	echo "wrapper.java.additional=-Xmx${NEO4J_HEAP_MEMORY}" >> $NEO4J_HOME/conf/neo4j-wrapper.conf

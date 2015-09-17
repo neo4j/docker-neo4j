@@ -27,6 +27,12 @@ RUN sed -i -e "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=512M|g" /var/l
     && sed -i -e "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" /var/lib/neo4j/conf/neo4j-server.properties \
     && sed -i -e "s|Dneo4j.ext.udc.source=.*|Dneo4j.ext.udc.source=docker|g" /var/lib/neo4j/conf/neo4j-wrapper.conf
 
+RUN if [ -n "$NEO4J_OPEN_FILES" ]; then \
+	ulimit -n $NEO4J_OPEN_FILES > /dev/null \
+else \
+	ulimit -n 40000 > /dev/null; \
+fi
+
 VOLUME /data
 
 COPY neo4j.sh /neo4j.sh
