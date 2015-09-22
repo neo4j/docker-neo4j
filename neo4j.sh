@@ -6,8 +6,6 @@ cd $NEO4J_HOME
 
 if [ -n "$NEO4J_OPEN_FILES" ]; then
 	ulimit -n $NEO4J_OPEN_FILES > /dev/null
-else
-	ulimit -n 40000 > /dev/null
 fi
 
 # NEO4J_HEAP_MEMORY=2G
