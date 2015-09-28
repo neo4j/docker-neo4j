@@ -10,8 +10,8 @@ endif
 all: 2.2.5/Dockerfile 2.2.5/neo4j.sh
 .PHONY: all
 
-2.2.5/Dockerfile: Dockerfile
-> cp $^ $@
+2.2.5/Dockerfile: Dockerfile.template Makefile
+> sed 's/%%NEO4J_VERSION%%/2.2.5/g; s/%%NEO4J_SHA%%/7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998/g' $< >$@
 
-2.2.5/neo4j.sh: neo4j.sh
-> cp $^ $@
+2.2.5/neo4j.sh: neo4j.sh Makefile
+> cp $< $@
