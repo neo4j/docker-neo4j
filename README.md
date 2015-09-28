@@ -58,8 +58,3 @@ You can provide additional environment variables to your `docker run` command to
 
 You can also mount a `conf` (`-v $HOME/my-neo-conf:/conf`) directory whose content will be copied over Neo4j's configuration.
 Then you are completely responsible yourself for providing the correctly set-up config files.
-
-### TODO
-
-* Provide initial password externally
-* "docker stop" needs to execute graceful shutdown
