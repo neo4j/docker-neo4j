@@ -1,0 +1,5 @@
+# -*- mode: shell-script -*-
+
+if ! which make >/dev/null; then
+   sudo apt-get install make
+fi
