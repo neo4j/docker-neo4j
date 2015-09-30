@@ -6,8 +6,8 @@ MAINTAINER Michael Hunger <michael.hunger@neotechnology.com>
 
 ENV PATH $PATH:/var/lib/neo4j/bin
 
-ENV NEO4J_VERSION 2.2.5
-ENV NEO4J_DOWNLOAD_SHA256 7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998
+ENV NEO4J_VERSION %%NEO4J_VERSION%%
+ENV NEO4J_DOWNLOAD_SHA256 %%NEO4J_SHA%%
 
 RUN apt-get update \
     && apt-get install -y curl \
