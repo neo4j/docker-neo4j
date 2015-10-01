@@ -1,1 +1,2 @@
 DEV_ROOT=<neo4j-tarball-directory>
+DEV_VERSION=<neo4j-version-under-test>

@@ -4,6 +4,8 @@ if [ -f ./devenv.local ]; then
     . ./devenv.local
 
     export DEV_ROOT
+    export DEV_VERSION
+    export DEV_SHA=$(sha256sum ${DEV_ROOT}/neo4j-community-${DEV_VERSION}-unix.tar.gz | cut --delimiter=' ' --fields=1)
 
     if ! which make >/dev/null; then
         sudo apt-get install make
