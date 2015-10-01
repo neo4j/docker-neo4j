@@ -17,9 +17,10 @@ RUN apt-get update \
     && echo "$NEO4J_DOWNLOAD_SHA256 $NEO4J_TARBALL" | sha256sum -c - \
     && tar xzf $NEO4J_TARBALL -C /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
-    && ln -s /var/lib/neo4j/data /data \
-    && touch /tmp/rrd \
     && rm $NEO4J_TARBALL
+
+RUN ln -s /var/lib/neo4j/data /data
+RUN touch /tmp/rrd
 
 RUN sed -i -e "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=512M|g" /var/lib/neo4j/conf/neo4j.properties \
     && sed -i -e "s|.*keep_logical_logs=.*|keep_logical_logs=100M size|g" /var/lib/neo4j/conf/neo4j.properties \
