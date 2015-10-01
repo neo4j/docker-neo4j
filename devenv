@@ -1,5 +1,13 @@
 # -*- mode: shell-script -*-
 
-if ! which make >/dev/null; then
-   sudo apt-get install make
+if [ -f ./devenv.local ]; then
+    . ./devenv.local
+
+    export DEV_ROOT
+
+    if ! which make >/dev/null; then
+        sudo apt-get install make
+    fi
+else
+    echo "Couldn't find ./devenv.local"
 fi
