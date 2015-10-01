@@ -9,11 +9,11 @@ ENV NEO4J_TARBALL neo4j-community-$NEO4J_VERSION-unix.tar.gz
 
 
 
-RUN apt-get update \
-    && apt-get install --yes curl \
-    && curl --fail --show-error --location --output $NEO4J_TARBALL $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL \
-    && apt-get purge --yes --auto-remove curl && rm --recursive --force /var/lib/apt/lists/* \
-    && echo "$NEO4J_DOWNLOAD_SHA256 $NEO4J_TARBALL" | sha256sum --check - \
+RUN apt-get update --quiet --quiet \
+    && apt-get install --quiet --quiet curl \
+    && curl --fail --silent --show-error --location --output $NEO4J_TARBALL $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL \
+    && apt-get purge --quiet --quiet --auto-remove curl && rm --recursive --force /var/lib/apt/lists/* \
+    && echo "$NEO4J_DOWNLOAD_SHA256 $NEO4J_TARBALL" | sha256sum --check --quiet - \
     && tar --extract --file $NEO4J_TARBALL --directory /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm $NEO4J_TARBALL
