@@ -1,5 +1,4 @@
-#!/bin/bash
-set -e
+#!/bin/bash -eu
 
 NEO4J_HOME=/var/lib/neo4j
 cd $NEO4J_HOME
