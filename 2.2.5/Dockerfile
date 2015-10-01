@@ -1,5 +1,3 @@
-# Neo4j Server
-# Repository http://github.com/neo4j-contrib/docker-neo4j
 FROM java:openjdk-8-jre
 
 MAINTAINER Michael Hunger <michael.hunger@neotechnology.com>
