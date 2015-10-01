@@ -8,15 +8,19 @@ endif
 
 .RECIPEPREFIX = >
 
-all: 2.2.5 2.3.0-M03 dev/builds-okay
+all: dev/builds-okay
 .PHONY: all
 
-2.2.5: 2.2.5/Dockerfile 2.2.5/neo4j.sh
-2.3.0-M03: 2.3.0-M03/Dockerfile 2.3.0-M03/neo4j.sh
-.PHONY: 2.2.5 2.3.0-M03
+test: $(TAG)
+> image=test/$$RANDOM; docker build --tag=$$image $(TAG); docker run --name test --rm $$image
+.PHONY: test
 
-clean:
-> rm -rf dev 2.2.5 2.3.0-M03
+stop-test:
+> docker stop test
+.PHONY: stop-test
+
+clean::
+> rm -rf dev
 .PHONY: clean
 
 %/Dockerfile: Dockerfile.template Makefile lookup
@@ -35,3 +39,39 @@ dev/builds-okay: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
 dev/neo4j-package.tar.gz: $(DEV_ROOT)/neo4j-community-*-unix.tar.gz
 > @mkdir -p dev
 > cp $< $@
+
+all: 2.3.0-M03
+2.3.0-M03: 2.3.0-M03/Dockerfile 2.3.0-M03/neo4j.sh
+.PHONY: 2.3.0-M03
+clean::
+> rm -rf 2.3.0-M03
+
+all: 2.3.0-M02
+2.3.0-M02: 2.3.0-M02/Dockerfile 2.3.0-M02/neo4j.sh
+.PHONY: 2.3.0-M02
+clean::
+> rm -rf 2.3.0-M02
+
+all: 2.2.5
+2.2.5: 2.2.5/Dockerfile 2.2.5/neo4j.sh
+.PHONY: 2.2.5
+clean::
+> rm -rf 2.2.5
+
+all: 2.2.4
+2.2.4: 2.2.4/Dockerfile 2.2.4/neo4j.sh
+.PHONY: 2.2.4
+clean::
+> rm -rf 2.2.4
+
+all: 2.2.3
+2.2.3: 2.2.3/Dockerfile 2.2.3/neo4j.sh
+.PHONY: 2.2.3
+clean::
+> rm -rf 2.2.3
+
+all: 2.2.2
+2.2.2: 2.2.2/Dockerfile 2.2.2/neo4j.sh
+.PHONY: 2.2.2
+clean::
+> rm -rf 2.2.2
