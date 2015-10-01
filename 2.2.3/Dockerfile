@@ -1,7 +1,5 @@
 FROM java:openjdk-8-jre
 
-MAINTAINER Michael Hunger <michael.hunger@neotechnology.com>
-
 ENV PATH $PATH:/var/lib/neo4j/bin
 
 ENV NEO4J_VERSION 2.2.3
