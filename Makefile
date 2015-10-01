@@ -8,17 +8,18 @@ endif
 
 .RECIPEPREFIX = >
 
-all: 2.2.5 dev/builds-okay
+all: 2.2.5 2.3.0-M03 dev/builds-okay
 .PHONY: all
 
 2.2.5: 2.2.5/Dockerfile 2.2.5/neo4j.sh
-.PHONY: 2.2.5
+2.3.0-M03: 2.3.0-M03/Dockerfile 2.3.0-M03/neo4j.sh
+.PHONY: 2.2.5 2.3.0-M03
 
 clean:
-> rm -rf dev 2.2.5
+> rm -rf dev 2.2.5 2.3.0-M03
 .PHONY: clean
 
-%/Dockerfile: Dockerfile.template Makefile
+%/Dockerfile: Dockerfile.template Makefile lookup
 > @mkdir -p $*
 > export VERSION=$*; sed "s|%%VERSION%%|$$(./lookup version)|; s|%%DOWNLOAD_SHA%%|$$(./lookup sha)|; s|%%DOWNLOAD_ROOT%%|$$(./lookup root)|; s|%%INJECT_TARBALL%%|$$(./lookup inject)|" $< >$@
 

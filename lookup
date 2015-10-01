@@ -5,7 +5,10 @@ import sys
 
 data = {
     '2.2.5': {
-        'sha': '7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998',
+        'sha': '7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998'
+    },
+    '2.3.0-M03': {
+        'sha': 'cd47ae541a0c5da0d82212c30c1c2fb19ea91ddb1b174346c120e596e04b5dfc'
     },
     'dev': {
         'version': os.environ['DEV_VERSION'],
