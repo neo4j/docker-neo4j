@@ -13,7 +13,6 @@ RUN apt-get update \
     && apt-get install -y curl \
     && curl -fSL -o $NEO4J_TARBALL $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL \
     && apt-get purge -y --auto-remove curl && rm -rf /var/lib/apt/lists/* \
-    && sha256sum $NEO4J_TARBALL \
     && echo "$NEO4J_DOWNLOAD_SHA256 $NEO4J_TARBALL" | sha256sum -c - \
     && tar xzf $NEO4J_TARBALL -C /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
