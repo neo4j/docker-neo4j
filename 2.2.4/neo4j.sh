@@ -1,7 +1,6 @@
 #!/bin/bash -eu
 
 NEO4J_HOME=/var/lib/neo4j
-cd $NEO4J_HOME
 
 if [ -n "$NEO4J_OPEN_FILES" ]; then
     ulimit -n $NEO4J_OPEN_FILES >/dev/null
