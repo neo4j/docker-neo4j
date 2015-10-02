@@ -2,18 +2,18 @@
 
 NEO4J_HOME=/var/lib/neo4j
 
-if [ -n "$NEO4J_OPEN_FILES" ]; then
+if [ -n "${NEO4J_OPEN_FILES:-}" ]; then
     ulimit -n $NEO4J_OPEN_FILES >/dev/null
 fi
 
 # NEO4J_HEAP_MEMORY=2G
-if [ -n "$NEO4J_HEAP_MEMORY" ]; then
+if [ -n "${NEO4J_HEAP_MEMORY:-}" ]; then
     echo "wrapper.java.additional=-Xmx${NEO4J_HEAP_MEMORY}" >> $NEO4J_HOME/conf/neo4j-wrapper.conf
     echo "wrapper.java.additional=-Xms${NEO4J_HEAP_MEMORY}" >> $NEO4J_HOME/conf/neo4j-wrapper.conf
 fi
 
 # NEO4J_CACHE_MEMORY=2G
-if [ -n "$NEO4J_CACHE_MEMORY" ]; then
+if [ -n "${NEO4J_CACHE_MEMORY:-}" ]; then
     sed -i -e "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=${NEO4J_CACHE_MEMORY}|g" $NEO4J_HOME/conf/neo4j.properties
 fi
 
