@@ -13,9 +13,13 @@ RUN curl --fail --silent --show-error --location --output $NEO4J_TARBALL $NEO4J_
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm $NEO4J_TARBALL
 
-VOLUME /var/lib/neo4j/data
-
 WORKDIR /var/lib/neo4j
+
+RUN adduser --system --quiet neo4j \
+    && chown --recursive neo4j: .
+USER neo4j
+
+VOLUME /var/lib/neo4j/data
 
 RUN touch /tmp/rrd \
     && sed --in-place "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" conf/neo4j-server.properties
