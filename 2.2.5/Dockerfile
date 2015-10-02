@@ -16,12 +16,7 @@ RUN curl --fail --silent --show-error --location --output $NEO4J_TARBALL $NEO4J_
 WORKDIR /var/lib/neo4j
 
 RUN touch /tmp/rrd
-
-RUN sed --in-place "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=512M|g" conf/neo4j.properties
-RUN sed --in-place "s|.*keep_logical_logs=.*|keep_logical_logs=100M size|g" conf/neo4j.properties
-RUN sed --in-place "s|#*remote_shell_enabled=.*|remote_shell_enabled=true|g" conf/neo4j.properties
 RUN sed --in-place "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" conf/neo4j-server.properties
-RUN sed --in-place "s|Dneo4j.ext.udc.source=.*|Dneo4j.ext.udc.source=docker|g" conf/neo4j-wrapper.conf
 
 RUN ulimit -n 40000 >/dev/null
 
