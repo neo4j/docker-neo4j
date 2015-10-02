@@ -18,10 +18,6 @@ WORKDIR /var/lib/neo4j
 RUN mv data /data \
     && ln --symbolic /data
 
-RUN adduser --system --quiet neo4j \
-    && chown --recursive neo4j: . /data
-USER neo4j
-
 VOLUME /data
 
 RUN touch /tmp/rrd \
