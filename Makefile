@@ -14,6 +14,10 @@ dev/runs-okay: dev/image-id
 > @mkdir -p dev
 > trap "touch $@; exit 0" SIGINT; docker run --publish 7474:7474 --rm $$(cat $<)
 
+shell: dev/image-id
+> docker run --publish 7474:7474 --rm  --entrypoint sh --interactive --tty $$(cat dev/image-id)
+.PHONY: shell
+
 dev/image-id: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
 > @mkdir -p dev
 > set -e; image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
