@@ -5,19 +5,18 @@ SHELL := bash
 ifeq ($(origin .RECIPEPREFIX), undefined)
   $(error This Make does not support .RECIPEPREFIX. Please use GNU Make 4.0 or later)
 endif
-
 .RECIPEPREFIX = >
 
-all: dev/builds-okay
+all:
 .PHONY: all
 
-test: $(TAG)
-> image=test/$$RANDOM; docker build --tag=$$image $(TAG); docker run --name test --rm $$image
-.PHONY: test
+dev/runs-okay: dev/image-id
+> @mkdir -p dev
+> trap "touch $@; exit 0" SIGINT; docker run --publish 7474:7474 --rm $$(cat $<)
 
-stop-test:
-> docker stop test
-.PHONY: stop-test
+dev/image-id: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
+> @mkdir -p dev
+> set -e; image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
 
 clean::
 > rm -rf dev
@@ -30,11 +29,6 @@ clean::
 %/neo4j.sh: neo4j.sh Makefile
 > @mkdir -p $*
 > cp $< $@
-
-dev/builds-okay: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
-> @mkdir -p dev
-> docker build dev
-> touch $@
 
 dev/neo4j-package.tar.gz: $(DEV_ROOT)/neo4j-community-*-unix.tar.gz
 > @mkdir -p dev
@@ -75,3 +69,5 @@ all: 2.2.2
 .PHONY: 2.2.2
 clean::
 > rm -rf 2.2.2
+
+all: dev/runs-okay
