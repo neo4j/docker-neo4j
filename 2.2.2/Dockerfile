@@ -17,8 +17,8 @@ VOLUME /var/lib/neo4j/data
 
 WORKDIR /var/lib/neo4j
 
-RUN touch /tmp/rrd
-RUN sed --in-place "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" conf/neo4j-server.properties
+RUN touch /tmp/rrd \
+    && sed --in-place "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" conf/neo4j-server.properties
 
 RUN ulimit -n 40000 >/dev/null
 
