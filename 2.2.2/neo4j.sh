@@ -13,11 +13,11 @@ if [ -n "${NEO4J_CACHE_MEMORY:-}" ]; then
     sed --in-place "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=${NEO4J_CACHE_MEMORY}|g" conf/neo4j.properties
 fi
 
-if [ ! -z ${NEO4J_NO_AUTH+x} ]; then
+if [ -n "${NEO4J_NO_AUTH:-}" ]; then
     sed --in-place "s|dbms.security.auth_enabled=.*|dbms.security.auth_enabled=false|g" conf/neo4j-server.properties
 fi
 
-if [ ! -z ${NEO4J_UDC_SOURCE+x} ]; then
+if [ -n "${NEO4J_UDC_SOURCE:-}" ]; then
     sed --in-place "s|Dneo4j.ext.udc.source=.*|Dneo4j.ext.udc.source=${NEO4J_UDC_SOURCE}|g" conf/neo4j-wrapper.conf
 fi
 
