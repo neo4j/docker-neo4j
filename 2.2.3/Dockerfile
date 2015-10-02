@@ -13,15 +13,14 @@ RUN curl --fail --silent --show-error --location --output $NEO4J_TARBALL $NEO4J_
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm $NEO4J_TARBALL
 
+VOLUME /var/lib/neo4j/data
+
 WORKDIR /var/lib/neo4j
 
 RUN touch /tmp/rrd
 RUN sed --in-place "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" conf/neo4j-server.properties
 
 RUN ulimit -n 40000 >/dev/null
-
-VOLUME /data
-RUN ln --symbolic data /data
 
 COPY neo4j.sh /neo4j.sh
 
