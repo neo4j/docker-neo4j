@@ -5,10 +5,21 @@ if [ -f ./devenv.local ]; then
 
     export DEV_VERSION
     export DEV_PACKAGE="${DEV_ROOT}/neo4j-community-${DEV_VERSION}-unix.tar.gz"
-    export DEV_SHA=$(sha256sum ${DEV_PACKAGE} | cut --delimiter=' ' --fields=1)
+
+    if which sha256sum >/dev/null; then
+        sha=$(sha256sum ${DEV_PACKAGE})
+    else
+        sha=$(shasum --algorithm=256 ${DEV_PACKAGE})
+    fi
+
+    export DEV_SHA=$(echo "${sha}" | cut -d' ' -f1)
 
     if ! which make >/dev/null; then
-        sudo apt-get install make
+        if which apt-get >/dev/null; then
+            sudo apt-get install make
+        else
+            echo "Please install GNU Make 4.0 or later"
+        fi
     fi
 else
     echo "Couldn't find ./devenv.local"
