@@ -88,6 +88,8 @@ The following environment variables are available:
   defaults to 512M
 * `NEO4J_HEAP_MEMORY`: the size of Neo4j's heap, defaults to the JVM
   default for your system
+* `NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs,
+  defaults to `100M size`
 * `NEO4J_NO_AUTH`: turn off authentication by setting a value
 
 #### `/conf` volume
