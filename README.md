@@ -58,7 +58,7 @@ The following environment variables are available:
 * `NEO4J_HEAP_MEMORY`: the size of Neo4j's heap, defaults to the JVM
   default for your system
 * `NEO4J_OPEN_FILES`: the maximum number of open filehandles, defaults
-  to 4000
+  to 1048576
 * `NEO4J_NO_AUTH`: turn off authentication by setting a value
 
 #### `/conf` volume
