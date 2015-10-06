@@ -62,7 +62,7 @@ The following environment variables are available:
 -	`NEO4J_CACHE_MEMORY`: the size of Neo4j's native-memory cache, defaults to 512M
 -	`NEO4J_HEAP_MEMORY`: the size of Neo4j's heap, defaults to the JVM default for your system
 -	`NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs, defaults to `100M size`
--	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html)
+-	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html))
 
 ## `/conf` volume
 

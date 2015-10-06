@@ -12,10 +12,13 @@ all:
 
 dev/runs-okay: dev/image-id
 > @mkdir -p dev
-> trap "touch $@; exit 0" SIGINT; docker run --publish 7474:7474 --volume=/tmp/neo4j-data:/data --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
+> trap "touch $@; exit 0" SIGINT; \
+    docker run --publish 7474:7474 --volume=/tmp/neo4j-data:/data \
+        --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
 
 shell: dev/image-id
-> docker run --publish 7474:7474 --rm  --entrypoint sh --interactive --tty $$(cat dev/image-id)
+> docker run --publish 7474:7474 --rm  --entrypoint sh --interactive --tty \
+    $$(cat dev/image-id)
 .PHONY: shell
 
 dev/image-id: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
@@ -28,7 +31,12 @@ clean::
 
 %/Dockerfile: Dockerfile.template Makefile lookup
 > @mkdir -p $*
-> export VERSION=$*; sed "s|%%VERSION%%|$$(./lookup version)|; s|%%DOWNLOAD_SHA%%|$$(./lookup sha)|; s|%%DOWNLOAD_ROOT%%|$$(./lookup root)|; s|%%INJECT_TARBALL%%|$$(./lookup inject)|" $< >$@
+> export VERSION=$*; <$< \
+      sed "s|%%VERSION%%|$$(./lookup version)|" \
+    | sed "s|%%DOWNLOAD_SHA%%|$$(./lookup sha)|" \
+    | sed "s|%%DOWNLOAD_ROOT%%|$$(./lookup root)|" \
+    | sed "s|%%INJECT_TARBALL%%|$$(./lookup inject)|" \
+    >$@
 
 %/neo4j.sh: neo4j.sh Makefile
 > @mkdir -p $*
