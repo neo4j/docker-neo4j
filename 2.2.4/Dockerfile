@@ -20,9 +20,6 @@ RUN mv data /data \
 
 VOLUME /data
 
-RUN touch /tmp/rrd \
-    && sed --in-place "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" conf/neo4j-server.properties
-
 COPY neo4j.sh /neo4j.sh
 
 EXPOSE 7474 7473
