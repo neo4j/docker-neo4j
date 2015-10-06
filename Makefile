@@ -34,7 +34,7 @@ clean::
 > @mkdir -p $*
 > cp $< $@
 
-dev/neo4j-package.tar.gz: $(DEV_ROOT)/neo4j-community-*-unix.tar.gz
+dev/neo4j-package.tar.gz: $(DEV_PACKAGE)
 > @mkdir -p dev
 > cp $< $@
 
