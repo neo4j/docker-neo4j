@@ -10,10 +10,6 @@ else
     sed --in-place "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=${NEO4J_CACHE_MEMORY:-512M}|g" conf/neo4j.properties
     sed --in-place "s|Dneo4j.ext.udc.source=.*|Dneo4j.ext.udc.source=${NEO4J_UDC_SOURCE:-docker}|g" conf/neo4j-wrapper.conf
 
-    if [ -n "${NEO4J_OPEN_FILES:-}" ]; then
-        ulimit -n $NEO4J_OPEN_FILES >/dev/null
-    fi
-
     if [ -n "${NEO4J_HEAP_MEMORY:-}" ]; then
         echo "wrapper.java.additional=-Xmx${NEO4J_HEAP_MEMORY}" >>conf/neo4j-wrapper.conf
         echo "wrapper.java.additional=-Xms${NEO4J_HEAP_MEMORY}" >>conf/neo4j-wrapper.conf

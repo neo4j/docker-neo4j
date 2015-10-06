@@ -28,7 +28,38 @@ Please note that by default Neo4j requires authentication. You have to
 login with `neo4j/neo4j` at the first connection and set a new
 password.
 
-### Configuration
+### Docker configuration
+
+#### File descriptor limit
+
+Neo4j may use a large number of file descriptors if many indexes are
+in use or there is a large number of simultaneous database
+connections.
+
+Docker controls the number of open file descriptors in a container;
+the limit depends on the configuration of your system. We recommend a
+limit of at least 40000 for running Neo4j.
+
+To check the limit on your system, run this command:
+
+```
+docker run neo4j/neo4j \
+    bash -c 'echo Soft limit: $(ulimit -Sn); echo Hard limit: $(ulimit -Hn)'
+```
+
+To override the default configuration for a single container, use the
+`--ulimit` option like this:
+
+```
+docker run \
+    --detach \
+    --publish=7474:7474 \
+    --volume=$HOME/neo4j-data:/data \
+    --ulimit=nofile=40000:40000
+    neo4j/neo4j
+```
+
+### Neo4j configuration
 
 The image provides a useable default configuration for learning about
 Neo4j, but it is not suitable for production use. You can read more
@@ -57,8 +88,6 @@ The following environment variables are available:
   defaults to 512M
 * `NEO4J_HEAP_MEMORY`: the size of Neo4j's heap, defaults to the JVM
   default for your system
-* `NEO4J_OPEN_FILES`: the maximum number of open filehandles, defaults
-  to 1048576
 * `NEO4J_NO_AUTH`: turn off authentication by setting a value
 
 #### `/conf` volume
