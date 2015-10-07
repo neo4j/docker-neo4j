@@ -37,11 +37,15 @@ clean::
 
 %/Dockerfile: Dockerfile.template Makefile lookup
 > @mkdir -p $*
-> export VERSION=$*; <$< \
-      sed "s|%%VERSION%%|$$(./lookup version)|" \
-    | sed "s|%%DOWNLOAD_SHA%%|$$(./lookup sha)|" \
-    | sed "s|%%DOWNLOAD_ROOT%%|$$(./lookup root)|" \
-    | sed "s|%%INJECT_TARBALL%%|$$(./lookup inject)|" \
+> export VERSION=$*; \
+    version=$$(./lookup version); \
+    sha=$$(./lookup sha); \
+    root=$$(./lookup root); \
+    inject=$$(./lookup inject); \
+    <$< sed "s|%%VERSION%%|$${version}|" \
+    | sed "s|%%DOWNLOAD_SHA%%|$${sha}|" \
+    | sed "s|%%DOWNLOAD_ROOT%%|$${root}|" \
+    | sed "s|%%INJECT_TARBALL%%|$${inject}|" \
     >$@
 
 %/neo4j.sh: neo4j.sh Makefile
