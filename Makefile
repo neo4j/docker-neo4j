@@ -29,7 +29,7 @@ shell: dev/image-id
 
 dev/image-id: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
 > @mkdir -p dev
-> set -e; image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
+> image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
 
 clean::
 > rm -rf dev
