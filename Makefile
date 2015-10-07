@@ -7,10 +7,15 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
-all:
+all: dev/runs-okay
 .PHONY: all
 
-dev/runs-okay: dev/image-id
+include 2.2.2.mk 2.2.3.mk 2.2.4.mk 2.2.5.mk 2.3.0-M02.mk 2.3.0-M03.mk
+
+%.mk: version.mk.template Makefile
+> sed "s/%%VERSION%%/$*/g" $< >$@
+
+dev/runs-okay: dev/image-id trapping-sigint
 > @mkdir -p dev
 > ./trapping-sigint \
     docker run --publish 7474:7474 --volume=/tmp/neo4j-data:/data \
@@ -46,41 +51,3 @@ clean::
 dev/neo4j-package.tar.gz: $(DEV_PACKAGE)
 > @mkdir -p dev
 > cp $< $@
-
-all: 2.3.0-M03
-2.3.0-M03: 2.3.0-M03/Dockerfile 2.3.0-M03/neo4j.sh
-.PHONY: 2.3.0-M03
-clean::
-> rm -rf 2.3.0-M03
-
-all: 2.3.0-M02
-2.3.0-M02: 2.3.0-M02/Dockerfile 2.3.0-M02/neo4j.sh
-.PHONY: 2.3.0-M02
-clean::
-> rm -rf 2.3.0-M02
-
-all: 2.2.5
-2.2.5: 2.2.5/Dockerfile 2.2.5/neo4j.sh
-.PHONY: 2.2.5
-clean::
-> rm -rf 2.2.5
-
-all: 2.2.4
-2.2.4: 2.2.4/Dockerfile 2.2.4/neo4j.sh
-.PHONY: 2.2.4
-clean::
-> rm -rf 2.2.4
-
-all: 2.2.3
-2.2.3: 2.2.3/Dockerfile 2.2.3/neo4j.sh
-.PHONY: 2.2.3
-clean::
-> rm -rf 2.2.3
-
-all: 2.2.2
-2.2.2: 2.2.2/Dockerfile 2.2.2/neo4j.sh
-.PHONY: 2.2.2
-clean::
-> rm -rf 2.2.2
-
-all: dev/runs-okay

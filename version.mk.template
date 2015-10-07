@@ -1,0 +1,6 @@
+all: %%VERSION%%
+%%VERSION%%: %%VERSION%%/Dockerfile %%VERSION%%/neo4j.sh
+.PHONY: %%VERSION%%
+clean::
+> rm -rf %%VERSION%%
+> rm -f %%VERSION%%.mk
