@@ -64,6 +64,14 @@ The following environment variables are available:
 -	`NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs, defaults to `100M size`
 -	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html))
 
+### Enterprise Edition
+
+The following settings control features that are only available in the Enterprise Edition of Neo4j.
+
+-	`NEO4J_DATABASE_MODE`: the database mode, defaults to `SINGLE`, set to `HA` to create a cluster
+-	`NEO4J_SERVER_ID`: the id of the server, must be unique within a cluster
+-	`NEO4J_INITIAL_HOSTS`: comma-separated list of other members of the cluster
+
 ## `/conf` volume
 
 To make arbitrary modifications to the Neo4j configuration, provide the container with a `/conf` volume.

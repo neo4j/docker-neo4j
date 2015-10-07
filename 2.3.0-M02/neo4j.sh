@@ -19,6 +19,9 @@ else
     setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
     setting "wrapper.java.initmemory" "${NEO4J_HEAP_MEMORY:-}" neo4j-wrapper.conf
     setting "wrapper.java.maxmemory" "${NEO4J_HEAP_MEMORY:-}" neo4j-wrapper.conf
+    setting "org.neo4j.server.database.mode" "${NEO4J_DATABASE_MODE:-}" neo4j-server.properties
+    setting "ha.server_id" "${NEO4J_SERVER_ID:-}" neo4j.properties
+    setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
 
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
         setting "dbms.security.auth_enabled" "false" neo4j-server.properties
