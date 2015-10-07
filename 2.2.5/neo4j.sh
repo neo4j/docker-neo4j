@@ -20,7 +20,8 @@ else
             conf/neo4j-server.properties
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
-        bin/neo4j start
+        bin/neo4j start || \
+            (cat data/log/console.log && echo "Neo4j failed to start" && exit 1)
         if ! curl --fail --silent --user "neo4j:${password}" http://localhost:7474/db/data/ >/dev/null ; then
             curl --fail --silent --show-error --user neo4j:neo4j \
                  --data '{"password": "'"${password}"'"}' \
