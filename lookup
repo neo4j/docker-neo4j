@@ -5,37 +5,72 @@ import sys
 
 data = {
     '2.3.0-M03': {
-        'sha': 'cd47ae541a0c5da0d82212c30c1c2fb19ea91ddb1b174346c120e596e04b5dfc'
+        'community': {
+            'sha': 'cd47ae541a0c5da0d82212c30c1c2fb19ea91ddb1b174346c120e596e04b5dfc'
+        },
+        'enterprise': {
+            'sha': ''
+        }
     },
     '2.3.0-M02': {
-        'sha': '54047565659e1230c7a196ff696765e042da5679cf287966efad9e36a8f07046'
+        'community': {
+            'sha': '54047565659e1230c7a196ff696765e042da5679cf287966efad9e36a8f07046'
+        }
     },
     '2.2.5': {
-        'sha': '7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998'
+        'community': {
+            'sha': '7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998'
+        }
     },
     '2.2.4': {
-        'sha': 'b3fa5d547e50c3f619e39290266979e72f7222be7644fbb3bad2fc31d074aab9'
+        'community': {
+            'sha': 'b3fa5d547e50c3f619e39290266979e72f7222be7644fbb3bad2fc31d074aab9'
+        }
     },
     '2.2.3': {
-        'sha': 'b170e54a8af540a30b915a85bdc6e3670c0790466fb90cf7fd9555097165c67c'
+        'community': {
+            'sha': 'b170e54a8af540a30b915a85bdc6e3670c0790466fb90cf7fd9555097165c67c'
+        }
     },
     '2.2.2': {
-        'sha': '18d6d88c61d9077340adf774359bd1d8f458f68ec51bcf96deb3f00894db1ded'
+        'community': {
+            'sha': '18d6d88c61d9077340adf774359bd1d8f458f68ec51bcf96deb3f00894db1ded'
+        }
     },
     'dev': {
-        'version': os.environ['DEV_VERSION'],
-        'sha': os.environ['DEV_SHA'],
-        'root': 'file:///docker-test/',
-        'inject': 'COPY ./neo4j-package.tar.gz /docker-test/$NEO4J_TARBALL',
+        'dev': {
+            'version': os.environ['DEV_VERSION'],
+            'edition': os.environ['DEV_EDITION'],
+            'sha': os.environ['DEV_SHA'],
+            'root': 'file:///docker-test/',
+            'inject': 'COPY ./neo4j-package.tar.gz /docker-test/$NEO4J_TARBALL',
+        }
     }
 }
 
-for version, details in data.iteritems():
-    if not 'version' in details:
-        details['version'] = version
-    if not 'root' in details:
-        details['root'] = 'http://dist.neo4j.org'
-    if not 'inject' in details:
-        details['inject'] = ''
+for version, editions in data.iteritems():
+    for edition, details in editions.iteritems():
+        if not 'version' in details:
+            details['version'] = version
+        if not 'edition' in details:
+            details['edition'] = edition
+        if not 'root' in details:
+            details['root'] = 'http://dist.neo4j.org'
+        if not 'inject' in details:
+            details['inject'] = ''
 
-print data[os.environ['VERSION']][sys.argv[1]]
+tag = os.environ['TAG']
+detail = sys.argv[1]
+
+if tag == 'dev':
+    version = 'dev'
+    edition = 'dev'
+elif '_' in tag:
+    parts = tag.split('_')
+    version = parts[0]
+    edition = parts[1]
+else:
+    version = tag
+    edition = 'community'
+
+print data[version][edition][detail]

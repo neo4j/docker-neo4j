@@ -4,7 +4,8 @@ if [ -f ./devenv.local ]; then
     . ./devenv.local
 
     export DEV_VERSION
-    export DEV_PACKAGE="${DEV_ROOT}/neo4j-community-${DEV_VERSION}-unix.tar.gz"
+    export DEV_EDITION
+    export DEV_PACKAGE="${DEV_ROOT}/neo4j-${DEV_EDITION}-${DEV_VERSION}-unix.tar.gz"
 
     if which sha256sum >/dev/null; then
         sha=$(sha256sum ${DEV_PACKAGE})
