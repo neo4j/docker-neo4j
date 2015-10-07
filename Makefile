@@ -12,9 +12,10 @@ all:
 
 dev/runs-okay: dev/image-id
 > @mkdir -p dev
-> trap "touch $@; exit 0" SIGINT; \
+> ./trapping-sigint \
     docker run --publish 7474:7474 --volume=/tmp/neo4j-data:/data \
         --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
+> touch $@
 
 shell: dev/image-id
 > docker run --publish 7474:7474 --rm  --entrypoint sh --interactive --tty \

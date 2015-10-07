@@ -1,0 +1,5 @@
+#!/bin/bash -em
+
+trap 'exit 0' SIGINT
+set +m
+$*
