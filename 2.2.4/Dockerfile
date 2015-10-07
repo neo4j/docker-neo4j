@@ -4,6 +4,7 @@ ENV NEO4J_VERSION 2.2.4
 ENV NEO4J_DOWNLOAD_SHA256 b3fa5d547e50c3f619e39290266979e72f7222be7644fbb3bad2fc31d074aab9
 ENV NEO4J_DOWNLOAD_ROOT http://dist.neo4j.org
 ENV NEO4J_TARBALL neo4j-community-$NEO4J_VERSION-unix.tar.gz
+ENV NEO4J_URI $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL
 
 
 
@@ -11,11 +12,11 @@ RUN apt-get update --quiet --quiet \
     && apt-get install --quiet --quiet --no-install-recommends lsof \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl --fail --silent --show-error --location --output $NEO4J_TARBALL $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL \
-    && echo "$NEO4J_DOWNLOAD_SHA256 $NEO4J_TARBALL" | sha256sum --check --quiet - \
-    && tar --extract --file $NEO4J_TARBALL --directory /var/lib \
+RUN curl --fail --silent --show-error --location --output neo4j.tar.gz $NEO4J_URI \
+    && echo "$NEO4J_DOWNLOAD_SHA256 neo4j.tar.gz" | sha256sum --check --quiet - \
+    && tar --extract --file neo4j.tar.gz --directory /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
-    && rm $NEO4J_TARBALL
+    && rm neo4j.tar.gz
 
 WORKDIR /var/lib/neo4j
 
