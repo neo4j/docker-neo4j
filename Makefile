@@ -23,6 +23,29 @@ dev/runs-okay: dev/image-id trapping-sigint
         --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
 > touch $@
 
+start-cluster: dev/image-id
+> docker run --name=instance1 --detach --publish 7474:7474 --env=NEO4J_AUTH=neo4j/foo\
+    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_SERVER_ID=1 \
+    --env=NEO4J_HA_ADDRESS=instance1 \
+    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001 $$(cat $<)
+> docker run --name=instance2 --detach --publish 7475:7474 --env=NEO4J_AUTH=neo4j/foo\
+    --link instance1:instance1 \
+    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_SERVER_ID=2 \
+    --env=NEO4J_HA_ADDRESS=instance2 \
+    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001 $$(cat $<)
+> docker run --name=instance3 --detach --publish 7476:7474 --env=NEO4J_AUTH=neo4j/foo\
+    --link instance1:instance1 --link instance2:instance2 \
+    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_SERVER_ID=3 \
+    --env=NEO4J_HA_ADDRESS=instance3 \
+    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 $$(cat $<)
+.PHONY: start-cluster
+
+stop-cluster:
+> docker rm instance1 instance2 instance3 || true
+> docker stop instance1 instance2 instance3
+> docker rm instance1 instance2 instance3
+.PHONY: stop-cluster
+
 shell: dev/image-id
 > docker run --publish 7474:7474 --rm  --entrypoint sh --interactive --tty \
     $$(cat dev/image-id)

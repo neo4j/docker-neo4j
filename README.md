@@ -70,6 +70,7 @@ The following settings control features that are only available in the Enterpris
 
 -	`NEO4J_DATABASE_MODE`: the database mode, defaults to `SINGLE`, set to `HA` to create a cluster
 -	`NEO4J_SERVER_ID`: the id of the server, must be unique within a cluster
+-	`NEO4J_HA_ADDRESS`: the address which a server advertises to other members of a cluster in HA mode, this must be resolvable by all cluster members
 -	`NEO4J_INITIAL_HOSTS`: comma-separated list of other members of the cluster
 
 ## `/conf` volume

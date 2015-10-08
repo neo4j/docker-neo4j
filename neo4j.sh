@@ -40,6 +40,8 @@ else
     setting "org.neo4j.server.webserver.address" "0.0.0.0" neo4j-server.properties
     setting "org.neo4j.server.database.mode" "${NEO4J_DATABASE_MODE:-}" neo4j-server.properties
     setting "ha.server_id" "${NEO4J_SERVER_ID:-}" neo4j.properties
+    setting "ha.server" "${NEO4J_HA_ADDRESS:-}:6001" neo4j.properties
+    setting "ha.cluster_server" "${NEO4J_HA_ADDRESS:-}:5001" neo4j.properties
     setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
 fi
 
