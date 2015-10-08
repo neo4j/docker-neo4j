@@ -122,3 +122,9 @@ Within a single Docker host, this can be achieved using container names and link
 	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance3 --env=NEO4J_SERVER_ID=3 \
 	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
 	    neo4j/neo4j
+
+## Neo4j shell
+
+The Neo4j shell can be run locally within a container using a command like this:
+
+	docker exec --interactive <container> bin/neo4j-shell
