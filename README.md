@@ -18,6 +18,14 @@ Point your browser at `http://localhost:7474`.
 
 Please note that by default Neo4j requires authentication. You have to login with `neo4j/neo4j` at the first connection and set a new password.
 
+## Neo4j editions
+
+The Neo4j comes in two editions: Community and Enterprise.
+
+Neo4j Enterprise Edition is designed for commercial deployments where scale and availability are important. Use of Neo4j Enterprise Edition requires a commercial license agreement with Neo Technology. Please see [Neo4j licensing](http://neo4j.com/licensing/) for details.
+
+Tags are available for both editions. Enterprise tags have an `_enterprise` suffix, Community tags have no suffix.
+
 ## Docker configuration
 
 ### File descriptor limit
@@ -46,7 +54,7 @@ The image provides a useable default configuration for learning about Neo4j, but
 
 There are three ways to modify the configuration depending on how much you need to customize the image.
 
-## Environment variables
+### Environment variables
 
 Pass environment variables to the container when you run it.
 
@@ -64,7 +72,7 @@ The following environment variables are available:
 -	`NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs, defaults to `100M size`
 -	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html))
 
-### Enterprise Edition
+#### Enterprise Edition
 
 The following settings control features that are only available in the Enterprise Edition of Neo4j.
 
@@ -73,7 +81,7 @@ The following settings control features that are only available in the Enterpris
 -	`NEO4J_HA_ADDRESS`: the address which a server advertises to other members of a cluster in HA mode, this must be resolvable by all cluster members
 -	`NEO4J_INITIAL_HOSTS`: comma-separated list of other members of the cluster
 
-## `/conf` volume
+### `/conf` volume
 
 To make arbitrary modifications to the Neo4j configuration, provide the container with a `/conf` volume.
 
@@ -86,8 +94,31 @@ To make arbitrary modifications to the Neo4j configuration, provide the containe
 
 The `/conf` volume will override all configuration provided by the image and must therefore contain a complete, valid set of Neo4j configuration files.
 
-## Build a new image
+### Build a new image
 
 For more complex customization of the image you can create a new image based on this one.
 
-	FROM neo4j/neoj4
+	FROM neo4j/neo4j
+
+## Neo4j HA
+
+In order to run Neo4j in HA mode under Docker you need to wire up the containers in the cluster so that they can talk to each other. Each container must have a network route to each of the others and the `NEO4J_HA_ADDRESS` and `NEO4J_INITIAL_HOSTS` environment variables must be set according (see above).
+
+Within a single Docker host, this can be achieved using container names and links as follows.
+
+	docker run --name=instance1 --detach --publish 7474:7474 \
+	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance1 --env=NEO4J_SERVER_ID=1 \
+	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
+	    neo4j/neo4j
+
+	docker run --name=instance2 --detach --publish 7475:7474 \
+	    --link instance1:instance1 \
+	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance2 --env=NEO4J_SERVER_ID=2f \
+	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
+	    neo4j/neo4j
+
+	docker run --name=instance3 --detach --publish 7476:7474 \
+	    --link instance1:instance1 --link instance2:instance2 \
+	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance3 --env=NEO4J_SERVER_ID=3 \
+	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
+	    neo4j/neo4j
