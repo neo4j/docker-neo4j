@@ -50,7 +50,7 @@ To override the default configuration for a single container, use the `--ulimit`
 
 ## Neo4j configuration
 
-The image provides a useable default configuration for learning about Neo4j, but it is not suitable for production use. You can read more about configuring Neo4j in the [manual](http://neo4j.com/docs/stable/configuration.html).
+The image provides a usable default configuration for learning about Neo4j, but it is not suitable for production use. You can read more about configuring Neo4j in the [manual](http://neo4j.com/docs/stable/configuration.html).
 
 There are three ways to modify the configuration depending on how much you need to customize the image.
 
