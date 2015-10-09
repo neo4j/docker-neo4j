@@ -9,7 +9,7 @@ data = {
             'sha': 'cd47ae541a0c5da0d82212c30c1c2fb19ea91ddb1b174346c120e596e04b5dfc'
         },
         'enterprise': {
-            'sha': ''
+            'sha': 'eaabc51cfbfb78f02a0d404a38e79a5dff903e9fed18b7fa0fbfbfc4a9a138bb'
         }
     },
     '2.3.0-M02': {
