@@ -45,4 +45,8 @@ else
     setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
 fi
 
-exec bin/neo4j console
+if [ "$1" == "neo4j" ]; then
+    exec bin/neo4j console
+else
+    exec "$@"
+fi

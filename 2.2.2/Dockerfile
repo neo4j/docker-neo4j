@@ -26,8 +26,9 @@ RUN mv data /data \
 
 VOLUME /data
 
-COPY neo4j.sh /neo4j.sh
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 EXPOSE 7474 7473
 
-CMD ["/neo4j.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["neo4j"]

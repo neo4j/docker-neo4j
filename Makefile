@@ -51,7 +51,7 @@ shell: dev/image-id
     $$(cat dev/image-id)
 .PHONY: shell
 
-dev/image-id: dev/Dockerfile dev/neo4j.sh dev/neo4j-package.tar.gz
+dev/image-id: dev/Dockerfile dev/docker-entrypoint.sh dev/neo4j-package.tar.gz
 > @mkdir -p dev
 > image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
 
@@ -74,7 +74,7 @@ clean::
     | sed "s|%%INJECT_TARBALL%%|$${inject}|" \
     >$@
 
-%/neo4j.sh: neo4j.sh Makefile
+%/docker-entrypoint.sh: docker-entrypoint.sh Makefile
 > @mkdir -p $*
 > cp $< $@
 

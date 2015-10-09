@@ -1,5 +1,5 @@
 all: %%VERSION%%
-%%VERSION%%: %%VERSION%%/Dockerfile %%VERSION%%/neo4j.sh
+%%VERSION%%: %%VERSION%%/Dockerfile %%VERSION%%/docker-entrypoint.sh
 .PHONY: %%VERSION%%
 clean::
 > rm -rf %%VERSION%%
