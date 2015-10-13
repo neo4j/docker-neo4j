@@ -96,8 +96,8 @@ The `/conf` volume will override all configuration provided by the image and mus
 
 To generate an initial set of configuration files, run the image with the `dump-config` command.
 
-	docker run \
-	    --volume=$HOME/neo4j-config:/config \
+	docker run --rm\
+	    --volume=$HOME/neo4j-conf:/conf \
 	    neo4j/neo4j dump-config
 
 ### Build a new image
