@@ -71,6 +71,7 @@ The following environment variables are available:
 -	`NEO4J_HEAP_MEMORY`: the size of Neo4j's heap in MB, defaults to the JVM default for your system
 -	`NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs, defaults to `100M size`
 -	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html))
+-	`NEO4J_THIRDPARTY_JAXRS_CLASSES`: URI mappings for unmanaged extensions (see below)
 
 #### Enterprise Edition
 
@@ -108,6 +109,8 @@ For more complex customization of the image you can create a new image based on 
 
 ## Neo4j HA
 
+(This feature is only available in Neo4j Enterprise Edition.)
+
 In order to run Neo4j in HA mode under Docker you need to wire up the containers in the cluster so that they can talk to each other. Each container must have a network route to each of the others and the `NEO4J_HA_ADDRESS` and `NEO4J_INITIAL_HOSTS` environment variables must be set according (see above).
 
 Within a single Docker host, this can be achieved using container names and links as follows.
@@ -128,6 +131,16 @@ Within a single Docker host, this can be achieved using container names and link
 	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance3 --env=NEO4J_SERVER_ID=3 \
 	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
 	    neo4j/neo4j:milestone_enterprise
+
+## Plugins and unmanaged extensions
+
+To install a plugin or unmanaged extension, provide a `/plugins` volume containing the jars. For unmanged extensions you also need to provide an environment variable specifying a URI mapping.
+
+	docker run --publish 7474:7474 --volume=/tmp/neo4j-plugins:/plugins \
+	    --env=NEO4J_THIRDPARTY_JAXRS_CLASSES=com.example.extension=/example
+	    neo4j/neo4j
+
+See the [manual](http://neo4j.com/docs/stable/server-extending.html) for more details on plugins and unmanaged extensions.
 
 ## Neo4j shell
 

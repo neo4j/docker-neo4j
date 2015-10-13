@@ -9,7 +9,6 @@ setting() {
     fi
 }
 
-
 if [ "$1" == "neo4j" ]; then
     if [ -d /conf ]; then
         rm --recursive --force conf
@@ -20,6 +19,7 @@ if [ "$1" == "neo4j" ]; then
         setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
         setting "wrapper.java.initmemory" "${NEO4J_HEAP_MEMORY:-}" neo4j-wrapper.conf
         setting "wrapper.java.maxmemory" "${NEO4J_HEAP_MEMORY:-}" neo4j-wrapper.conf
+        setting "org.neo4j.server.thirdparty_jaxrs_classes" "${NEO4J_THIRDPARTY_JAXRS_CLASSES:-}" neo4j-server.properties
 
         if [ "${NEO4J_AUTH:-}" == "none" ]; then
             setting "dbms.security.auth_enabled" "false" neo4j-server.properties
@@ -45,6 +45,11 @@ if [ "$1" == "neo4j" ]; then
         setting "ha.server" "${NEO4J_HA_ADDRESS:-}:6001" neo4j.properties
         setting "ha.cluster_server" "${NEO4J_HA_ADDRESS:-}:5001" neo4j.properties
         setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
+    fi
+
+    if [ -d /plugins ]; then
+        rm --recursive --force plugins
+        ln --symbolic /plugins
     fi
 
     exec bin/neo4j console
