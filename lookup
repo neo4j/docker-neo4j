@@ -17,6 +17,11 @@ data = {
             'sha': '54047565659e1230c7a196ff696765e042da5679cf287966efad9e36a8f07046'
         }
     },
+    '2.2.6': {
+        'community': {
+            'sha': '77f8371318c843bdd8fbd5f95be95e9a1467bb84030d4a3ff9dcec805b4003b9'
+        }
+    },
     '2.2.5': {
         'community': {
             'sha': '7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998'

@@ -10,7 +10,7 @@ endif
 all: dev/runs-okay
 .PHONY: all
 
-include 2.2.2.mk 2.2.3.mk 2.2.4.mk 2.2.5.mk 2.3.0-M02.mk 2.3.0-M03.mk \
+include 2.2.2.mk 2.2.3.mk 2.2.4.mk 2.2.5.mk 2.2.6.mk 2.3.0-M02.mk 2.3.0-M03.mk \
         2.3.0-M03_enterprise.mk
 
 %.mk: version.mk.template Makefile
