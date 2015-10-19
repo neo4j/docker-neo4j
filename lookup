@@ -78,10 +78,9 @@ detail = sys.argv[1]
 if tag == 'dev':
     version = 'dev'
     edition = 'dev'
-elif '_' in tag:
-    parts = tag.split('_')
-    version = parts[0]
-    edition = parts[1]
+elif tag.endswith('-enterprise'):
+    version = tag.replace('-enterprise', '')
+    edition = 'enterprise'
 else:
     version = tag
     edition = 'community'

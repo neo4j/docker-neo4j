@@ -22,7 +22,7 @@ The Neo4j comes in two editions: Community and Enterprise.
 
 Neo4j Enterprise Edition is designed for commercial deployments where scale and availability are important. Use of Neo4j Enterprise Edition requires a commercial license agreement with Neo Technology. Please see [Neo4j licensing](http://neo4j.com/licensing/) for details.
 
-Tags are available for both editions. Enterprise tags have an `_enterprise` suffix, Community tags have no suffix.
+Tags are available for both editions. Enterprise tags have an `-enterprise` suffix, Community tags have no suffix.
 
 ## Docker configuration
 
@@ -116,19 +116,19 @@ Within a single Docker host, this can be achieved using container names and link
 	docker run --name=instance1 --detach --publish 7474:7474 \
 	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance1 --env=NEO4J_SERVER_ID=1 \
 	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
-	    neo4j/neo4j:milestone_enterprise
+	    neo4j/neo4j:milestone-enterprise
 
 	docker run --name=instance2 --detach --publish 7475:7474 \
 	    --link instance1:instance1 \
 	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance2 --env=NEO4J_SERVER_ID=2 \
 	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
-	    neo4j/neo4j:milestone_enterprise
+	    neo4j/neo4j:milestone-enterprise
 
 	docker run --name=instance3 --detach --publish 7476:7474 \
 	    --link instance1:instance1 --link instance2:instance2 \
 	    --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_HA_ADDRESS=instance3 --env=NEO4J_SERVER_ID=3 \
 	    --env=NEO4J_INITIAL_HOSTS=instance1:5001,instance2:5001,instance3:5001 \
-	    neo4j/neo4j:milestone_enterprise
+	    neo4j/neo4j:milestone-enterprise
 
 ## Plugins and unmanaged extensions
 
