@@ -1,5 +1,9 @@
 FROM java:openjdk-8-jre
 
+RUN apt-get update --quiet --quiet \
+    && apt-get install --quiet --quiet --no-install-recommends lsof \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV NEO4J_VERSION 2.3.0-RC1
 ENV NEO4J_EDITION enterprise
 ENV NEO4J_DOWNLOAD_SHA256 fdd77a1c0802241a4a712d0ae957abd5f3fe0fdb1124b0e3ca24d0621f01b986
@@ -8,10 +12,6 @@ ENV NEO4J_TARBALL neo4j-$NEO4J_EDITION-$NEO4J_VERSION-unix.tar.gz
 ENV NEO4J_URI $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL
 
 
-
-RUN apt-get update --quiet --quiet \
-    && apt-get install --quiet --quiet --no-install-recommends lsof \
-    && rm -rf /var/lib/apt/lists/*
 
 RUN curl --fail --silent --show-error --location --output neo4j.tar.gz $NEO4J_URI \
     && echo "$NEO4J_DOWNLOAD_SHA256 neo4j.tar.gz" | sha256sum --check --quiet - \
