@@ -11,7 +11,8 @@ all: dev/runs-okay
 .PHONY: all
 
 include 2.2.2.mk 2.2.3.mk 2.2.4.mk 2.2.5.mk 2.2.6.mk 2.3.0-M02.mk 2.3.0-M03.mk \
-    2.3.0-M03-enterprise.mk 2.3.0-RC1.mk 2.3.0-RC1-enterprise.mk
+    2.3.0-M03-enterprise.mk 2.3.0-RC1.mk 2.3.0-RC1-enterprise.mk 2.3.0.mk \
+    2.3.0-enterprise.mk
 
 %.mk: version.mk.template Makefile
 > sed "s/%%VERSION%%/$*/g" $< >$@
