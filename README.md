@@ -48,7 +48,7 @@ To override the default configuration for a single container, use the `--ulimit`
 
 ## Neo4j configuration
 
-The image provides a usable default configuration for learning about Neo4j, but it is not suitable for production use. In particular the memory assigned to Neo4j is very limited (see `NEO4J_CACHE_MEMORY` and `NEO4J_HEAP_MEMORY` below), to allow multiple containers to be run on the same server. You can read more about configuring Neo4j in the [manual](http://neo4j.com/docs/stable/configuration.html).
+The default configuration provided by this image is intended for learning about Neo4j, but must be modified to make it suitable for production use. In particular the memory assigned to Neo4j is very limited (see `NEO4J_CACHE_MEMORY` and `NEO4J_HEAP_MEMORY` below), to allow multiple containers to be run on the same server. You can read more about configuring Neo4j in the [manual](http://neo4j.com/docs/stable/configuration.html).
 
 There are three ways to modify the configuration depending on how much you need to customize the image.
 
