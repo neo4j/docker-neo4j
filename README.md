@@ -22,7 +22,7 @@ The Neo4j comes in two editions: Community and Enterprise.
 
 Neo4j Enterprise Edition is designed for commercial deployments where scale and availability are important. Use of Neo4j Enterprise Edition requires a commercial license agreement with Neo Technology. Please see [Neo4j licensing](http://neo4j.com/licensing/) for details.
 
-Tags are available for both editions. Enterprise tags have an `-enterprise` suffix, Community tags have no suffix.
+Tags are available for both editions. Version-specific Enterprise tags have an `-enterprise` suffix (like `neo4j/neo4j:2.3.0-enterprise`), Community tags have no suffix (like `neo4j/neo4j:2.3.0`). The latest Enterprise release is available as `neo4j/neo4j:enterprise`.
 
 ## Docker configuration
 
