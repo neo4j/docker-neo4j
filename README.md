@@ -48,7 +48,7 @@ To override the default configuration for a single container, use the `--ulimit`
 
 ## Neo4j configuration
 
-The image provides a usable default configuration for learning about Neo4j, but it is not suitable for production use. You can read more about configuring Neo4j in the [manual](http://neo4j.com/docs/stable/configuration.html).
+The image provides a usable default configuration for learning about Neo4j, but it is not suitable for production use. In particular the memory assigned to Neo4j is very limited (see `NEO4J_CACHE_MEMORY` and `NEO4J_HEAP_MEMORY` below), to allow multiple containers to be run on the same server. You can read more about configuring Neo4j in the [manual](http://neo4j.com/docs/stable/configuration.html).
 
 There are three ways to modify the configuration depending on how much you need to customize the image.
 
@@ -66,7 +66,7 @@ Pass environment variables to the container when you run it.
 The following environment variables are available:
 
 -	`NEO4J_CACHE_MEMORY`: the size of Neo4j's native-memory cache, defaults to 512M
--	`NEO4J_HEAP_MEMORY`: the size of Neo4j's heap in MB, defaults to the JVM default for your system
+-	`NEO4J_HEAP_MEMORY`: the size of Neo4j's heap in MB, defaults to 512
 -	`NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs, defaults to `100M size`
 -	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html))
 -	`NEO4J_THIRDPARTY_JAXRS_CLASSES`: URI mappings for unmanaged extensions (see below)
