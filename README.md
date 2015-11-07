@@ -12,7 +12,7 @@ The image exposes two ports (`7474` and `7473`) for HTTP and HTTPS access to the
 	    --volume=$HOME/neo4j-data:/data \
 	    neo4j/neo4j
 
-Point your browser at `http://192.168.99.100:7474`. Where here `192.168.99.100` is the ip of the Docker hosts.
+Point your browser at `http://192.168.99.100:7474`. Where here `192.168.99.100` is the ip of the Docker host.
 
 Please note that by default Neo4j requires authentication. You have to login with `neo4j/neo4j` at the first connection and set a new password.
 
