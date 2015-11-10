@@ -14,9 +14,9 @@ The image exposes two ports (`7474` and `7473`) for HTTP and HTTPS access to the
 
 Point your browser at `http://localhost:7474`.
 
-*NOTE* By default Neo4j requires authentication. You have to login with `neo4j/neo4j` at the first connection and set a new password.
+*NOTE:* By default Neo4j requires authentication. You have to login with `neo4j/neo4j` at the first connection and set a new password.
 
-*NOTE* The instructions in this documentation assume that you are running Docker natively on Linux. If you are using OSX or Windows then you will need to adjust them accordingly. Please see the Docker documentation for details ([OSX](http://docs.docker.com/engine/installation/mac/), [Windows](http://docs.docker.com/engine/installation/windows/)).
+*NOTE:* The instructions in this documentation assume that you are running Docker natively on Linux. If you are using OSX or Windows then you will need to adjust them accordingly. Please see the Docker documentation for details ([OSX](http://docs.docker.com/engine/installation/mac/), [Windows](http://docs.docker.com/engine/installation/windows/)).
 
 ## Neo4j editions
 
