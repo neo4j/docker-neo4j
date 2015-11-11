@@ -4,19 +4,21 @@ Neo4j is a highly scalable, robust, native graph database. It is used in mission
 
 # How to use this image
 
+*NOTE:* Docker does not run natively on OSX or Windows. If you are running on one of these platforms you will need to run Docker inside a VM. Please read the Docker documentation for your platform ([OSX](http://docs.docker.com/engine/installation/mac/), [Windows](http://docs.docker.com/engine/installation/windows/)). The instructions below include variants to cope with the difference between platforms where necessary; they assume that on OSX you have a shell set up as per the instructions linked above and that you have a Docker machine VM called `default`.
+
 The image exposes two ports (`7474` and `7473`) for HTTP and HTTPS access to the Neo4j API and a volume (`/data`) to allow the database to be persisted outside its container.
 
 	docker run \
 	    --detach \
 	    --publish=7474:7474 \
-	    --volume=$HOME/neo4j-data:/data \
+	    --volume=$HOME/neo4j/data:/data \
 	    neo4j/neo4j
 
-Point your browser at `http://localhost:7474`.
+Point your browser at `http://localhost:7474` on Linux or `http://$(docker-machine ip default):7474` on OSX.
+
+*NOTE:* All the volumes in this guide are stored under `$HOME` in order to work on OSX where `$HOME` is automatically mounted into the machine VM. On Linux the volumes can be store anywhere.
 
 *NOTE:* By default Neo4j requires authentication. You have to login with `neo4j/neo4j` at the first connection and set a new password.
-
-*NOTE:* The instructions in this documentation assume that you are running Docker natively on Linux. If you are using OSX or Windows then you will need to adjust them accordingly. Please see the Docker documentation for details ([OSX](http://docs.docker.com/engine/installation/mac/), [Windows](http://docs.docker.com/engine/installation/windows/)).
 
 ## Neo4j editions
 
@@ -44,7 +46,7 @@ To override the default configuration for a single container, use the `--ulimit`
 	docker run \
 	    --detach \
 	    --publish=7474:7474 \
-	    --volume=$HOME/neo4j-data:/data \
+	    --volume=$HOME/neo4j/data:/data \
 	    --ulimit=nofile=40000:40000
 	    neo4j/neo4j
 
@@ -61,7 +63,7 @@ Pass environment variables to the container when you run it.
 	docker run \
 	    --detach \
 	    --publish=7474:7474 \
-	    --volume=$HOME/neo4j-data:/data \
+	    --volume=$HOME/neo4j/data:/data \
 	    --env=NEO4J_CACHE_MEMORY=4G \
 	    neo4j/neo4j
 
@@ -89,8 +91,8 @@ To make arbitrary modifications to the Neo4j configuration, provide the containe
 	docker run \
 	    --detach \
 	    --publish=7474:7474 \
-	    --volume=$HOME/neo4j-data:/data \
-	    --volume=$HOME/neo4j-conf:/conf \
+	    --volume=$HOME/neo4j/data:/data \
+	    --volume=$HOME/neo4j/conf:/conf \
 	    neo4j/neo4j
 
 The `/conf` volume will override all configuration provided by the image and must therefore contain a complete, valid set of Neo4j configuration files.
@@ -98,7 +100,7 @@ The `/conf` volume will override all configuration provided by the image and mus
 To generate an initial set of configuration files, run the image with the `dump-config` command.
 
 	docker run --rm\
-	    --volume=$HOME/neo4j-conf:/conf \
+	    --volume=$HOME/neo4j/conf:/conf \
 	    neo4j/neo4j dump-config
 
 ### Build a new image
@@ -136,7 +138,7 @@ Within a single Docker host, this can be achieved using container names and link
 
 To install a plugin or unmanaged extension, provide a `/plugins` volume containing the jars. For unmanged extensions you also need to provide an environment variable specifying a URI mapping.
 
-	docker run --publish 7474:7474 --volume=/tmp/neo4j-plugins:/plugins \
+	docker run --publish 7474:7474 --volume=$HOME/neo4j/plugins:/plugins \
 	    --env=NEO4J_THIRDPARTY_JAXRS_CLASSES=com.example.extension=/example
 	    neo4j/neo4j
 
