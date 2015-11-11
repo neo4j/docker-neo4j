@@ -58,6 +58,11 @@ data = {
             'sha': '18d6d88c61d9077340adf774359bd1d8f458f68ec51bcf96deb3f00894db1ded'
         }
     },
+    '2.1.7': {
+        'community': {
+            'sha': 'a71e1d31f288a03187d9e18890bee2924f8aa3ab1e740ab8be920ad68dbb3209'
+        }
+    },
     'dev': {
         'dev': {
             'version': os.environ['DEV_VERSION'],
