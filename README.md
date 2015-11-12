@@ -16,7 +16,7 @@ The image exposes two ports (`7474` and `7473`) for HTTP and HTTPS access to the
 
 Point your browser at `http://localhost:7474` on Linux or `http://$(docker-machine ip default):7474` on OSX.
 
-*NOTE:* All the volumes in this guide are stored under `$HOME` in order to work on OSX where `$HOME` is automatically mounted into the machine VM. On Linux the volumes can be store anywhere.
+*NOTE:* All the volumes in this guide are stored under `$HOME` in order to work on OSX where `$HOME` is automatically mounted into the machine VM. On Linux the volumes can be stored anywhere.
 
 *NOTE:* By default Neo4j requires authentication. You have to login with `neo4j/neo4j` at the first connection and set a new password.
 
