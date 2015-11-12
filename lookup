@@ -12,60 +12,14 @@ data = {
             'sha': '0d3f370f8141d8bc37065f843af190c405cba098d1bb82065ffc0cb5b99950b7'
         }
     },
-    '2.3.0-RC1': {
-        'community': {
-            'sha': 'fed10ec7d7c0a0c39041a8079672812962f3ceff053f050617b42b5d0bd22ae9'
-        },
-        'enterprise': {
-            'sha': 'fdd77a1c0802241a4a712d0ae957abd5f3fe0fdb1124b0e3ca24d0621f01b986'
-        }
-    },
-    '2.3.0-M03': {
-        'community': {
-            'sha': 'cd47ae541a0c5da0d82212c30c1c2fb19ea91ddb1b174346c120e596e04b5dfc'
-        },
-        'enterprise': {
-            'sha': 'eaabc51cfbfb78f02a0d404a38e79a5dff903e9fed18b7fa0fbfbfc4a9a138bb'
-        }
-    },
-    '2.3.0-M02': {
-        'community': {
-            'sha': '54047565659e1230c7a196ff696765e042da5679cf287966efad9e36a8f07046'
-        }
-    },
     '2.2.6': {
         'community': {
             'sha': '77f8371318c843bdd8fbd5f95be95e9a1467bb84030d4a3ff9dcec805b4003b9'
         }
     },
-    '2.2.5': {
-        'community': {
-            'sha': '7fadc119f465a3d6adceb610401363fb158a5ed25081f9893d4f56ac4989a998'
-        }
-    },
-    '2.2.4': {
-        'community': {
-            'sha': 'b3fa5d547e50c3f619e39290266979e72f7222be7644fbb3bad2fc31d074aab9'
-        }
-    },
-    '2.2.3': {
-        'community': {
-            'sha': 'b170e54a8af540a30b915a85bdc6e3670c0790466fb90cf7fd9555097165c67c'
-        }
-    },
-    '2.2.2': {
-        'community': {
-            'sha': '18d6d88c61d9077340adf774359bd1d8f458f68ec51bcf96deb3f00894db1ded'
-        }
-    },
     '2.1.8': {
         'community': {
             'sha': 'faf209dbeef9851c88717660a4b7ccb5110343a9ed53110f516b675c8230c39a'
-        }
-    },
-    '2.1.7': {
-        'community': {
-            'sha': 'a71e1d31f288a03187d9e18890bee2924f8aa3ab1e740ab8be920ad68dbb3209'
         }
     },
     'dev': {
