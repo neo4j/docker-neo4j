@@ -95,9 +95,9 @@ To make arbitrary modifications to the Neo4j configuration, provide the containe
 	    --volume=$HOME/neo4j/conf:/conf \
 	    neo4j/neo4j
 
-The `/conf` volume will override all configuration provided by the image and must therefore contain a complete, valid set of Neo4j configuration files.
+Any configuration files in the `/conf` volume will override files provided by the image. This includes values that may have been set in response to environment variables passed to the container by Docker. So if you want to change one value in a file you must ensure that the rest of the file is complete and correct.
 
-To generate an initial set of configuration files, run the image with the `dump-config` command.
+To dump an initial set of configuration files, run the image with the `dump-config` command.
 
 	docker run --rm\
 	    --volume=$HOME/neo4j/conf:/conf \
