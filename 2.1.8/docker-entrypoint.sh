@@ -55,7 +55,7 @@ if [ "$1" == "neo4j" ]; then
             setting "dbms.security.tls_certificate_file" $cert neo4j-server.properties
             setting "dbms.security.tls_key_file" $key neo4j-server.properties
         else
-            echo "You must provide only a single cert and key."
+            echo "You must provide exactly one *.cert and exactly one *.key in /ssl."
             exit 1
         fi
     fi
