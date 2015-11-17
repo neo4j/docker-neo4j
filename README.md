@@ -149,3 +149,9 @@ See the [manual](http://neo4j.com/docs/stable/server-extending.html) for more de
 The Neo4j shell can be run locally within a container using a command like this:
 
 	docker exec --interactive <container> bin/neo4j-shell
+
+## HTTPS Support
+
+To use your own key and certificate, provide an `/ssl` volume with the key and certificate inside. The key filename must end in `.key`, and the certificate in `.cert`. Only one of each file may be present. You must also publish port `7473` to access the HTTPS endpoint.
+
+    docker run --publish 7473:7473 --volume $HOME/neo4j/ssl:/ssl neo4j/neo4j

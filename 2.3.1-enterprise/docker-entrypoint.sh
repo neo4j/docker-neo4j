@@ -46,6 +46,20 @@ if [ "$1" == "neo4j" ]; then
         find /conf -type f -exec cp {} conf \;
     fi
 
+    if [ -d /ssl ]; then
+        num_certs=$(ls /ssl/*.cert 2>/dev/null | wc -l)
+        num_keys=$(ls /ssl/*.key 2>/dev/null | wc -l)
+        if [ $num_certs == "1" -a $num_keys == "1" ]; then
+            cert=$(ls /ssl/*.cert)
+            key=$(ls /ssl/*.key)
+            setting "dbms.security.tls_certificate_file" $cert neo4j-server.properties
+            setting "dbms.security.tls_key_file" $key neo4j-server.properties
+        else
+            echo "You must provide only a single cert and key."
+            exit 1
+        fi
+    fi
+
     if [ -d /plugins ]; then
         find /plugins -type f -exec cp {} plugins \;
     fi
