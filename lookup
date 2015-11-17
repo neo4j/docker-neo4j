@@ -12,9 +12,9 @@ data = {
             'sha': '93f0950b0c3a5a604f80183814b7cda2988a652e9278159c47d036daa96e3d29'
         }
     },
-    '2.2.6': {
+    '2.2.7': {
         'community': {
-            'sha': '77f8371318c843bdd8fbd5f95be95e9a1467bb84030d4a3ff9dcec805b4003b9'
+            'sha': '79d96471a5e8aa08ae2a7d78b0a2ff6d587fe13125205a9a4dc9705766e1cd25'
         }
     },
     '2.1.8': {
