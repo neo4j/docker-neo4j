@@ -74,6 +74,7 @@ The following environment variables are available:
 -	`NEO4J_KEEP_LOGICAL_LOGS`: the retention policy for logical logs, defaults to `100M size`
 -	`NEO4J_AUTH`: controls authentication, set to `none` to disable authentication or `neo4j/<password>` to override the default password (see documentation [here](http://neo4j.com/docs/stable/rest-api-security.html))
 -	`NEO4J_THIRDPARTY_JAXRS_CLASSES`: URI mappings for unmanaged extensions (see below)
+-	`NEO4J_ALLOW_STORE_UPGRADE`: set to `true` to enable upgrades, defaults to `false` (see the [manual](http://neo4j.com/docs/stable/deployment-upgrading.html) for details)
 
 #### Enterprise Edition
 
@@ -150,7 +151,7 @@ The Neo4j shell can be run locally within a container using a command like this:
 
 	docker exec --interactive <container> bin/neo4j-shell
 
-## HTTPS Support
+## HTTPS support
 
 To use your own key and certificate, provide an `/ssl` volume with the key and certificate inside. The key filename must end in `.key`, and the certificate in `.cert`. Only one of each file may be present. You must also publish port `7473` to access the HTTPS endpoint.
 
