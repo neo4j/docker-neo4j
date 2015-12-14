@@ -151,6 +151,18 @@ The Neo4j shell can be run locally within a container using a command like this:
 
 	docker exec --interactive <container> bin/neo4j-shell
 
+## AppArmor
+
+Neo4j currently makes use of `lsof` to ensure the server is running and accepting connections on a given port. Some AppArmor configurations (specifically the default configuration on Linux Mint) prevent `lsof` from working as expected.
+
+A workaround is to run the docker image in privileged mode, by adding `--privileged=true` to the docker command line. This is a workaround that disables the security provided by AppArmor, and is not recommended for deployments.
+
+The current best known solution is to enable the use of ptrace in the docker profile of AppArmor. Do this by adding the following line to `/etc/init.d/docker`:
+
+    ptrace peer=docker-default,
+
+Add this line before the last curly brace, and restart docker.
+
 ## HTTPS support
 
 To use your own key and certificate, provide an `/ssl` volume with the key and certificate inside. The key filename must end in `.key`, and the certificate in `.cert`. Only one of each file may be present. You must also publish port `7473` to access the HTTPS endpoint.
