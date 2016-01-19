@@ -10,6 +10,7 @@ setting() {
 }
 
 if [ "$1" == "neo4j" ]; then
+    chown --recursive neo4j: /data
     setting "keep_logical_logs" "${NEO4J_KEEP_LOGICAL_LOGS:-100M size}" neo4j.properties
     setting "dbms.pagecache.memory" "${NEO4J_CACHE_MEMORY:-512M}" neo4j.properties
     setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
@@ -22,7 +23,7 @@ if [ "$1" == "neo4j" ]; then
         setting "dbms.security.auth_enabled" "false" neo4j-server.properties
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
-        bin/neo4j start || \
+        exec gosu neo4j:neo4j bin/neo4j start || \
             (cat data/log/console.log && echo "Neo4j failed to start" && exit 1)
         if ! curl --fail --silent --user "neo4j:${password}" http://localhost:7474/db/data/ >/dev/null ; then
             curl --fail --silent --show-error --user neo4j:neo4j \
@@ -30,7 +31,7 @@ if [ "$1" == "neo4j" ]; then
                 --header 'Content-Type: application/json' \
                 http://localhost:7474/user/neo4j/password
         fi
-        bin/neo4j stop
+        exec gosu neo4j:neo4j bin/neo4j stop
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
@@ -59,13 +60,15 @@ if [ "$1" == "neo4j" ]; then
             echo "You must provide exactly one *.cert and exactly one *.key in /ssl."
             exit 1
         fi
+	chown --recursive neo4j: /ssl
     fi
 
     if [ -d /plugins ]; then
         find /plugins -type f -exec cp {} plugins \;
     fi
 
-    exec bin/neo4j console
+
+    exec gosu neo4j:neo4j bin/neo4j console
 elif [ "$1" == "dump-config" ]; then
     if [ -d /conf ]; then
         cp --recursive conf/* /conf
