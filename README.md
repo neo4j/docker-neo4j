@@ -110,6 +110,17 @@ For more complex customization of the image you can create a new image based on 
 
 	FROM neo4j/neo4j
 
+If you need to make your own configuration changes, we provide a hook so you can do that in a script:
+
+	COPY extra_conf.sh /extra_conf.sh
+
+Then you can pass in the `EXTENSION_SCRIPT` environment variable at runtime to source the script:
+
+	docker run -e "EXTENSION_SCRIPT=/extra_conf.sh" cafe12345678
+
+When the extension script is sourced, the current working directory will be the root of the Neo4j installation.
+
+
 ## Neo4j HA
 
 (This feature is only available in Neo4j Enterprise Edition.)
