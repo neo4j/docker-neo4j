@@ -43,6 +43,8 @@ if [ "$1" == "neo4j" ]; then
     setting "ha.cluster_server" "${NEO4J_HA_ADDRESS:-}:5001" neo4j.properties
     setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
 
+    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
+
     if [ -d /conf ]; then
         find /conf -type f -exec cp {} conf \;
     fi
