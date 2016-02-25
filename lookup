@@ -4,6 +4,14 @@ import os
 import sys
 
 data = {
+    '3.0.0-M04': {
+        'community': {
+            'sha': '4fed0551a321c7cb41ac3ebf232a4a4deea0425ae24d751b6b7307a056735f28'
+        },
+        'enterprise': {
+            'sha': '00437e55ba7e3748244736f45164a4d2a5006592aed591dba17b17ccbfe23e0d'
+        }
+    },
     '3.0.0-M03': {
         'community': {
             'sha': '77351117d92f4c8cce0b700ec89aabbe80c4029fdca7ba2a18f28791fbdbcc60'
