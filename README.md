@@ -1,3 +1,5 @@
+*NOTE:* This repository contains pre-release and experimental images. For production use please use the [Official Neo4j image](https://hub.docker.com/_/neo4j/).
+
 # What is Neo4j?
 
 Neo4j is a highly scalable, robust, native graph database. It is used in mission-critical apps by thousands of leading startups, enterprises, and governments around the world. You can learn more [here](http://neo4j.com/developer).
