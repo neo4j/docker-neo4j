@@ -13,10 +13,18 @@ setting() {
 
     if [ -n "${value}" ]; then
         sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
+        if ! grep "${setting}=" conf/"${file}" >/dev/null; then
+            echo "${setting}=${value}" >> conf/${file}
+        fi
     fi
 }
 
 if [ "$1" == "neo4j" ]; then
+    ALTERNATE_DIR_LOCATION="${ALTERNATE_DIR_LOCATION:-}"
+    if [ "${ALTERNATE_DIR_LOCATION/\$/}" != "${ALTERNATE_DIR_LOCATION}" ];then
+        eval "ALTERNATE_DIR_LOCATION=${ALTERNATE_DIR_LOCATION}"
+    fi
+
     setting "keep_logical_logs" "${NEO4J_KEEP_LOGICAL_LOGS:-100M size}" neo4j.properties
     setting "dbms.pagecache.memory" "${NEO4J_CACHE_MEMORY:-512M}" neo4j.properties
     setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
@@ -68,28 +76,29 @@ if [ "$1" == "neo4j" ]; then
     setting "ha.cluster_server" "${NEO4J_HA_ADDRESS:-}:5001" neo4j.properties
     setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
 
-    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
+    [ -f "${ALTERNATE_DIR_LOCATION:-}${EXTENSION_SCRIPT:-}" ] && . "${ALTERNATE_DIR_LOCATION:-}${EXTENSION_SCRIPT}"
 
-    if [ -d /conf ]; then
-        find /conf -type f -exec cp {} conf \;
+    if [ -d "${ALTERNATE_DIR_LOCATION:-}/conf" ]; then
+        find "${ALTERNATE_DIR_LOCATION:-}/conf" -type f -exec cp {} conf \;
     fi
 
-    if [ -d /ssl ]; then
-        num_certs=$(ls /ssl/*.cert 2>/dev/null | wc -l)
-        num_keys=$(ls /ssl/*.key 2>/dev/null | wc -l)
+    if [ -d "${ALTERNATE_DIR_LOCATION:-}/ssl" ]; then
+        SSL_DIR="${ALTERNATE_DIR_LOCATION:-}/ssl"
+        num_certs=$(ls -1 "${SSL_DIR}/*.cert" 2>/dev/null | wc -l)
+        num_keys=$(ls -1 "${SSL_DIR}/*.key" 2>/dev/null | wc -l)
         if [ $num_certs == "1" -a $num_keys == "1" ]; then
-            cert=$(ls /ssl/*.cert)
-            key=$(ls /ssl/*.key)
-            setting "dbms.security.tls_certificate_file" $cert neo4j-server.properties
-            setting "dbms.security.tls_key_file" $key neo4j-server.properties
+            cert=$(ls "${SSL_DIR}/*.cert")
+            key=$(ls "${SSL_DIR}/*.key")
+            setting "dbms.security.tls_certificate_file" "$cert" neo4j-server.properties
+            setting "dbms.security.tls_key_file" "$key" neo4j-server.properties
         else
             echo "You must provide exactly one *.cert and exactly one *.key in /ssl."
             exit 1
         fi
     fi
 
-    if [ -d /plugins ]; then
-        find /plugins -type f -exec cp {} plugins \;
+    if [ -d "${ALTERNATE_DIR_LOCATION:-}/plugins" ]; then
+        find "${ALTERNATE_DIR_LOCATION:-}/plugins" -type f -exec cp {} plugins \;
     fi
 
     exec bin/neo4j console
