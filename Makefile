@@ -18,7 +18,7 @@ include 2.1.8.mk 2.2.8.mk 2.3.2.mk 2.3.2-enterprise.mk 3.0.0-M03.mk 3.0.0-M03-en
 dev/runs-okay: dev/image-id trapping-sigint
 > @mkdir -p dev
 > ./trapping-sigint \
-    docker run --publish 7474:7474 --volume=/tmp/neo4j-data:/data \
+    docker run --publish 7474:7474 --publish 7687:7687 --volume=/tmp/neo4j-data:/data \
         --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
 > touch $@
 
