@@ -28,12 +28,12 @@ data = {
             'sha': '1a1702f232c55f8af9e86d0c6a7ed68c695fe5c99ba127f795ab21d8bc8bbc8a'
         }
     },
-    '2.3.2': {
+    '2.3.3': {
         'community': {
-            'sha': '37e24d95c914c54d5cbbe99473d4beef89da78adb2db04eb87258a489225932a'
+            'sha': '01559c55055516a42ee2dd100137b6b55d63f02959a3c6c6db7a152e045828d9'
         },
         'enterprise': {
-            'sha': 'ea80cfca918dd70ea5d10a125f5c3a5be02e45dd497b67dfa2d22770a891acea'
+            'sha': '864b7ebef3a12844c809e75016aa951c60ac90fb0d075a595108824859ce7875'
         }
     },
     '2.2.8': {
