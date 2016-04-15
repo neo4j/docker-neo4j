@@ -17,13 +17,13 @@ setting() {
 }
 
 if [ "$1" == "neo4j" ]; then
-    setting "dbms.tx_log.rotation.retention_policy" "${NEO4J_KEEP_LOGICAL_LOGS:-100M size}" neo4j.properties
-    setting "dbms.memory.pagecache.size" "${NEO4J_CACHE_MEMORY:-512M}" neo4j.properties
+    setting "dbms.tx_log.rotation.retention_policy" "${NEO4J_dbms_txLog_rotation_retentionPolicy:-100M size}" neo4j.properties
+    setting "dbms.memory.pagecache.size" "${NEO4J_dbms_memory_pagecache_size:-512M}" neo4j.properties
     setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
-    setting "dbms.memory.heap.initial_size" "${NEO4J_HEAP_MEMORY:-512}" neo4j-wrapper.conf
-    setting "dbms.memory.heap.max_size" "${NEO4J_HEAP_MEMORY:-512}" neo4j-wrapper.conf
-    setting "dbms.unmanaged_extension_classes" "${NEO4J_THIRDPARTY_JAXRS_CLASSES:-}" neo4j-server.properties
-    setting "dbms.allow_format_migration" "${NEO4J_ALLOW_STORE_UPGRADE:-}" neo4j.properties
+    setting "dbms.memory.heap.initial_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
+    setting "dbms.memory.heap.max_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
+    setting "dbms.unmanaged_extension_classes" "${NEO4J_dbms_unmanagedExtensionClasses:-}" neo4j-server.properties
+    setting "dbms.allow_format_migration" "${NEO4J_dbms_allowFormatMigration:-}" neo4j.properties
 
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
         setting "dbms.security.auth_enabled" "false" neo4j-server.properties
@@ -64,11 +64,11 @@ if [ "$1" == "neo4j" ]; then
     setting "dbms.connector.http.address" "0.0.0.0:7474" neo4j-server.properties
     setting "dbms.connector.https.address" "0.0.0.0:7473" neo4j-server.properties
     setting "dbms.connector.bolt.address" "0.0.0.0:7687" neo4j-server.properties
-    setting "dbms.mode" "${NEO4J_DATABASE_MODE:-}" neo4j-server.properties
-    setting "ha.server_id" "${NEO4J_SERVER_ID:-}" neo4j.properties
-    setting "ha.host.data" "${NEO4J_HA_ADDRESS:-}:6001" neo4j.properties
-    setting "ha.host.coordination" "${NEO4J_HA_ADDRESS:-}:5001" neo4j.properties
-    setting "ha.initial_hosts" "${NEO4J_INITIAL_HOSTS:-}" neo4j.properties
+    setting "dbms.mode" "${NEO4J_dbms_mode:-}" neo4j-server.properties
+    setting "ha.server_id" "${NEO4J_ha_serverId:-}" neo4j.properties
+    setting "ha.host.data" "${NEO4J_ha_host_data:-}" neo4j.properties
+    setting "ha.host.coordination" "${NEO4J_ha_host_coordination:-}" neo4j.properties
+    setting "ha.initial_hosts" "${NEO4J_ha_initialHosts:-}" neo4j.properties
 
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
