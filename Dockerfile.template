@@ -1,9 +1,5 @@
 FROM java:openjdk-8-jre
 
-RUN apt-get update --quiet --quiet \
-    && apt-get install --quiet --quiet --no-install-recommends lsof \
-    && rm -rf /var/lib/apt/lists/*
-
 ENV NEO4J_VERSION %%VERSION%%
 ENV NEO4J_EDITION %%EDITION%%
 ENV NEO4J_DOWNLOAD_SHA256 %%DOWNLOAD_SHA%%
