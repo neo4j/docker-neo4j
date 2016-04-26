@@ -5,7 +5,7 @@ Please use those for production use.
 
 ## Neo4j 2.3
 
-Documentation for the Neo4j 2.3 image can be found [here](http://neo4j.com/developer/docker-2.3/).
+Documentation for the Neo4j 2.3 image can be found [here](http://neo4j.com/developer/docker-2.x/).
 
 You can start a Neo4j 2.3 container like this:
 
@@ -18,7 +18,7 @@ docker run \
 
 ## Neo4j 3.0
 
-Documentation for the Neo4j 3.0 image can be found [here](http://neo4j.com/developer/docker-3.0/).
+Documentation for the Neo4j 3.0 image can be found [here](http://neo4j.com/developer/docker-3.x/).
 
 You can start a Neo4j 3.0 container like this:
 
