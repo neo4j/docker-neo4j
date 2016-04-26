@@ -10,7 +10,7 @@ endif
 all: dev/runs-okay
 .PHONY: all
 
-include 3.0.0-RC1.mk 3.0.0-RC1-enterprise.mk
+include 3.0.0.mk 3.0.0-enterprise.mk
 
 %.mk: version.mk.template Makefile
 > sed "s/%%VERSION%%/$*/g" $< >$@
@@ -55,7 +55,7 @@ dev/image-id: dev/Dockerfile dev/docker-entrypoint.sh dev/neo4j-package.tar.gz
 > image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
 
 clean::
-> rm -rf dev
+> rm -rf dev *.mk
 .PHONY: clean
 
 %/Dockerfile: Dockerfile.template Makefile lookup

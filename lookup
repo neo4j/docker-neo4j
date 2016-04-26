@@ -4,12 +4,12 @@ import os
 import sys
 
 data = {
-    '3.0.0-RC1': {
+    '3.0.0': {
         'community': {
-            'sha': '19dbf31f2ccd7c060c713ffaf6827305a37fb689bcf39d0562d37bb6780e635c'
+            'sha': '1f1aeb3c748d5b05c263b7dab8b195df788507f59228e80534ed8e506a80c517'
         },
         'enterprise': {
-            'sha': '7accdb9ae91a945a978fa61b494029411e85b5ba5105424d4859701bafe7cb22'
+            'sha': '376409e1849f2f13d5ea6ddc672b535646ffb9a24527520b661e044190bf617a'
         }
     },
     '2.3.2': {
