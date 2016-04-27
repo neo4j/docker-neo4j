@@ -13,7 +13,7 @@ You can start a Neo4j 2.3 container like this:
 docker run \
     --publish=7474:7474 \
     --volume=$HOME/neo4j/data:/data \
-    neo4j
+    neo4j:2.3
 ```
 
 ## Neo4j 3.0
@@ -26,7 +26,7 @@ You can start a Neo4j 3.0 container like this:
 docker run \
     --publish=7474:7474 --publish=7687:7687 \
     --volume=$HOME/neo4j/data:/data \
-    neo4j/neo4j:milestone
+    neo4j:3.0
 ```
 
 # Getting support and contributing
