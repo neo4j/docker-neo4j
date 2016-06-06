@@ -4,20 +4,12 @@ import os
 import sys
 
 data = {
-    '3.0.1': {
+    '3.0.2': {
         'community': {
-            'sha': 'ae9d966559c83a9f1c61e1ef4d67aafeb9185e568b6dec0cd6b50e4297a15895'
+            'sha': '3daac469e0ad0f74eb8532ada8019b418e6ebd88da9bac52a4ee3393e18086aa'
         },
         'enterprise': {
-            'sha': 'd88c107d10bc4d4919bbac775aa128b4c312a420abfd06897471b5fa96864b11'
-        }
-    },
-    '3.0.0': {
-        'community': {
-            'sha': '1f1aeb3c748d5b05c263b7dab8b195df788507f59228e80534ed8e506a80c517'
-        },
-        'enterprise': {
-            'sha': '376409e1849f2f13d5ea6ddc672b535646ffb9a24527520b661e044190bf617a'
+            'sha': '7e3cb1cb29c51ac267e57ec3d12c425bd31a4c92a2ecba70bb78360670b4b972'
         }
     },
     '2.3.2': {

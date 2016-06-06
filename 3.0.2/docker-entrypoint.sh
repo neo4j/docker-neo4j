@@ -29,10 +29,15 @@ if [ "$1" == "neo4j" ]; then
         setting "dbms.security.auth_enabled" "false" neo4j-server.properties
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
+        if [ "${password}" == "neo4j" ]; then
+            echo "Invalid value for password. It cannot be 'neo4j', which is the default."
+            exit 1
+        fi
+
         bin/neo4j start || \
             (cat logs/neo4j.log && echo "Neo4j failed to start" && exit 1)
 
-        end="$((SECONDS+10))"
+        end="$((SECONDS+100))"
         while true; do
             http_code="$(curl --silent --write-out %{http_code} --user "neo4j:${password}" --output /dev/null http://localhost:7474/db/data/ || true)"
 

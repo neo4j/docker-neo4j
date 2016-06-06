@@ -10,7 +10,7 @@ endif
 all: dev/runs-okay
 .PHONY: all
 
-include 3.0.0.mk 3.0.0-enterprise.mk 3.0.1.mk 3.0.1-enterprise.mk
+include 3.0.2.mk 3.0.2-enterprise.mk
 
 %.mk: version.mk.template Makefile
 > sed "s/%%VERSION%%/$*/g" $< >$@
