@@ -80,3 +80,7 @@ clean::
 dev/neo4j-package.tar.gz: $(DEV_PACKAGE)
 > @mkdir -p dev
 > cp $< $@
+
+%.digest:
+> curl --silent http://dist.neo4j.org/neo4j-community-$*-unix.tar.gz | sha256sum
+> curl --silent http://dist.neo4j.org/neo4j-enterprise-$*-unix.tar.gz | sha256sum
