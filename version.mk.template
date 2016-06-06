@@ -1,6 +1,7 @@
 all: %%VERSION%%
-%%VERSION%%: %%VERSION%%/Dockerfile %%VERSION%%/docker-entrypoint.sh
+
+%%VERSION%%: tmp/%%VERSION%%.runs-okay
 .PHONY: %%VERSION%%
+
 clean::
 > rm -rf %%VERSION%%
-> rm -f %%VERSION%%.mk
