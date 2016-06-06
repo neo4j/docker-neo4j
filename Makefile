@@ -13,9 +13,9 @@ endif
 
 .SECONDARY:
 
-include tmp/3.0.2.mk tmp/3.0.2-enterprise.mk tmp/dev.mk
+include tmp/3.1.0-M02.mk tmp/3.1.0-M02-enterprise.mk tmp/3.0.2.mk tmp/3.0.2-enterprise.mk tmp/dev.mk
 
-tmp/%.mk: version.mk.template Makefile | tmp
+tmp/%.mk: version.mk.template | tmp
 > sed "s/%%VERSION%%/$*/g" $< >$@
 
 tmp:
@@ -65,7 +65,7 @@ shell: tmp/dev.image-id
 
 tmp/dev.image-id: dev/neo4j-package.tar.gz
 
-%/Dockerfile: Dockerfile.template Makefile lookup
+%/Dockerfile: Dockerfile.template lookup
 > @mkdir -p $*
 > export TAG=$*; \
     version=$$(./lookup version); \
@@ -80,7 +80,7 @@ tmp/dev.image-id: dev/neo4j-package.tar.gz
     | sed "s|%%INJECT_TARBALL%%|$${inject}|" \
     >$@
 
-%/docker-entrypoint.sh: docker-entrypoint.sh Makefile
+%/docker-entrypoint.sh: docker-entrypoint.sh
 > @mkdir -p $*
 > cp $< $@
 

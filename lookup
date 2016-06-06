@@ -4,30 +4,20 @@ import os
 import sys
 
 data = {
+    '3.1.0-M02': {
+        'community': {
+            'sha': '3b1da508a4c731ae29b9983ab489665f00e4c46635844f1fe30edad343fc3ea7'
+        },
+        'enterprise': {
+            'sha': '5ab266109e44aa7792ab5001477724a435545c9611986a1cc02028ca3edb685f'
+        }
+    },
     '3.0.2': {
         'community': {
             'sha': '3daac469e0ad0f74eb8532ada8019b418e6ebd88da9bac52a4ee3393e18086aa'
         },
         'enterprise': {
             'sha': '7e3cb1cb29c51ac267e57ec3d12c425bd31a4c92a2ecba70bb78360670b4b972'
-        }
-    },
-    '2.3.2': {
-        'community': {
-            'sha': '37e24d95c914c54d5cbbe99473d4beef89da78adb2db04eb87258a489225932a'
-        },
-        'enterprise': {
-            'sha': 'ea80cfca918dd70ea5d10a125f5c3a5be02e45dd497b67dfa2d22770a891acea'
-        }
-    },
-    '2.2.8': {
-        'community': {
-            'sha': 'e6758ed662821a71e15836b94fe3f591d5e27f2ff4c1188be619d73343993a99'
-        }
-    },
-    '2.1.8': {
-        'community': {
-            'sha': 'faf209dbeef9851c88717660a4b7ccb5110343a9ed53110f516b675c8230c39a'
         }
     },
     'dev': {
