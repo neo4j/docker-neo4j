@@ -1,16 +1,12 @@
 FROM java:openjdk-8-jre
 
-ENV NEO4J_VERSION 3.1.0-M02
-ENV NEO4J_EDITION community
-ENV NEO4J_DOWNLOAD_SHA256 3b1da508a4c731ae29b9983ab489665f00e4c46635844f1fe30edad343fc3ea7
-ENV NEO4J_DOWNLOAD_ROOT http://dist.neo4j.org
-ENV NEO4J_TARBALL neo4j-$NEO4J_EDITION-$NEO4J_VERSION-unix.tar.gz
-ENV NEO4J_URI $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL
+ENV NEO4J_SHA256 %%NEO4J_SHA%%
+ENV NEO4J_URI %%NEO4J_URI%%
 
-
+%%INJECT_TARBALL%%
 
 RUN curl --fail --silent --show-error --location --output neo4j.tar.gz $NEO4J_URI \
-    && echo "$NEO4J_DOWNLOAD_SHA256 neo4j.tar.gz" | sha256sum --check --quiet - \
+    && echo "$NEO4J_SHA256 neo4j.tar.gz" | sha256sum --check --quiet - \
     && tar --extract --file neo4j.tar.gz --directory /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm neo4j.tar.gz

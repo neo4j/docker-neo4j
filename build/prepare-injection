@@ -1,0 +1,42 @@
+#!/usr/bin/python
+
+import shutil
+import subprocess
+import sys
+from urlparse import urlparse
+
+action = sys.argv[1]
+uri_arg = sys.argv[2]
+if len(sys.argv) > 3:
+    target_dir = sys.argv[3]
+    target_file = target_dir+'/neo4j-package.tar.gz'
+
+if not action in ['sha', 'copy', 'command', 'uri']:
+    sys.exit("Unknown action %s" % action)
+
+uri = urlparse(uri_arg)
+
+if uri.scheme == 'file':
+    path = uri.path
+    if action == 'sha':
+        result = subprocess.check_output(['sha256sum', path])
+        sha = result.split()[0]
+        print sha
+    elif action == 'copy':
+        shutil.copy(path, target_file)
+    elif action == 'command':
+        print 'COPY ./neo4j-package.tar.gz /tmp/neo4j-package.tar.gz'
+    elif action == 'uri':
+        print 'file:///tmp/neo4j-package.tar.gz'
+else:
+    if action == 'sha':
+        result = subprocess.check_output("curl --silent %s | sha256sum" % uri_arg,
+                                         shell=True)
+        sha = result.split()[0]
+        print sha
+    elif action == 'copy':
+        subprocess.check_call(['touch', target_file])
+    elif action == 'command':
+        pass
+    elif action == 'uri':
+        print uri_arg
