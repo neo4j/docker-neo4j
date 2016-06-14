@@ -8,6 +8,8 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
+tests_in = $(shell find $1 -name 'test-*')
+
 all: uriless complete
 .PHONY: all
 
@@ -28,8 +30,8 @@ out/image-with-%/.sentinel: tmp/image-with-%/.sentinel tmp/.tests-pass | out
 > cp --recursive $(<D) $(@D)
 > @touch $@
 
-tmp/.tests-pass: tmp/.image-id
-> for test in test/test-*; do "$${test}" $$(cat $<); done
+tmp/.tests-pass: tmp/.image-id $(call tests_in,test)
+> @for test in $(filter test/test-%,$^); do echo "Running $${test}"; "$${test}" $$(cat $<); done
 > @touch $@
 
 tmp/.image-id: tmp/image-with-uri/.sentinel | tmp
