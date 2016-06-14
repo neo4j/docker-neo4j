@@ -17,15 +17,19 @@ complete: out/image-with-uri/.sentinel
 uriless: out/image-with-sha/.sentinel
 .PHONY: uriless
 
-out/image-with-%/.sentinel: tmp/image-with-%/.sentinel tmp/.runs-okay | out
+run: tmp/.image-id
+> trapping-sigint \
+    docker run --publish 7474:7474 --publish 7687:7687 \
+        --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
+.PHONY: run
+
+out/image-with-%/.sentinel: tmp/image-with-%/.sentinel tmp/.tests-pass | out
 > rm -rf $(@D)
 > cp --recursive $(<D) $(@D)
 > @touch $@
 
-tmp/.runs-okay: tmp/.image-id
-> trapping-sigint \
-    docker run --publish 7474:7474 --publish 7687:7687 \
-        --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
+tmp/.tests-pass: tmp/.image-id
+> for test in test/test-*; do "$${test}" $$(cat $<); done
 > @touch $@
 
 tmp/.image-id: tmp/image-with-uri/.sentinel | tmp

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+readonly image="$1"
+readonly cname="neo4j-$(uuidgen)"
+
+docker_rm() {
+  declare -r cid="$1"
+  docker rm --force "${cid}" >/dev/null
+}
+
+docker_run() {
+  declare -r l_image="$1" l_cname="$2"
+  declare -r cid="$(docker run --detach --env=NEO4J_AUTH=none --name="${l_cname}" "${l_image}")"
+  trap "docker_rm ${cid}" EXIT
+}
+
+docker_ip() {
+  declare -r l_cname="$1"
+  docker inspect --format '{{ .NetworkSettings.IPAddress }}' "${l_cname}"
+}
+
+neo4j_wait() {
+  declare -r l_ip="$1" end="$((SECONDS+10))"
+  while true; do
+    [[ "200" = "$(curl --silent --write-out '%{http_code}' --output /dev/null http://${l_ip}:7474)" ]] && break
+    [[ "${SECONDS}" -ge "${end}" ]] && exit 1
+    sleep 1
+  done
+}
+
+docker_run "$image" "$cname"
+readonly ip="$(docker_ip "${cname}")"
+neo4j_wait "${ip}"
