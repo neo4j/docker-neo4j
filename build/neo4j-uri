@@ -1,3 +1,0 @@
-#!/bin/bash
-
-echo "${NEO4J_URI:-http://dist.neo4j.org/neo4j-community-3.0.1-unix.tar.gz}"

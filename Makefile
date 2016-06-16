@@ -1,4 +1,5 @@
 SHELL := bash
+.ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 .DELETE_ON_ERROR:
 .SECONDEXPANSION:
@@ -8,73 +9,63 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
-tests_in = $(shell find $1 -name 'test-*')
+NEO4J_EDITION ?= community
+NEO4J_VERSION ?= 3.0.1
 
-all: uriless complete
-.PHONY: all
+dist_uri := http://dist.neo4j.org/neo4j-$(NEO4J_EDITION)-$(NEO4J_VERSION)-unix.tar.gz
+NEO4J_URI ?= $(dist_uri)
+env_NEO4J_URI := $(shell record-env NEO4J_URI $(NEO4J_URI))
 
-complete: out/image-with-uri/.sentinel
+all: out/image/.sentinel
 .PHONY: complete
 
-uriless: out/image-with-sha/.sentinel
-.PHONY: uriless
-
 run: tmp/.image-id
+> image_id=$$(cat $<)
 > trapping-sigint \
     docker run --publish 7474:7474 --publish 7687:7687 \
-        --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
+        --env=NEO4J_AUTH=neo4j/foo --rm $${image_id}
 .PHONY: run
 
-out/image-with-%/.sentinel: tmp/image-with-%/.sentinel tmp/.tests-pass | out
-> rm -rf $(@D)
-> cp --recursive $(<D) $(@D)
-> @touch $@
+out/image/.sentinel: tmp/image-with-sha/.sentinel tmp/.tests-pass $(env_NEO4J_URI)
+> mkdir -p $(@D)
+> cp $(<D)/docker-entrypoint.sh $(@D)/
+> uri=$$(prepare-injection uri $(dist_uri))
+> command=$$(prepare-injection command $(dist_uri))
+> <$(<D)/Dockerfile \
+    sed -e "s|%%NEO4J_URI%%|$${uri}|" -e "s|%%INJECT_TARBALL%%|$${command}|" \
+    >$(@D)/Dockerfile
+> touch $@
 
-tmp/.tests-pass: tmp/.image-id $(call tests_in,test)
-> @for test in $(filter test/test-%,$^); do echo "Running $${test}"; "$${test}" $$(cat $<); done
-> @touch $@
+tmp/.tests-pass: tmp/.image-id $(shell find test -name 'test-*')
+> image_id=$$(cat $<)
+> for test in $(filter test/test-%,$^); do
+>   echo "Running $${test}"
+>   "$${test}" $${image_id}
+> done
+> touch $@
 
-tmp/.image-id: tmp/image-with-uri/.sentinel | tmp
+tmp/.image-id: tmp/image-with-uri/.sentinel
 > image=test/$$RANDOM; docker build --tag=$$image $(<D); echo -n $$image >$@
 
-tmp/image-with-uri/.sentinel: \
-    $$(@D)/Dockerfile $$(@D)/docker-entrypoint.sh $$(@D)/neo4j-package.tar.gz
-> @touch $@
+tmp/image-with-uri/.sentinel: tmp/image-with-sha/.sentinel $(env_NEO4J_URI)
+> mkdir -p $(@D)
+> cp $(<D)/docker-entrypoint.sh $(@D)/
+> uri=$$(prepare-injection uri $(NEO4J_URI))
+> command=$$(prepare-injection command $(NEO4J_URI))
+> <$(<D)/Dockerfile \
+    sed -e "s|%%NEO4J_URI%%|$${uri}|" -e "s|%%INJECT_TARBALL%%|$${command}|" \
+    >$(@D)/Dockerfile
+> prepare-injection copy $(NEO4J_URI) $(@D)
+> touch $@
 
-tmp/image-with-uri/Dockerfile: tmp/image-with-sha/$$(@F) | $$(@D)
-> <$< sed "s|%%NEO4J_URI%%|$$(prepare-injection uri $$(neo4j-uri))|" \
-    | sed "s|%%INJECT_TARBALL%%|$$(prepare-injection command $$(neo4j-uri))|" \
-    >$@
+tmp/image-with-sha/.sentinel: src/Dockerfile src/docker-entrypoint.sh $(env_NEO4J_URI)
+> mkdir -p $(@D)
+> cp src/docker-entrypoint.sh $(@D)/
+> sha=$$(prepare-injection sha $(NEO4J_URI))
+> <src/Dockerfile sed "s|%%NEO4J_SHA%%|$${sha}|" >$(@D)/Dockerfile
+> touch $@
 
-tmp/image-with-uri/docker-entrypoint.sh: tmp/image-with-sha/$$(@F) | $$(@D)
-> cp $< $@
-
-tmp/image-with-uri/neo4j-package.tar.gz: | $$(@D)
-> prepare-injection copy $$(neo4j-uri) $(@D)
-
-tmp/image-with-uri:
-> @mkdir -p $@
-
-tmp/image-with-sha/.sentinel: $$(@D)/Dockerfile $$(@D)/docker-entrypoint.sh
-> @touch $@
-
-tmp/image-with-sha/Dockerfile: src/$$(@F) | $$(@D)
-> <$< sed "s|%%NEO4J_SHA%%|$$(prepare-injection sha $$(neo4j-uri))|" >$@
-
-tmp/image-with-sha/docker-entrypoint.sh: src/$$(@F) | $$(@D)
-> cp $< $@
-
-tmp/image-with-sha:
-> @mkdir -p $@
-
-tmp:
-> @mkdir -p tmp
-clean::
+clean:
 > rm -rf tmp
-
-out:
-> @mkdir -p out
-clean::
 > rm -rf out
-
 .PHONY: clean
