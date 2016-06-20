@@ -1,9 +1,14 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import shutil
 import subprocess
 import sys
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
 
 action = sys.argv[1]
 uri_arg = sys.argv[2]
@@ -21,22 +26,22 @@ if uri.scheme == 'file':
     if action == 'sha':
         result = subprocess.check_output(['shasum', '--algorithm=256', path])
         sha = result.split()[0]
-        print sha
+        print(sha.decode())
     elif action == 'copy':
         shutil.copy(path, target_file)
     elif action == 'command':
-        print 'COPY ./neo4j-package.tar.gz /tmp/neo4j-package.tar.gz'
+        print('COPY ./neo4j-package.tar.gz /tmp/neo4j-package.tar.gz')
     elif action == 'uri':
-        print 'file:///tmp/neo4j-package.tar.gz'
+        print('file:///tmp/neo4j-package.tar.gz')
 else:
     if action == 'sha':
         result = subprocess.check_output("curl --silent %s | shasum --algorithm=256" % uri_arg,
                                          shell=True)
         sha = result.split()[0]
-        print sha
+        print(sha.decode())
     elif action == 'copy':
         subprocess.check_call(['touch', target_file])
     elif action == 'command':
         pass
     elif action == 'uri':
-        print uri_arg
+        print(uri_arg)
