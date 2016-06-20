@@ -1,12 +1,8 @@
 FROM java:openjdk-8-jre
 
-RUN apt-get update --quiet --quiet \
-    && apt-get install --quiet --quiet --no-install-recommends lsof \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV NEO4J_VERSION 2.3.3
+ENV NEO4J_VERSION 3.0.2
 ENV NEO4J_EDITION enterprise
-ENV NEO4J_DOWNLOAD_SHA256 864b7ebef3a12844c809e75016aa951c60ac90fb0d075a595108824859ce7875
+ENV NEO4J_DOWNLOAD_SHA256 7e3cb1cb29c51ac267e57ec3d12c425bd31a4c92a2ecba70bb78360670b4b972
 ENV NEO4J_DOWNLOAD_ROOT http://dist.neo4j.org
 ENV NEO4J_TARBALL neo4j-$NEO4J_EDITION-$NEO4J_VERSION-unix.tar.gz
 ENV NEO4J_URI $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL
@@ -28,7 +24,7 @@ VOLUME /data
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-EXPOSE 7474 7473
+EXPOSE 7474 7473 7687
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["neo4j"]

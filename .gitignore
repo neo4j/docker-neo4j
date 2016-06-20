@@ -3,3 +3,4 @@ devenv.local
 /*.mk
 .idea
 *.iml
+/tmp/

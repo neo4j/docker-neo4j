@@ -7,22 +7,35 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
-all: dev/runs-okay
 .PHONY: all
 
-include 2.1.8.mk 2.2.8.mk 2.3.3.mk 2.3.3-enterprise.mk 3.0.0-M03.mk 3.0.0-M03-enterprise.mk 3.0.0-M04.mk 3.0.0-M04-enterprise.mk 3.0.0-M05.mk 3.0.0-M05-enterprise.mk
+.PHONY: clean
 
-%.mk: version.mk.template Makefile
+.SECONDARY:
+
+include tmp/3.1.0-M02.mk tmp/3.1.0-M02-enterprise.mk tmp/3.0.2.mk tmp/3.0.2-enterprise.mk tmp/dev.mk
+
+tmp/%.mk: version.mk.template | tmp
 > sed "s/%%VERSION%%/$*/g" $< >$@
 
-dev/runs-okay: dev/image-id trapping-sigint
-> @mkdir -p dev
+tmp:
+> mkdir -p tmp
+clean::
+> rm -rf tmp
+
+tmp/%.runs-okay: tmp/%.image-id trapping-sigint | tmp
 > ./trapping-sigint \
-    docker run --publish 7474:7474 --volume=/tmp/neo4j-data:/data \
+    docker run --publish 7474:7474 --publish 7687:7687 \
         --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $<)
 > touch $@
 
-start-cluster: dev/image-id
+tmp/%.image-id: tmp/%.files | tmp
+> image=test/$$RANDOM; docker build --tag=$$image $*; echo -n $$image >$@
+
+tmp/%.files: %/Dockerfile %/docker-entrypoint.sh | tmp
+> touch $@
+
+start-cluster: tmp/dev.image-id
 > docker run --name=instance1 --detach --publish 7474:7474 --env=NEO4J_AUTH=neo4j/foo\
     --env=NEO4J_DATABASE_MODE=HA --env=NEO4J_SERVER_ID=1 \
     --env=NEO4J_HA_ADDRESS=instance1 \
@@ -45,20 +58,14 @@ stop-cluster:
 > docker rm instance1 instance2 instance3
 .PHONY: stop-cluster
 
-shell: dev/image-id
+shell: tmp/dev.image-id
 > docker run --publish 7474:7474 --rm  --entrypoint sh --interactive --tty \
-    $$(cat dev/image-id)
+    $$(cat $<)
 .PHONY: shell
 
-dev/image-id: dev/Dockerfile dev/docker-entrypoint.sh dev/neo4j-package.tar.gz
-> @mkdir -p dev
-> image=test/$$RANDOM; docker build --tag=$$image dev; echo -n $$image >$@
+tmp/dev.image-id: dev/neo4j-package.tar.gz
 
-clean::
-> rm -rf dev
-.PHONY: clean
-
-%/Dockerfile: Dockerfile.template Makefile lookup
+%/Dockerfile: Dockerfile.template lookup
 > @mkdir -p $*
 > export TAG=$*; \
     version=$$(./lookup version); \
@@ -73,10 +80,13 @@ clean::
     | sed "s|%%INJECT_TARBALL%%|$${inject}|" \
     >$@
 
-%/docker-entrypoint.sh: docker-entrypoint.sh Makefile
+%/docker-entrypoint.sh: docker-entrypoint.sh
 > @mkdir -p $*
 > cp $< $@
 
 dev/neo4j-package.tar.gz: $(DEV_PACKAGE)
-> @mkdir -p dev
 > cp $< $@
+
+%.digest:
+> curl --silent http://dist.neo4j.org/neo4j-community-$*-unix.tar.gz | sha256sum
+> curl --silent http://dist.neo4j.org/neo4j-enterprise-$*-unix.tar.gz | sha256sum
