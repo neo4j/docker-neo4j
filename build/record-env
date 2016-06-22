@@ -1,0 +1,10 @@
+#!/bin/bash -eu
+
+var="$1"
+val="$2"
+root=tmp/.env
+path="${root}/${var}"
+
+mkdir -p "${root}"
+grep --quiet --no-messages "^${val}$" "${path}" || echo "${val}" >"${path}"
+echo "${path}"

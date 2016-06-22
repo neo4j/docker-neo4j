@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly cname="neo4j-$(uuidgen)"
+
+docker_run "$image" "$cname" "NEO4J_AUTH=none"
+readonly ip="$(docker_ip "${cname}")"
+neo4j_wait "${ip}"

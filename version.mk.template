@@ -1,7 +1,0 @@
-all: %%VERSION%%
-
-%%VERSION%%: tmp/%%VERSION%%.runs-okay
-.PHONY: %%VERSION%%
-
-clean::
-> rm -rf %%VERSION%%
