@@ -4,9 +4,9 @@ RUN apt-get update --quiet --quiet \
     && apt-get install --quiet --quiet --no-install-recommends lsof \
     && rm -rf /var/lib/apt/lists/*
 
-ENV NEO4J_VERSION 2.3.3
-ENV NEO4J_EDITION enterprise
-ENV NEO4J_DOWNLOAD_SHA256 864b7ebef3a12844c809e75016aa951c60ac90fb0d075a595108824859ce7875
+ENV NEO4J_VERSION 2.3.5
+ENV NEO4J_EDITION community
+ENV NEO4J_DOWNLOAD_SHA256 969159bddc0526681795f039e4250d728c8b60c5e421450259caacfc488c18cf
 ENV NEO4J_DOWNLOAD_ROOT http://dist.neo4j.org
 ENV NEO4J_TARBALL neo4j-$NEO4J_EDITION-$NEO4J_VERSION-unix.tar.gz
 ENV NEO4J_URI $NEO4J_DOWNLOAD_ROOT/$NEO4J_TARBALL
