@@ -47,15 +47,6 @@ data = {
         'community': {
             'sha': 'faf209dbeef9851c88717660a4b7ccb5110343a9ed53110f516b675c8230c39a'
         }
-    },
-    'dev': {
-        'dev': {
-            'version': os.environ['DEV_VERSION'],
-            'edition': os.environ['DEV_EDITION'],
-            'sha': os.environ['DEV_SHA'],
-            'root': 'file:///docker-test/',
-            'inject': 'COPY ./neo4j-package.tar.gz /docker-test/$NEO4J_TARBALL',
-        }
     }
 }
 
@@ -73,10 +64,7 @@ for version, editions in data.items():
 tag = os.environ['TAG']
 detail = sys.argv[1]
 
-if tag == 'dev':
-    version = 'dev'
-    edition = 'dev'
-elif tag.endswith('-enterprise'):
+if tag.endswith('-enterprise'):
     version = tag.replace('-enterprise', '')
     edition = 'enterprise'
 else:
