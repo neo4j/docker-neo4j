@@ -3,7 +3,7 @@
 setting() {
     setting="${1}"
     value="${2}"
-    file="${3}"
+    file="${3:-neo4j.conf}"
 
     if [ ! -f "conf/${file}" ]; then
         if [ -f "conf/neo4j.conf" ]; then
@@ -17,16 +17,16 @@ setting() {
 }
 
 if [ "$1" == "neo4j" ]; then
-    setting "dbms.tx_log.rotation.retention_policy" "${NEO4J_dbms_txLog_rotation_retentionPolicy:-100M size}" neo4j.properties
-    setting "dbms.memory.pagecache.size" "${NEO4J_dbms_memory_pagecache_size:-512M}" neo4j.properties
+    setting "dbms.tx_log.rotation.retention_policy" "${NEO4J_dbms_txLog_rotation_retentionPolicy:-100M size}"
+    setting "dbms.memory.pagecache.size" "${NEO4J_dbms_memory_pagecache_size:-512M}"
     setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
     setting "dbms.memory.heap.initial_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
     setting "dbms.memory.heap.max_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
-    setting "dbms.unmanaged_extension_classes" "${NEO4J_dbms_unmanagedExtensionClasses:-}" neo4j-server.properties
-    setting "dbms.allow_format_migration" "${NEO4J_dbms_allowFormatMigration:-}" neo4j.properties
+    setting "dbms.unmanaged_extension_classes" "${NEO4J_dbms_unmanagedExtensionClasses:-}"
+    setting "dbms.allow_format_migration" "${NEO4J_dbms_allowFormatMigration:-}"
 
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
-        setting "dbms.security.auth_enabled" "false" neo4j-server.properties
+        setting "dbms.security.auth_enabled" "false"
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
         if [ "${password}" == "neo4j" ]; then
@@ -66,14 +66,14 @@ if [ "$1" == "neo4j" ]; then
         exit 1
     fi
 
-    setting "dbms.connector.http.address" "0.0.0.0:7474" neo4j-server.properties
-    setting "dbms.connector.https.address" "0.0.0.0:7473" neo4j-server.properties
-    setting "dbms.connector.bolt.address" "0.0.0.0:7687" neo4j-server.properties
-    setting "dbms.mode" "${NEO4J_dbms_mode:-}" neo4j-server.properties
-    setting "ha.server_id" "${NEO4J_ha_serverId:-}" neo4j.properties
-    setting "ha.host.data" "${NEO4J_ha_host_data:-}" neo4j.properties
-    setting "ha.host.coordination" "${NEO4J_ha_host_coordination:-}" neo4j.properties
-    setting "ha.initial_hosts" "${NEO4J_ha_initialHosts:-}" neo4j.properties
+    setting "dbms.connector.http.address" "0.0.0.0:7474"
+    setting "dbms.connector.https.address" "0.0.0.0:7473"
+    setting "dbms.connector.bolt.address" "0.0.0.0:7687"
+    setting "dbms.mode" "${NEO4J_dbms_mode:-}"
+    setting "ha.server_id" "${NEO4J_ha_serverId:-}"
+    setting "ha.host.data" "${NEO4J_ha_host_data:-}"
+    setting "ha.host.coordination" "${NEO4J_ha_host_coordination:-}"
+    setting "ha.initial_hosts" "${NEO4J_ha_initialHosts:-}"
 
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
