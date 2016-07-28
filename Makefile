@@ -26,17 +26,13 @@ run: tmp/.image-id
         --env=NEO4J_AUTH=neo4j/foo --rm $${image_id}
 .PHONY: run
 
-out/image/.sentinel: tmp/image-with-sha/.sentinel tmp/.tests-pass $(env_NEO4J_URI)
+out/image/.sentinel: tmp/image/.sentinel tmp/.tests-pass
 > mkdir -p $(@D)
-> cp $(<D)/docker-entrypoint.sh $(@D)/
-> uri=$$(prepare-injection uri $(dist_uri))
-> command=$$(prepare-injection command $(dist_uri))
-> <$(<D)/Dockerfile \
-    sed -e "s|%%NEO4J_URI%%|$${uri}|" -e "s|%%INJECT_TARBALL%%|$${command}|" \
-    >$(@D)/Dockerfile
+> cp -r $(<D)/* $(@D)
 > touch $@
 
 tmp/.tests-pass: tmp/.image-id $(shell find test -name 'test-*')
+> mkdir -p $(@D)
 > image_id=$$(cat $<)
 > for test in $(filter test/test-%,$^); do
 >   echo "Running $${test}"
@@ -44,25 +40,29 @@ tmp/.tests-pass: tmp/.image-id $(shell find test -name 'test-*')
 > done
 > touch $@
 
-tmp/.image-id: tmp/image-with-uri/.sentinel
-> image=test/$$RANDOM; docker build --tag=$$image $(<D); echo -n $$image >$@
-
-tmp/image-with-uri/.sentinel: tmp/image-with-sha/.sentinel $(env_NEO4J_URI)
+tmp/.image-id: tmp/local-context/.sentinel $(env_NEO4J_URI)
 > mkdir -p $(@D)
-> cp $(<D)/docker-entrypoint.sh $(@D)/
+> image=test/$$RANDOM
 > uri=$$(prepare-injection uri $(NEO4J_URI))
-> command=$$(prepare-injection command $(NEO4J_URI))
-> <$(<D)/Dockerfile \
-    sed -e "s|%%NEO4J_URI%%|$${uri}|" -e "s|%%INJECT_TARBALL%%|$${command}|" \
-    >$(@D)/Dockerfile
-> prepare-injection copy $(NEO4J_URI) $(@D)
+> docker build --tag=$$image --build-arg="NEO4J_URI=$${uri}" $(<D)
+> echo -n $$image >$@
+
+tmp/local-context/.sentinel: tmp/image/.sentinel $(env_NEO4J_URI)
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> prepare-injection copy $(NEO4J_URI) $(@D)/local-package
 > touch $@
 
-tmp/image-with-sha/.sentinel: src/Dockerfile src/docker-entrypoint.sh $(env_NEO4J_URI)
+tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh $(env_NEO4J_URI)
 > mkdir -p $(@D)
 > cp src/docker-entrypoint.sh $(@D)/
 > sha=$$(prepare-injection sha $(NEO4J_URI))
-> <src/Dockerfile sed "s|%%NEO4J_SHA%%|$${sha}|" >$(@D)/Dockerfile
+> <src/Dockerfile sed \
+    -e "s|%%NEO4J_SHA%%|$${sha}|" \
+    -e "s|%%NEO4J_PUBLICATION_URI%%|$(dist_uri)|" \
+    >$(@D)/Dockerfile
+> mkdir -p $(@D)/local-package
+> touch $(@D)/local-package/.sentinel
 > touch $@
 
 clean:

@@ -1,9 +1,9 @@
 FROM java:openjdk-8-jre
 
 ENV NEO4J_SHA256 %%NEO4J_SHA%%
-ENV NEO4J_URI %%NEO4J_URI%%
+ARG NEO4J_URI=%%NEO4J_PUBLICATION_URI%%
 
-%%INJECT_TARBALL%%
+COPY ./local-package/* /tmp/
 
 RUN curl --fail --silent --show-error --location --output neo4j.tar.gz $NEO4J_URI \
     && echo "$NEO4J_SHA256 neo4j.tar.gz" | sha256sum --check --quiet - \
