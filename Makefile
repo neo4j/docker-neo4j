@@ -11,10 +11,11 @@ endif
 
 NEO4J_EDITION ?= community
 NEO4J_VERSION ?= 3.0.1
-
+env_NEO4J_EDITION := $(shell record-env NEO4J_EDITION $(NEO4J_EDITION))
+env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION $(NEO4J_VERSION))
 dist_uri := http://dist.neo4j.org/neo4j-$(NEO4J_EDITION)-$(NEO4J_VERSION)-unix.tar.gz
-NEO4J_URI ?= $(dist_uri)
-env_NEO4J_URI := $(shell record-env NEO4J_URI $(NEO4J_URI))
+
+generic_package := neo4j.tar.gz
 
 all: out/image/.sentinel
 .PHONY: complete
@@ -40,23 +41,36 @@ tmp/.tests-pass: tmp/.image-id $(shell find test -name 'test-*')
 > done
 > touch $@
 
-tmp/.image-id: tmp/local-context/.sentinel $(env_NEO4J_URI)
+tmp/.image-id: tmp/local-context/.sentinel
 > mkdir -p $(@D)
 > image=test/$$RANDOM
-> uri=$$(prepare-injection uri $(NEO4J_URI))
-> docker build --tag=$$image --build-arg="NEO4J_URI=$${uri}" $(<D)
+> docker build --tag=$$image --build-arg="NEO4J_URI=file:///tmp/$(generic_package)" $(<D)
 > echo -n $$image >$@
 
-tmp/local-context/.sentinel: tmp/image/.sentinel $(env_NEO4J_URI)
+tmp/local-context/.sentinel: tmp/image/.sentinel tmp/$(generic_package)
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
-> prepare-injection copy $(NEO4J_URI) $(@D)/local-package
+> cp tmp/$(generic_package) $(@D)/local-package
 > touch $@
 
-tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh $(env_NEO4J_URI)
+tarball := $(wildcard in/neo4j-*-unix.tar.gz)
+tmp/$(generic_package): $(tarball)
+> mkdir -p $(@D)
+> found="f"
+> for tarball in $(tarball); do
+>   [[ $${found} == "t" ]] && echo >&2 "ERROR: more than one tarball in in/" && exit 1
+>   cp $${tarball} $@
+>   found="t"
+> done
+> if [[ $${found} == "f" ]]; then
+>   echo >&2 "ERROR: no tarball in in/" && exit 1
+> fi
+
+tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_package) \
+                     $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
 > mkdir -p $(@D)
 > cp src/docker-entrypoint.sh $(@D)/
-> sha=$$(prepare-injection sha $(NEO4J_URI))
+> sha=$$(shasum --algorithm=256 tmp/$(generic_package) | cut --delimiter=' ' --fields=1)
 > <src/Dockerfile sed \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
     -e "s|%%NEO4J_PUBLICATION_URI%%|$(dist_uri)|" \
