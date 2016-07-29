@@ -9,10 +9,14 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
-NEO4J_EDITION ?= community
-NEO4J_VERSION ?= 3.0.1
-env_NEO4J_EDITION := $(shell record-env NEO4J_EDITION $(NEO4J_EDITION))
-env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION $(NEO4J_VERSION))
+ifndef NEO4J_EDITION
+  $(error NEO4J_EDITION is not set)
+endif
+ifndef NEO4J_VERSION
+  $(error NEO4J_VERSION is not set)
+endif
+env_NEO4J_EDITION := $(shell record-env NEO4J_EDITION)
+env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
 dist_uri := http://dist.neo4j.org/neo4j-$(NEO4J_EDITION)-$(NEO4J_VERSION)-unix.tar.gz
 
 generic_package := neo4j.tar.gz

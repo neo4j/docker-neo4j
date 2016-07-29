@@ -9,3 +9,11 @@ if ! which make >/dev/null; then
         echo "Please install GNU Make 4.0 or later"
     fi
 fi
+
+if [[ -f devenv.local ]]; then
+    . devenv.local
+    export NEO4J_EDITION
+    export NEO4J_VERSION
+else
+    echo >&2 "Error: cannot find devenv.local"
+fi

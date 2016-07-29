@@ -1,7 +1,8 @@
 #!/bin/bash -eu
 
 var="$1"
-val="$2"
+[[ -z "${!var:-}" ]] && echo >&2 "Error: ${var} must be defined" && exit 1
+val="${!var}"
 root=tmp/.env
 path="${root}/${var}"
 
