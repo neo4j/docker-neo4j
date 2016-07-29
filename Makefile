@@ -66,6 +66,13 @@ tmp/$(generic_package): $(tarball)
 >   echo >&2 "ERROR: no tarball in in/" && exit 1
 > fi
 
+cache: $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
+> rm -rf in
+> mkdir -p in
+> cd in
+> curl --fail --silent --show-error --location --remote-name $(dist_uri)
+.PHONY: cache
+
 tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_package) \
                      $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
 > mkdir -p $(@D)
