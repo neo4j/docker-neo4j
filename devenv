@@ -12,7 +12,6 @@ fi
 
 if [[ -f devenv.local ]]; then
     source devenv.local
-    export NEO4J_EDITION
     export NEO4J_VERSION
 else
     echo >&2 "Error: cannot find devenv.local"

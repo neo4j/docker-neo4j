@@ -9,13 +9,9 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
-ifndef NEO4J_EDITION
-  $(error NEO4J_EDITION is not set)
-endif
 ifndef NEO4J_VERSION
   $(error NEO4J_VERSION is not set)
 endif
-env_NEO4J_EDITION := $(shell record-env NEO4J_EDITION)
 env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
 
 dist_uri = http://dist.neo4j.org/neo4j-$(1)-$(2)-unix.tar.gz
@@ -51,13 +47,13 @@ tmp/local-context/.sentinel: tmp/image/.sentinel tmp/$(generic_package)
 > touch $@
 
 tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_package) \
-                     $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
+                     $(env_NEO4J_VERSION)
 > mkdir -p $(@D)
 > cp src/docker-entrypoint.sh $(@D)/
 > sha=$$(shasum --algorithm=256 tmp/$(generic_package) | cut --delimiter=' ' --fields=1)
 > <src/Dockerfile sed \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
-    -e "s|%%NEO4J_PUBLICATION_URI%%|$(call dist_uri,$(NEO4J_EDITION),$(NEO4J_VERSION))|" \
+    -e "s|%%NEO4J_PUBLICATION_URI%%|$(call dist_uri,enterprise,$(NEO4J_VERSION))|" \
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
@@ -83,12 +79,12 @@ run: tmp/.image-id
     --env=NEO4J_AUTH=neo4j/foo --rm $${image_id}
 .PHONY: run
 
-cache: $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
+cache: $(env_NEO4J_VERSION)
 > rm -rf in
 > mkdir -p in
 > cd in
 > curl --fail --silent --show-error --location --remote-name \
-    $(call dist_uri,$(NEO4J_EDITION),$(NEO4J_VERSION))
+    $(call dist_uri,enterprise,$(NEO4J_VERSION))
 .PHONY: cache
 
 clean:
