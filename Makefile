@@ -24,13 +24,6 @@ generic_package := neo4j.tar.gz
 all: out/image/.sentinel
 .PHONY: complete
 
-run: tmp/.image-id
-> image_id=$$(cat $<)
-> trapping-sigint \
-    docker run --publish 7474:7474 --publish 7687:7687 \
-        --env=NEO4J_AUTH=neo4j/foo --rm $${image_id}
-.PHONY: run
-
 out/image/.sentinel: tmp/image/.sentinel tmp/.tests-pass
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
@@ -57,6 +50,19 @@ tmp/local-context/.sentinel: tmp/image/.sentinel tmp/$(generic_package)
 > cp tmp/$(generic_package) $(@D)/local-package
 > touch $@
 
+tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_package) \
+                     $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
+> mkdir -p $(@D)
+> cp src/docker-entrypoint.sh $(@D)/
+> sha=$$(shasum --algorithm=256 tmp/$(generic_package) | cut --delimiter=' ' --fields=1)
+> <src/Dockerfile sed \
+    -e "s|%%NEO4J_SHA%%|$${sha}|" \
+    -e "s|%%NEO4J_PUBLICATION_URI%%|$(dist_uri)|" \
+    >$(@D)/Dockerfile
+> mkdir -p $(@D)/local-package
+> touch $(@D)/local-package/.sentinel
+> touch $@
+
 tarball := $(wildcard in/neo4j-*-unix.tar.gz)
 tmp/$(generic_package): $(tarball)
 > mkdir -p $(@D)
@@ -70,25 +76,19 @@ tmp/$(generic_package): $(tarball)
 >   echo >&2 "ERROR: no tarball in in/" && exit 1
 > fi
 
+run: tmp/.image-id
+> image_id=$$(cat $<)
+> trapping-sigint \
+    docker run --publish 7474:7474 --publish 7687:7687 \
+    --env=NEO4J_AUTH=neo4j/foo --rm $${image_id}
+.PHONY: run
+
 cache: $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
 > rm -rf in
 > mkdir -p in
 > cd in
 > curl --fail --silent --show-error --location --remote-name $(dist_uri)
 .PHONY: cache
-
-tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_package) \
-                     $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
-> mkdir -p $(@D)
-> cp src/docker-entrypoint.sh $(@D)/
-> sha=$$(shasum --algorithm=256 tmp/$(generic_package) | cut --delimiter=' ' --fields=1)
-> <src/Dockerfile sed \
-    -e "s|%%NEO4J_SHA%%|$${sha}|" \
-    -e "s|%%NEO4J_PUBLICATION_URI%%|$(dist_uri)|" \
-    >$(@D)/Dockerfile
-> mkdir -p $(@D)/local-package
-> touch $(@D)/local-package/.sentinel
-> touch $@
 
 clean:
 > rm -rf tmp
