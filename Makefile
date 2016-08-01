@@ -14,8 +14,8 @@ ifndef NEO4J_VERSION
 endif
 env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
 
-dist_uri = http://dist.neo4j.org/neo4j-$(1)-$(2)-unix.tar.gz
-generic_package := neo4j.tar.gz
+tarball = neo4j-$(1)-$(2)-unix.tar.gz
+dist_site := http://dist.neo4j.org
 
 all: out/image/.sentinel
 .PHONY: complete
@@ -34,43 +34,34 @@ tmp/.tests-pass: tmp/.image-id $(shell find test -name 'test-*')
 > done
 > touch $@
 
-tmp/.image-id: tmp/local-context/.sentinel
+tmp/.image-id: tmp/local-context/.sentinel $(env_NEO4J_VERSION)
 > mkdir -p $(@D)
 > image=test/$$RANDOM
-> docker build --tag=$$image --build-arg="NEO4J_URI=file:///tmp/$(generic_package)" $(<D)
+> docker build --tag=$$image \
+    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,enterprise,$(NEO4J_VERSION))" \
+    $(<D)
 > echo -n $$image >$@
 
-tmp/local-context/.sentinel: tmp/image/.sentinel tmp/$(generic_package)
+tmp/local-context/.sentinel: tmp/image/.sentinel \
+                             in/$(call tarball,enterprise,$(NEO4J_VERSION))
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
-> cp tmp/$(generic_package) $(@D)/local-package
+> cp $(filter %.tar.gz,$^) $(@D)/local-package
 > touch $@
 
-tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_package) \
-                     $(env_NEO4J_VERSION)
+tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh $(env_NEO4J_VERSION) \
+                     in/$(call tarball,enterprise,$(NEO4J_VERSION))
 > mkdir -p $(@D)
 > cp src/docker-entrypoint.sh $(@D)/
-> sha=$$(shasum --algorithm=256 tmp/$(generic_package) | cut --delimiter=' ' --fields=1)
+> sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut --delimiter=' ' --fields=1)
 > <src/Dockerfile sed \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
-    -e "s|%%NEO4J_PUBLICATION_URI%%|$(call dist_uri,enterprise,$(NEO4J_VERSION))|" \
+    -e "s|%%NEO4J_TARBALL%%|$(call tarball,enterprise,$(NEO4J_VERSION))|" \
+    -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
-
-tarball := $(wildcard in/neo4j-*-unix.tar.gz)
-tmp/$(generic_package): $(tarball)
-> mkdir -p $(@D)
-> found="f"
-> for tarball in $(tarball); do
->   [[ $${found} == "t" ]] && echo >&2 "ERROR: more than one tarball in in/" && exit 1
->   cp $${tarball} $@
->   found="t"
-> done
-> if [[ $${found} == "f" ]]; then
->   echo >&2 "ERROR: no tarball in in/" && exit 1
-> fi
 
 run: tmp/.image-id
 > image_id=$$(cat $<)
@@ -79,12 +70,14 @@ run: tmp/.image-id
     --env=NEO4J_AUTH=neo4j/foo --rm $${image_id}
 .PHONY: run
 
-cache: $(env_NEO4J_VERSION)
+fetch_tarball = curl --fail --silent --show-error --location --remote-name \
+    $(dist_site)/$(call tarball,$(1),$(NEO4J_VERSION))
+
+cache:
 > rm -rf in
 > mkdir -p in
 > cd in
-> curl --fail --silent --show-error --location --remote-name \
-    $(call dist_uri,enterprise,$(NEO4J_VERSION))
+> $(call fetch_tarball,enterprise)
 .PHONY: cache
 
 clean:
