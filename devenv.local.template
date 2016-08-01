@@ -1,0 +1,4 @@
+# -*- mode: shell-script -*-
+
+NEO4J_EDITION=<the-edition-you-want-to-test-against>
+NEO4J_VERSION=<the-version-you-want-to-test-against>
