@@ -17,8 +17,8 @@ ifndef NEO4J_VERSION
 endif
 env_NEO4J_EDITION := $(shell record-env NEO4J_EDITION)
 env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
-dist_uri := http://dist.neo4j.org/neo4j-$(NEO4J_EDITION)-$(NEO4J_VERSION)-unix.tar.gz
 
+dist_uri = http://dist.neo4j.org/neo4j-$(1)-$(2)-unix.tar.gz
 generic_package := neo4j.tar.gz
 
 all: out/image/.sentinel
@@ -57,7 +57,7 @@ tmp/image/.sentinel: src/Dockerfile src/docker-entrypoint.sh tmp/$(generic_packa
 > sha=$$(shasum --algorithm=256 tmp/$(generic_package) | cut --delimiter=' ' --fields=1)
 > <src/Dockerfile sed \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
-    -e "s|%%NEO4J_PUBLICATION_URI%%|$(dist_uri)|" \
+    -e "s|%%NEO4J_PUBLICATION_URI%%|$(call dist_uri,$(NEO4J_EDITION),$(NEO4J_VERSION))|" \
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
@@ -87,7 +87,8 @@ cache: $(env_NEO4J_EDITION) $(env_NEO4J_VERSION)
 > rm -rf in
 > mkdir -p in
 > cd in
-> curl --fail --silent --show-error --location --remote-name $(dist_uri)
+> curl --fail --silent --show-error --location --remote-name \
+    $(call dist_uri,$(NEO4J_EDITION),$(NEO4J_VERSION))
 .PHONY: cache
 
 clean:
