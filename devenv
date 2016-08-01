@@ -11,7 +11,7 @@ if ! which make >/dev/null; then
 fi
 
 if [[ -f devenv.local ]]; then
-    . devenv.local
+    source devenv.local
     export NEO4J_EDITION
     export NEO4J_VERSION
 else
