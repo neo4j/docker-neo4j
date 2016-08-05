@@ -1,4 +1,8 @@
-FROM java:openjdk-8-jre
+FROM java:openjdk-8-jre-alpine
+
+RUN apk add --no-cache --quiet \
+    bash \
+    curl
 
 ENV NEO4J_SHA256 %%NEO4J_SHA%%
 ENV NEO4J_TARBALL %%NEO4J_TARBALL%%
@@ -7,7 +11,7 @@ ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 COPY ./local-package/* /tmp/
 
 RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
-    && echo "${NEO4J_SHA256} ${NEO4J_TARBALL}" | sha256sum --check --quiet - \
+    && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -csw - \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm ${NEO4J_TARBALL}
@@ -15,7 +19,7 @@ RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
 WORKDIR /var/lib/neo4j
 
 RUN mv data /data \
-    && ln --symbolic /data
+    && ln -s /data
 
 VOLUME /data
 
