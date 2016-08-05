@@ -17,7 +17,7 @@ env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
 
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
-series := $(shell echo "$(NEO4J_VERSION)" | sed --regexp-extended 's/^([23])\..*/\1.x/')
+series := $(shell echo "$(NEO4J_VERSION)" | sed --regexp-extended 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
 all: out/enterprise/.sentinel out/community/.sentinel
 .PHONY: all
