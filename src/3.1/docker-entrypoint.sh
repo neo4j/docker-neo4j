@@ -12,7 +12,7 @@ setting() {
     fi
 
     if [ -n "${value}" ]; then
-        if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
+        if grep -q -F "${setting}=" conf/"${file}"; then
             sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
         else
             echo "${setting}=${value}" >>conf/"${file}"
