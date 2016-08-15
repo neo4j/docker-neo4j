@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+readonly cname="neo4j-$(uuidgen)"
+
+readonly dir=$(mktemp --directory)
+
+docker run --rm --volume="${dir}:/conf" "${image}" dump-config
+
+if [[ "${series}" == "2.3" ]]; then
+    [[ -f "${dir}/neo4j.properties" ]]
+else
+    [[ -f "${dir}/neo4j.conf" ]]
+fi
