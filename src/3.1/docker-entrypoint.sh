@@ -37,34 +37,7 @@ if [ "$1" == "neo4j" ]; then
             echo "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
-
-        bin/neo4j start || \
-            (cat logs/neo4j.log && echo "Neo4j failed to start" && exit 1)
-
-        end="$((SECONDS+100))"
-        while true; do
-            http_code="$(curl --silent --write-out %{http_code} --user "neo4j:${password}" --output /dev/null http://localhost:7474/db/data/ || true)"
-
-            if [[ "${http_code}" = "200" ]]; then
-                break;
-            fi
-
-            if [[ "${http_code}" = "401" ]]; then
-                curl --fail --silent --show-error --user neo4j:neo4j \
-                     --data '{"password": "'"${password}"'"}' \
-                     --header 'Content-Type: application/json' \
-                     http://localhost:7474/user/neo4j/password
-                break;
-            fi
-
-            if [[ "${SECONDS}" -ge "${end}" ]]; then
-                (cat logs/neo4j.log && echo "Neo4j failed to start" && exit 1)
-            fi
-
-            sleep 1
-        done
-
-        bin/neo4j stop
+        bin/neo4j-admin users set-password neo4j "${password}"
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
