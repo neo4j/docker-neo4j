@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset
 
+[[ -n "${TRACE:-}" ]] && set -o xtrace
+
 . "$(dirname "$0")/helpers.sh"
 
 readonly image="$1"
