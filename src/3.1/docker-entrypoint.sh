@@ -43,9 +43,9 @@ if [ "$1" == "neo4j" ]; then
         exit 1
     fi
 
-    setting "dbms.connector.http.address" "0.0.0.0:7474"
-    setting "dbms.connector.https.address" "0.0.0.0:7473"
-    setting "dbms.connector.bolt.address" "0.0.0.0:7687"
+    setting "dbms.connector.http.listen_address" "0.0.0.0:7474"
+    setting "dbms.connector.https.listen_address" "0.0.0.0:7473"
+    setting "dbms.connector.bolt.listen_address" "0.0.0.0:7687"
     setting "dbms.mode" "${NEO4J_dbms_mode:-}"
     setting "ha.server_id" "${NEO4J_ha_serverId:-}"
     setting "ha.host.data" "${NEO4J_ha_host_data:-}"
