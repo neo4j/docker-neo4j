@@ -27,6 +27,7 @@ if [ "$1" == "neo4j" ]; then
         setting "dbms.security.auth_enabled" "false" neo4j-server.properties
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
+        setting "org.neo4j.server.webserver.address" "127.0.0.1" neo4j-server.properties
         bin/neo4j start || \
             (cat data/log/console.log && echo "Neo4j failed to start" && exit 1)
         if ! curl --fail --silent --user "neo4j:${password}" http://localhost:7474/db/data/ >/dev/null ; then
