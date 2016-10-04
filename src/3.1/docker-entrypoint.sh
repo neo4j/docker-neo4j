@@ -43,6 +43,7 @@ if [ "$1" == "neo4j" ]; then
         exit 1
     fi
 
+    setting "dbms.connectors.default_listen_address" "0.0.0.0"
     setting "dbms.connector.http.listen_address" "0.0.0.0:7474"
     setting "dbms.connector.https.listen_address" "0.0.0.0:7473"
     setting "dbms.connector.bolt.listen_address" "0.0.0.0:7687"
@@ -51,6 +52,10 @@ if [ "$1" == "neo4j" ]; then
     setting "ha.host.data" "${NEO4J_ha_host_data:-}"
     setting "ha.host.coordination" "${NEO4J_ha_host_coordination:-}"
     setting "ha.initial_hosts" "${NEO4J_ha_initialHosts:-}"
+    setting "core_edge.expected_core_cluster_size" "${NEO4J_coreEdge_expectedCoreClusterSize:-}"
+    setting "core_edge.initial_discovery_members" "${NEO4J_coreEdge_initialDiscoveryMembers:-}"
+    setting "core_edge.transaction_advertised_address" "${NEO4J_coreEdge_transactionAdvertisedAddress:-$(hostname):6000}"
+    setting "core_edge.raft_advertised_address" "${NEO4J_coreEdge_raftAdvertisedAddress:-$(hostname):7000}"
 
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
