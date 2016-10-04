@@ -30,3 +30,11 @@ neo4j_wait() {
     sleep 1
   done
 }
+
+neo4j_createnode() {
+  local l_ip="$1" end="$((SECONDS+30))"
+  if [[ -n "${2:-}" ]]; then
+    local auth="--user $2"
+  fi
+  [[ "201" = "$(curl --silent --write-out '%{http_code}' --request POST --output /dev/null ${auth:-} http://${l_ip}:7474/db/data/node)" ]] || exit 1
+}
