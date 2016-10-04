@@ -38,6 +38,9 @@ if [ "$1" == "neo4j" ]; then
             exit 1
         fi
 
+        setting "dbms.connector.http.address" "127.0.0.1:7474"
+        setting "dbms.connector.https.address" "127.0.0.1:7473"
+        setting "dbms.connector.bolt.address" "127.0.0.1:7687"
         bin/neo4j start || \
             (cat logs/neo4j.log && echo "Neo4j failed to start" && exit 1)
 
