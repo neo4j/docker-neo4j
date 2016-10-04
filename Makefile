@@ -68,11 +68,17 @@ tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.
 run = trapping-sigint \
     docker run --publish 7474:7474 --publish 7687:7687 \
     --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $1)
+build-enterprise: tmp/.image-id-enterprise
+> @echo "Neo4j $(NEO4J_VERSION)-enterprise available as: $$(cat $<)"
+build-community: tmp/.image-id-community
+> @echo "Neo4j $(NEO4J_VERSION)-community available as: $$(cat $<)"
 run-enterprise: tmp/.image-id-enterprise
 > $(call run,$<)
 run-community: tmp/.image-id-community
 > $(call run,$<)
-.PHONY: run-enterprise run-community
+test-enterprise: tmp/.tests-pass-enterprise
+test-community: tmp/.tests-pass-community
+.PHONY: run-enterprise run-community build-enterprise build-community test-enterprise test-community
 
 fetch_tarball = curl --fail --silent --show-error --location --remote-name \
     $(dist_site)/$(call tarball,$(1),$(NEO4J_VERSION))

@@ -10,6 +10,10 @@ other Linuxes. Pull requests welcomed for other platforms.
 1. install GNU Make (>=4.0)
 1. install the Docker Toolbox
 
+## Debian
+
+1. install `uuid-runtime`
+
 ## All platforms
 
 1. download the Neo4j Community unix tarball
