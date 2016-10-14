@@ -3,13 +3,7 @@
 setting() {
     setting="${1}"
     value="${2}"
-    file="${3:-neo4j.conf}"
-
-    if [ ! -f "conf/${file}" ]; then
-        if [ -f "conf/neo4j.conf" ]; then
-            file="neo4j.conf"
-        fi
-    fi
+    file="neo4j.conf"
 
     if [ -n "${value}" ]; then
         if grep -q -F "${setting}=" conf/"${file}"; then
