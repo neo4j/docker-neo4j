@@ -3,13 +3,7 @@
 setting() {
     setting="${1}"
     value="${2}"
-    file="${3:-neo4j.conf}"
-
-    if [ ! -f "conf/${file}" ]; then
-        if [ -f "conf/neo4j.conf" ]; then
-            file="neo4j.conf"
-        fi
-    fi
+    file="neo4j.conf"
 
     if [ -n "${value}" ]; then
         if grep -q -F "${setting}=" conf/"${file}"; then
@@ -23,9 +17,9 @@ setting() {
 if [ "$1" == "neo4j" ]; then
     setting "dbms.tx_log.rotation.retention_policy" "${NEO4J_dbms_txLog_rotation_retentionPolicy:-100M size}"
     setting "dbms.memory.pagecache.size" "${NEO4J_dbms_memory_pagecache_size:-512M}"
-    setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
-    setting "dbms.memory.heap.initial_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
-    setting "dbms.memory.heap.max_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
+    setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}"
+    setting "dbms.memory.heap.initial_size" "${NEO4J_dbms_memory_heap_maxSize:-512M}"
+    setting "dbms.memory.heap.max_size" "${NEO4J_dbms_memory_heap_maxSize:-512M}"
     setting "dbms.unmanaged_extension_classes" "${NEO4J_dbms_unmanagedExtensionClasses:-}"
     setting "dbms.allow_format_migration" "${NEO4J_dbms_allowFormatMigration:-}"
 
