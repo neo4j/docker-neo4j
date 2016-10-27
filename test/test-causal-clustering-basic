@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+
+if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
+  echo "Skipping: Causal-Clustering not available pre 3.1"
+  exit 0
+fi
+
+readonly cname="neo4j-$(uuidgen)"
+readonly compose_file="$(dirname "$0")/causal-cluster-compose.yml"
+
+docker_compose_up "${image}" "${cname}" "${compose_file}"
+sleep 2
+readonly ip="$(docker_compose_ip "${cname}")"
+neo4j_wait "${ip}" "" "120"
