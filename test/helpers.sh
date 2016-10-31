@@ -13,13 +13,28 @@ docker_run() {
   trap "docker_rm ${cid}" EXIT
 }
 
+docker_compose_up() {
+  local l_image="$1" l_cname="$2" l_composefile="$3"; shift; shift; shift
+  sed --in-place='' --expression="s|image: .*|image: ${l_image}|g" "${l_composefile}"
+  sed --in-place='' --expression="s|container_name: .*|container_name: ${l_cname}|g" "${l_composefile}"
+
+  docker-compose --file "${l_composefile}" --project-name test up -d
+  trap "docker-compose --file ${l_composefile} down" EXIT
+}
+
+docker_compose_ip() {
+  local l_cname="$1"
+  docker inspect --format '{{ .NetworkSettings.Networks.test_lan.IPAddress }}' "${l_cname}"
+}
+
 docker_ip() {
   local l_cname="$1"
   docker inspect --format '{{ .NetworkSettings.IPAddress }}' "${l_cname}"
 }
 
 neo4j_wait() {
-  local l_ip="$1" end="$((SECONDS+30))"
+  local l_time="${3:-30}"
+  local l_ip="$1" end="$((SECONDS+${l_time}))"
   if [[ -n "${2:-}" ]]; then
     local auth="--user $2"
   fi
