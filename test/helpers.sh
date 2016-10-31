@@ -15,8 +15,8 @@ docker_run() {
 
 docker_compose_up() {
   local l_image="$1" l_cname="$2" l_composefile="$3"; shift; shift; shift
-  sed --in-place --expression="s|image: .*|image: ${l_image}|g" "${l_composefile}"
-  sed --in-place --expression="s|container_name: .*|container_name: ${l_cname}|g" "${l_composefile}"
+  sed --in-place='' --expression="s|image: .*|image: ${l_image}|g" "${l_composefile}"
+  sed --in-place='' --expression="s|container_name: .*|container_name: ${l_cname}|g" "${l_composefile}"
 
   docker-compose --file "${l_composefile}" --project-name test up -d
   trap "docker-compose --file ${l_composefile} down" EXIT
