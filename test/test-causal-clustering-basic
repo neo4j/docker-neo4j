@@ -11,7 +11,7 @@ if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
   exit 0
 fi
 
-if [[ -z "$(which docker-compose)" ]]; then
+if ! which docker-compose >/dev/null; then
   echo "Skipping: no docker-compose if path"
   exit 0
 fi
