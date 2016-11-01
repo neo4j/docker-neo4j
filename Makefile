@@ -17,7 +17,7 @@ env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
 
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
-series := $(shell echo "$(NEO4J_VERSION)" | sed --regexp-extended 's/^([0-9]+\.[0-9]+)\..*/\1/')
+series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
 all: out/enterprise/.sentinel out/community/.sentinel
 .PHONY: all
@@ -55,7 +55,7 @@ tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.
                        $(env_NEO4J_VERSION) in/$(call tarball,%,$(NEO4J_VERSION))
 > mkdir -p $(@D)
 > cp $(filter %/docker-entrypoint.sh,$^) $(@D)/docker-entrypoint.sh
-> sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut --delimiter=' ' --fields=1)
+> sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
 > <$(filter %/Dockerfile,$^) sed \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
     -e "s|%%NEO4J_TARBALL%%|$(call tarball,$*,$(NEO4J_VERSION))|" \
