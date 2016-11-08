@@ -1,4 +1,4 @@
-FROM java:openjdk-8-jre
+FROM openjdk:8-jre
 
 ENV NEO4J_SHA256 %%NEO4J_SHA%%
 ENV NEO4J_TARBALL %%NEO4J_TARBALL%%
