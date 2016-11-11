@@ -19,13 +19,13 @@ docker_compose_up() {
   sed --in-place -e "s|container_name: core.*|container_name: ${l_cname}|g" "${l_composefile}"
   sed --in-place -e "s|container_name: read.*|container_name: ${l_rname}|g" "${l_composefile}"
 
-  docker-compose --file "${l_composefile}" --project-name test up -d
-  trap "docker-compose --file ${l_composefile} down" EXIT
+  docker-compose --file "${l_composefile}" --project-name neo4jcomposetest up -d
+  trap "docker-compose --file ${l_composefile} --project-name neo4jcomposetest down --volumes" EXIT
 }
 
 docker_compose_ip() {
   local l_cname="$1"
-  docker inspect --format '{{ .NetworkSettings.Networks.test_lan.IPAddress }}' "${l_cname}"
+  docker inspect --format '{{ .NetworkSettings.Networks.neo4jcomposetest_lan.IPAddress }}' "${l_cname}"
 }
 
 docker_ip() {
