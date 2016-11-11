@@ -6,8 +6,8 @@ networks:
 services:
 
   core1:
-    image: neo4j:3.1
-    container_name: placeholder
+    image: neo4j:3.1-enterprise
+    container_name: core-placeholder
     networks:
       - lan
     environment:
@@ -17,7 +17,7 @@ services:
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
 
   core2:
-    image: neo4j:3.1
+    image: neo4j:3.1-enterprise
     networks:
       - lan
     environment:
@@ -27,13 +27,24 @@ services:
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
 
   core3:
-    image: neo4j:3.1
+    image: neo4j:3.1-enterprise
     networks:
       - lan
     environment:
       - NEO4J_AUTH=neo4j/neo
       - NEO4J_dbms_mode=CORE
-      - NEO4J_causalClustering_transactionAdvertisedAddress=core3:5000
+      - NEO4J_causalClustering_discoveryAdvertisedAddress=core3:5000
+      - NEO4J_causalClustering_transactionAdvertisedAddress=core3:6000
       - NEO4J_causalClustering_raftAdvertisedAddress=core3:7000
       - NEO4J_causalClustering_expectedCoreClusterSize=3
+      - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+
+  readreplica1:
+    image: neo4j:3.1-enterprise
+    container_name: read-placeholder
+    networks:
+      - lan
+    environment:
+      - NEO4J_AUTH=neo4j/neo
+      - NEO4J_dbms_mode=READ_REPLICA
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
