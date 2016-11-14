@@ -32,7 +32,7 @@ tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*')
 > image_id=$$(cat $<)
 > for test in $(filter test/test-%,$^); do
 >   echo "Running $${test}"
->   "$${test}" "$${image_id}" "${series}"
+>   "$${test}" "$${image_id}" "${series}" "$*"
 > done
 > touch $@
 
