@@ -42,9 +42,7 @@ if [ "$1" == "neo4j" ]; then
     setting "dbms.connector.https.listen_address" "0.0.0.0:7473"
     setting "dbms.connector.bolt.listen_address" "0.0.0.0:7687"
     setting "dbms.mode" "${NEO4J_dbms_mode:-}"
-    if [ -n "$NEO4J_dbms_advertisedAddress" ]; then
-        setting "dbms.connectors.default_advertised_address" "$NEO4J_dbms_advertisedAddress"
-    fi
+    setting "dbms.connectors.default_advertised_address" "${NEO4J_dbms_connectors_defaultAdvertisedAddress:-}"
     setting "ha.server_id" "${NEO4J_ha_serverId:-}"
     setting "ha.host.data" "${NEO4J_ha_host_data:-}"
     setting "ha.host.coordination" "${NEO4J_ha_host_coordination:-}"
