@@ -22,6 +22,9 @@ series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/'
 all: out/enterprise/.sentinel out/community/.sentinel
 .PHONY: all
 
+test: test-community test-enterprise
+.PHONY: test
+
 out/%/.sentinel: tmp/image-%/.sentinel tmp/.tests-pass-%
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
@@ -83,12 +86,18 @@ test-community: tmp/.tests-pass-community
 fetch_tarball = curl --fail --silent --show-error --location --remote-name \
     $(dist_site)/$(call tarball,$(1),$(NEO4J_VERSION))
 
-cache:
+cache: in/neo4j-%-$(NEO4J_VERSION)-unix.tar.gz
+.PHONY: cache
+
+in/neo4j-community-$(NEO4J_VERSION)-unix.tar.gz:
 > mkdir -p in
 > cd in
 > $(call fetch_tarball,community)
+
+in/neo4j-enterprise-$(NEO4J_VERSION)-unix.tar.gz:
+> mkdir -p in
+> cd in
 > $(call fetch_tarball,enterprise)
-.PHONY: cache
 
 clean:
 > rm -rf tmp
