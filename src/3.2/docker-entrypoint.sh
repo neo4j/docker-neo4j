@@ -31,7 +31,8 @@ if [ "$1" == "neo4j" ]; then
             echo "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
-        bin/neo4j-admin set-initial-password "${password}"
+        # Will exit with error if users already exist (and print a message explaining that)
+        bin/neo4j-admin set-initial-password "${password}" || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
