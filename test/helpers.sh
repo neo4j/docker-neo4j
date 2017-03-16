@@ -3,6 +3,11 @@ docker_rm() {
   docker rm --force "${cid}" >/dev/null
 }
 
+docker_restart() {
+  local l_cname="$1"
+  docker restart "${l_cname}" >/dev/null
+}
+
 docker_run() {
   local l_image="$1" l_cname="$2"; shift; shift
   local envs=()
