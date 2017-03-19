@@ -71,6 +71,10 @@ if [ "$1" == "neo4j" ]; then
     if [ -d /logs ]; then
         setting "dbms.directories.logs" "/logs" neo4j.conf
     fi
+    
+    if [ -d /import ]; then
+        setting "dbms.directories.import" "/import" neo4j.conf
+    fi
 
     exec bin/neo4j console
 elif [ "$1" == "dump-config" ]; then
