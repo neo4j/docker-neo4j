@@ -50,8 +50,11 @@ if [ "$1" == "neo4j" ]; then
     setting "ha.initial_hosts" "${NEO4J_ha_initialHosts:-}"
     setting "causal_clustering.expected_core_cluster_size" "${NEO4J_causalClustering_expectedCoreClusterSize:-}"
     setting "causal_clustering.initial_discovery_members" "${NEO4J_causalClustering_initialDiscoveryMembers:-}"
+    setting "causal_clustering.discovery_listen_address" "${NEO4J_causalClustering_discoveryListenAddress:-0.0.0.0:5000}"
     setting "causal_clustering.discovery_advertised_address" "${NEO4J_causalClustering_discoveryAdvertisedAddress:-$(hostname):5000}"
+    setting "causal_clustering.transaction_listen_address" "${NEO4J_causalClustering_transactionListenAddress:-0.0.0.0:6000}"
     setting "causal_clustering.transaction_advertised_address" "${NEO4J_causalClustering_transactionAdvertisedAddress:-$(hostname):6000}"
+    setting "causal_clustering.raft_listen_address" "${NEO4J_causalClustering_raftListenAddress:-0.0.0.0:7000}"
     setting "causal_clustering.raft_advertised_address" "${NEO4J_causalClustering_raftAdvertisedAddress:-$(hostname):7000}"
 
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
