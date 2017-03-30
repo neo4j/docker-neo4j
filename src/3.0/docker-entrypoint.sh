@@ -76,6 +76,7 @@ if [ "$1" == "neo4j" ]; then
     setting "dbms.connector.http.address" "0.0.0.0:7474"
     setting "dbms.connector.https.address" "0.0.0.0:7473"
     setting "dbms.connector.bolt.address" "0.0.0.0:7687"
+    setting "dbms.connector.bolt.enabled" "${NEO4J_dbms_connector_bolt_enabled:-true}"
     setting "dbms.mode" "${NEO4J_dbms_mode:-}"
     setting "ha.server_id" "${NEO4J_ha_serverId:-}"
     setting "ha.host.data" "${NEO4J_ha_host_data:-}"
