@@ -70,19 +70,8 @@ if [ "$1" == "neo4j" ]; then
         NEO4J_dbms_directories_import="/import"
     fi
 
-    # list env variables with prefix NEO4J_ and create settings from them
-    for i in $( printenv | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
-        setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
-        value=$(echo ${!i})
-        if grep -q -F "^${setting}=" conf/"${file}"; then
-            sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/neo4j.conf
-        else
-            echo "${setting}=${value}" >> conf/"${file}"
-        fi
-    done
-
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
-        setting "dbms.security.auth_enabled" "false"
+        NEO4J_dbms_security_auth__enabled=false
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
         if [ "${password}" == "neo4j" ]; then
@@ -95,6 +84,17 @@ if [ "$1" == "neo4j" ]; then
         echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
     fi
+
+    # list env variables with prefix NEO4J_ and create settings from them
+    for i in $( printenv | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
+        setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
+        value=$(echo ${!i})
+        if grep -q -F "^${setting}=" conf/"${file}"; then
+            sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/neo4j.conf
+        else
+            echo "${setting}=${value}" >> conf/"${file}"
+        fi
+    done
 
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
