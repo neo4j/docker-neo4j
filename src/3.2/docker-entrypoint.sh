@@ -80,6 +80,10 @@ if [ "$1" == "neo4j" ]; then
         NEO4J_dbms_directories_import="/import"
     fi
 
+    if [ -d /metrics ]; then
+        NEO4J_dbms_directories_metrics="/metrics"
+    fi
+
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
         NEO4J_dbms_security_auth__enabled=false
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
