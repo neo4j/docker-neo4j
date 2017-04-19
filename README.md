@@ -16,17 +16,17 @@ docker run \
     neo4j:2.3
 ```
 
-## Neo4j 3.0
+## Neo4j 3.1
 
-Documentation for the Neo4j 3.0 image can be found [here](http://neo4j.com/docs/operations-manual/current/deployment/single-instance/docker/).
+Documentation for the Neo4j 3.1 image can be found [here](http://neo4j.com/docs/operations-manual/current/deployment/single-instance/docker/).
 
-You can start a Neo4j 3.0 container like this:
+You can start a Neo4j 3.1 container like this:
 
 ```
 docker run \
     --publish=7474:7474 --publish=7687:7687 \
     --volume=$HOME/neo4j/data:/data \
-    neo4j:3.0
+    neo4j:3.1
 ```
 
 # Getting support and contributing
