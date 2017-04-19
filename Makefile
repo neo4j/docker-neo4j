@@ -13,7 +13,6 @@ endif
 ifndef NEO4J_VERSION
   $(error NEO4J_VERSION is not set)
 endif
-env_NEO4J_VERSION := $(shell record-env NEO4J_VERSION)
 
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
@@ -39,7 +38,7 @@ tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*')
 > done
 > touch $@
 
-tmp/.image-id-%: tmp/local-context-%/.sentinel $(env_NEO4J_VERSION)
+tmp/.image-id-%: tmp/local-context-%/.sentinel
 > mkdir -p $(@D)
 > image=test/$$RANDOM
 > docker build --tag=$$image \
@@ -55,7 +54,7 @@ tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J
 > touch $@
 
 tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.sh \
-                       $(env_NEO4J_VERSION) in/$(call tarball,%,$(NEO4J_VERSION))
+                       in/$(call tarball,%,$(NEO4J_VERSION))
 > mkdir -p $(@D)
 > cp $(filter %/docker-entrypoint.sh,$^) $(@D)/docker-entrypoint.sh
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
