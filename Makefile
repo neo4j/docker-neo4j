@@ -29,7 +29,7 @@ out/%/.sentinel: tmp/image-%/.sentinel tmp/.tests-pass-%
 > cp -r $(<D)/* $(@D)
 > touch $@
 
-tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*')
+tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*') $(shell find test -name '*.yml') $(shell find test -name '*.sh')
 > mkdir -p $(@D)
 > image_id=$$(cat $<)
 > for test in $(filter test/test-%,$^); do
