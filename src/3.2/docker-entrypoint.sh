@@ -53,6 +53,8 @@ if [ "$1" == "neo4j" ]; then
     : ${NEO4J_dbms_connector_http_listen__address:=0.0.0.0:7474}
     : ${NEO4J_dbms_connector_https_listen__address:=0.0.0.0:7473}
     : ${NEO4J_dbms_connector_bolt_listen__address:=0.0.0.0:7687}
+    : ${NEO4J_ha_host_coordination:=$(hostname):5001}
+    : ${NEO4J_ha_host_data:=$(hostname):6001}
     : ${NEO4J_causal__clustering_discovery__listen__address:=0.0.0.0:5000}
     : ${NEO4J_causal__clustering_discovery__advertised__address:=$(hostname):5000}
     : ${NEO4J_causal__clustering_transaction__listen__address:=0.0.0.0:6000}
