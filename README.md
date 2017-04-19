@@ -31,5 +31,4 @@ docker run \
 
 # Getting support and contributing
 
-
 Please create issues and pull requests in the Github repository.
