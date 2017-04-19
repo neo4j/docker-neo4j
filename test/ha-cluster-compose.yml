@@ -14,7 +14,7 @@ services:
       - NEO4J_AUTH=none
       - NEO4J_ha_serverId=1
       - NEO4J_dbms_mode=HA
-      - NEO4J_ha_initialHosts=core1:5001,core2:5001,core3:5001,slave1:5001
+      - NEO4J_ha_initialHosts=core1:5001,core2:5555,slave1:5001
 
   core2:
     image: neo4j:3.1-enterprise
@@ -24,19 +24,9 @@ services:
       - NEO4J_AUTH=neo4j/neo
       - NEO4J_dbms_mode=HA
       - NEO4J_ha_serverId=2
-      - NEO4J_ha_initialHosts=core1:5001,core2:5001,core3:5001,slave1:5001
-
-  core3:
-    image: neo4j:3.1-enterprise
-    networks:
-      - lan
-    environment:
-      - NEO4J_AUTH=neo4j/neo
-      - NEO4J_dbms_mode=HA
-      - NEO4J_ha_serverId=3
-      - NEO4J_ha_initialHosts=core1:5001,core2:5001,core3:5555,slave1:5001
-      - NEO4J_ha_host_coordination=core3:5555
-      - NEO4J_ha_host_data=core3:6666
+      - NEO4J_ha_initialHosts=core1:5001,core2:5555,slave1:5001
+      - NEO4J_ha_host_coordination=core2:5555
+      - NEO4J_ha_host_data=core2:6666
 
   slave1:
     image: neo4j:3.1-enterprise
@@ -47,7 +37,7 @@ services:
       - NEO4J_AUTH=neo4j/neo
       - NEO4J_dbms_mode=HA
       - NEO4J_ha_serverId=4
-      - NEO4J_ha_initialHosts=core1:5001,core2:5001,core3:5001,slave1:5001
+      - NEO4J_ha_initialHosts=core1:5001,core2:55551,slave1:5001
       - NEO4J_ha_host_coordination=slave1:5001
       - NEO4J_ha_host_data=slave1:6001
       - NEO4J_ha_slave__only=true
