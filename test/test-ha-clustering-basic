@@ -30,16 +30,20 @@ readonly cname="core-$(uuidgen)"
 readonly rname="slave-$(uuidgen)"
 
 docker_compose_up "${image}" "${compose_file}" "${cname}" "${rname}"
-readonly core_ip="$(docker_compose_ip "${cname}")"
+readonly master_ip="$(docker_compose_ip "${cname}")"
 readonly slave_ip="$(docker_compose_ip "${rname}")"
-# Make sure core and read replica are up
+# Make sure master and read replica are up
+echo "master: ${master_ip}"
+echo "slave: ${slave_ip}"
+
 echo "Waiting for up..."
-neo4j_wait "${core_ip}" "" "120"
-neo4j_wait "${slave_ip}" "" "120"
+neo4j_wait_for_ha_master "${master_ip}" "neo4j:neo" "120"
+neo4j_wait_for_ha_slave "${slave_ip}" "neo4j:neo" "120"
 
 echo "Creating node..."
 # create node on master
-neo4j_createnode "${core_ip}" "neo4j:neo"
+neo4j_createnode "${master_ip}" "neo4j:neo"
+
 echo "Reading node..."
 # read back on slave
 neo4j_readnode "${slave_ip}" "neo4j:neo" "30"
