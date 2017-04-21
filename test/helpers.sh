@@ -52,6 +52,48 @@ neo4j_wait() {
   done
 }
 
+neo4j_wait_for_ha_available() {
+  local l_time="${3:-30}"
+  local l_ip="$1" end="$((SECONDS+${l_time}))"
+  if [[ -n "${2:-}" ]]; then
+    local auth="--user $2"
+  fi
+
+  while true; do
+    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/manage/server/ha/available)" ]] && break
+    [[ "${SECONDS}" -ge "${end}" ]] && exit 1
+    sleep 1
+  done
+}
+
+neo4j_wait_for_ha_master() {
+  local l_time="${3:-30}"
+  local l_ip="$1" end="$((SECONDS+${l_time}))"
+  if [[ -n "${2:-}" ]]; then
+    local auth="--user $2"
+  fi
+
+  while true; do
+    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/manage/server/ha/master)" ]] && break
+    [[ "${SECONDS}" -ge "${end}" ]] && exit 1
+    sleep 1
+  done
+}
+
+neo4j_wait_for_ha_slave() {
+  local l_time="${3:-30}"
+  local l_ip="$1" end="$((SECONDS+${l_time}))"
+  if [[ -n "${2:-}" ]]; then
+    local auth="--user $2"
+  fi
+
+  while true; do
+    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/manage/server/ha/slave)" ]] && break
+    [[ "${SECONDS}" -ge "${end}" ]] && exit 1
+    sleep 1
+  done
+}
+
 neo4j_createnode() {
   local l_ip="$1" end="$((SECONDS+30))"
   if [[ -n "${2:-}" ]]; then
