@@ -7,11 +7,11 @@ if [ "$1" == "neo4j" ]; then
     # - double underscore char '__' instead of single underscore '_' char in the setting name
     # - underscore char '_' instead of dot '.' char in the setting name
     # Example:
-    # NEO4J_dbms_tx__log_rotation_retention_policy env variable to set
+    # NEO4J_dbms_tx__log_rotation_retention__policy env variable to set
     #       dbms.tx_log.rotation.retention_policy setting
 
     # Backward compatibility - map old hardcoded env variables into new naming convention
-    NEO4J_dbms_tx__log_rotation_retention_policy=${NEO4J_dbms_txLog_rotation_retentionPolicy:-}
+    NEO4J_dbms_tx__log_rotation_retention__policy=${NEO4J_dbms_txLog_rotation_retentionPolicy:-}
     NEO4J_wrapper_java_additional=${NEO4J_UDC_SOURCE:-}
     NEO4J_dbms_memory_heap_initial__size=${NEO4J_dbms_memory_heap_maxSize:-}
     NEO4J_dbms_memory_heap_max__size=${NEO4J_dbms_memory_heap_maxSize:-}
