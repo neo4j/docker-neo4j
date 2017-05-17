@@ -133,10 +133,11 @@ if [ "$1" == "neo4j" ]; then
         value=$(echo ${!i})
         if [[ -n ${value} ]]; then
             if grep -q -F "${setting}=" conf/neo4j.conf; then
-                sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/neo4j.conf
-            else
-               echo "${setting}=${value}" >> conf/neo4j.conf
+                # Remove any lines containing the setting already
+                sed --in-place "/${setting}=.*/d" conf/neo4j.conf
             fi
+            # Then always append setting to file
+            echo "${setting}=${value}" >> conf/neo4j.conf
         fi
     done
 
