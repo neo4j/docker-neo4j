@@ -23,7 +23,9 @@ if ! which docker-compose >/dev/null; then
 fi
 
 # Make a temp copy of compose file
-readonly compose_file=$(mktemp /tmp/XXXXXXXX.yml)
+mkdir -p tmp/out
+readonly compose_file=$(mktemp tmp/out/XXXXXXXX.yml)
+
 cp "$(dirname "$0")/causal-cluster-compose.yml" "${compose_file}"
 
 readonly cname="core-$(uuidgen)"
