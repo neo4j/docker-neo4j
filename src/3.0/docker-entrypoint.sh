@@ -47,7 +47,7 @@ if [ "$1" == "neo4j" ]; then
         NEO4J_ha_initialHosts
 
     # Custom settings for dockerized neo4j
-    : ${NEO4J_dbms_tx__log_rotation_retention_policy:=100M size}
+    : ${NEO4J_dbms_tx__log_rotation_retention__policy:=100M size}
     : ${NEO4J_dbms_memory_pagecache_size:=512M}
     : ${NEO4J_wrapper_java_additional:=-Dneo4j.ext.udc.source=docker}
     : ${NEO4J_dbms_memory_heap_initial__size:=512}
