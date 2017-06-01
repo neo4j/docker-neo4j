@@ -6,11 +6,17 @@ setting() {
     file="${3}"
 
     if [ -n "${value}" ]; then
+        # I think the intent is to always set *something*, disable exit on error which allows:
+        # 1) Success if the file doesn't exist
+        # 2) Success if grep exits with non-0 for any other reason
+        set +e
         if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
             sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
         else
             echo "${setting}=${value}" >>conf/"${file}"
         fi
+        # restore it
+        set -e
     fi
 }
 
