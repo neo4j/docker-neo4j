@@ -30,33 +30,28 @@ if [ "$1" == "neo4j" ]; then
     # NEO4J_dbms_tx__log_rotation_retention__policy env variable to set
     #       dbms.tx_log.rotation.retention_policy setting
 
-    # Backward compatibility - map old hardcoded env variables into new naming convention
-    NEO4J_dbms_tx__log_rotation_retention__policy=${NEO4J_dbms_txLog_rotation_retentionPolicy:-}
-    NEO4J_wrapper_java_additional=${NEO4J_UDC_SOURCE:-}
-    NEO4J_dbms_memory_heap_initial__size=${NEO4J_dbms_memory_heap_maxSize:-}
-    NEO4J_dbms_memory_heap_max__size=${NEO4J_dbms_memory_heap_maxSize:-}
-    NEO4J_dbms_unmanaged__extension__classes=${NEO4J_dbms_unmanagedExtensionClasses:-}
-    NEO4J_dbms_allow__format__migration=${NEO4J_dbms_allowFormatMigration:-}
-    NEO4J_ha_server__id=${NEO4J_ha_serverId:-}
-    NEO4J_ha_initial__hosts=${NEO4J_ha_initialHosts:-}
+    # Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
+    # Set some to default values if unset
+    : ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-"100M size"}}
+    : ${NEO4J_wrapper_java_additional:=${NEO4J_UDC_SOURCE:-"-Dneo4j.ext.udc.source=docker"}}
+    : ${NEO4J_dbms_memory_heap_initial__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
+    : ${NEO4J_dbms_memory_heap_max__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
+    : ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
+    : ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
+    : ${NEO4J_ha_server__id:=${NEO4J_ha_serverId:-}}
+    : ${NEO4J_ha_initial__hosts:=${NEO4J_ha_initialHosts:-}}
+
+    : ${NEO4J_dbms_connector_http_address:="0.0.0.0:7474"}
+    : ${NEO4J_dbms_connector_https_address:="0.0.0.0:7473"}
+    : ${NEO4J_dbms_connector_bolt_address:="0.0.0.0:7687"}
+    : ${NEO4J_ha_host_coordination:="$(hostname):5001"}
+    : ${NEO4J_ha_host_data:="$(hostname):6001"}
 
     # unset old hardcoded unsupported env variables
     unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
         NEO4J_dbms_memory_heap_maxSize NEO4J_dbms_memory_heap_maxSize \
         NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
         NEO4J_ha_initialHosts
-
-    # Custom settings for dockerized neo4j
-    : ${NEO4J_dbms_tx__log_rotation_retention__policy:=100M size}
-    : ${NEO4J_dbms_memory_pagecache_size:=512M}
-    : ${NEO4J_wrapper_java_additional:=-Dneo4j.ext.udc.source=docker}
-    : ${NEO4J_dbms_memory_heap_initial__size:=512}
-    : ${NEO4J_dbms_memory_heap_max__size:=512}
-    : ${NEO4J_dbms_connector_http_address:=0.0.0.0:7474}
-    : ${NEO4J_dbms_connector_https_address:=0.0.0.0:7473}
-    : ${NEO4J_dbms_connector_bolt_address:=0.0.0.0:7687}
-    : ${NEO4J_ha_host_coordination:=$(hostname):5001}
-    : ${NEO4J_ha_host_data:=$(hostname):6001}
 
     if [ -d /conf ]; then
         find /conf -type f -exec cp {} conf \;
