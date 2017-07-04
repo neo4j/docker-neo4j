@@ -43,7 +43,7 @@ if [ "$1" == "neo4j" ]; then
 
     : ${NEO4J_dbms_connector_http_address:="0.0.0.0:7474"}
     : ${NEO4J_dbms_connector_https_address:="0.0.0.0:7473"}
-    : ${NEO4J_dbms_connector_bolt_listen__address:=${NEO4J_dbms_connector_bolt_listenAddress:-"0.0.0.0:7687"}}        
+    : ${NEO4J_dbms_connector_bolt_address:=${NEO4J_dbms_connector_bolt_listenAddress:-"0.0.0.0:7687"}}        
     : ${NEO4J_ha_host_coordination:="$(hostname):5001"}
     : ${NEO4J_ha_host_data:="$(hostname):6001"}
 
