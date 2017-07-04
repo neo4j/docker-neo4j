@@ -21,16 +21,64 @@ setting() {
 }
 
 if [ "$1" == "neo4j" ]; then
-    setting "dbms.tx_log.rotation.retention_policy" "${NEO4J_dbms_txLog_rotation_retentionPolicy:-100M size}"
-    setting "dbms.memory.pagecache.size" "${NEO4J_dbms_memory_pagecache_size:-512M}"
-    setting "wrapper.java.additional=-Dneo4j.ext.udc.source" "${NEO4J_UDC_SOURCE:-docker}" neo4j-wrapper.conf
-    setting "dbms.memory.heap.initial_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
-    setting "dbms.memory.heap.max_size" "${NEO4J_dbms_memory_heap_maxSize:-512}" neo4j-wrapper.conf
-    setting "dbms.unmanaged_extension_classes" "${NEO4J_dbms_unmanagedExtensionClasses:-}"
-    setting "dbms.allow_format_migration" "${NEO4J_dbms_allowFormatMigration:-}"
+
+    # Env variable naming convention:
+    # - prefix NEO4J_
+    # - double underscore char '__' instead of single underscore '_' char in the setting name
+    # - underscore char '_' instead of dot '.' char in the setting name
+    # Example:
+    # NEO4J_dbms_tx__log_rotation_retention__policy env variable to set
+    #       dbms.tx_log.rotation.retention_policy setting
+
+    # Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
+    # Set some to default values if unset
+    : ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-"100M size"}}
+    : ${NEO4J_wrapper_java_additional:=${NEO4J_UDC_SOURCE:-"-Dneo4j.ext.udc.source=docker"}}
+    : ${NEO4J_dbms_memory_heap_initial__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
+    : ${NEO4J_dbms_memory_heap_max__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
+    : ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
+    : ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
+    : ${NEO4J_ha_server__id:=${NEO4J_ha_serverId:-}}
+    : ${NEO4J_ha_initial__hosts:=${NEO4J_ha_initialHosts:-}}
+
+    : ${NEO4J_dbms_connector_http_address:="0.0.0.0:7474"}
+    : ${NEO4J_dbms_connector_https_address:="0.0.0.0:7473"}
+    : ${NEO4J_dbms_connector_bolt_address:="0.0.0.0:7687"}
+    : ${NEO4J_ha_host_coordination:="$(hostname):5001"}
+    : ${NEO4J_ha_host_data:="$(hostname):6001"}
+
+    # unset old hardcoded unsupported env variables
+    unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
+        NEO4J_dbms_memory_heap_maxSize NEO4J_dbms_memory_heap_maxSize \
+        NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
+        NEO4J_ha_initialHosts
+
+    if [ -d /conf ]; then
+        find /conf -type f -exec cp {} conf \;
+    fi
+
+    if [ -d /ssl ]; then
+        NEO4J_dbms_directories_certificates="/ssl"
+    fi
+
+    if [ -d /plugins ]; then
+        NEO4J_dbms_directories_plugins="/plugins"
+    fi
+
+    if [ -d /logs ]; then
+        NEO4J_dbms_directories_logs="/logs"
+    fi
+
+    if [ -d /import ]; then
+        NEO4J_dbms_directories_import="/import"
+    fi
+
+    if [ -d /metrics ]; then
+        NEO4J_dbms_directories_metrics="/metrics"
+    fi
 
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
-        setting "dbms.security.auth_enabled" "false"
+        NEO4J_dbms_security_auth__enabled=false
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
         if [ "${password}" == "neo4j" ]; then
@@ -42,7 +90,7 @@ if [ "$1" == "neo4j" ]; then
         setting "dbms.connector.https.address" "127.0.0.1:7473"
         setting "dbms.connector.bolt.address" "127.0.0.1:7687"
         bin/neo4j start || \
-            (cat logs/neo4j.log && echo "Neo4j failed to start" && exit 1)
+            (cat logs/neo4j.log && echo "Neo4j failed to start for password change" && exit 1)
 
         end="$((SECONDS+100))"
         while true; do
@@ -73,36 +121,22 @@ if [ "$1" == "neo4j" ]; then
         exit 1
     fi
 
-    setting "dbms.connector.http.address" "0.0.0.0:7474"
-    setting "dbms.connector.https.address" "0.0.0.0:7473"
-    setting "dbms.connector.bolt.address" "0.0.0.0:7687"
-    setting "dbms.mode" "${NEO4J_dbms_mode:-}"
-    setting "ha.server_id" "${NEO4J_ha_serverId:-}"
-    setting "ha.host.data" "${NEO4J_ha_host_data:-}"
-    setting "ha.host.coordination" "${NEO4J_ha_host_coordination:-}"
-    setting "ha.initial_hosts" "${NEO4J_ha_initialHosts:-}"
+    # list env variables with prefix NEO4J_ and create settings from them
+    unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
+    for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
+        setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
+        value=$(echo ${!i})
+        if [[ -n ${value} ]]; then
+            if grep -q -F "${setting}=" conf/neo4j.conf; then
+                # Remove any lines containing the setting already
+                sed --in-place "/${setting}=.*/d" conf/neo4j.conf
+            fi
+            # Then always append setting to file
+            echo "${setting}=${value}" >> conf/neo4j.conf
+        fi
+    done
 
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
-    if [ -d /conf ]; then
-        find /conf -type f -exec cp {} conf \;
-    fi
-
-    if [ -d /ssl ]; then
-        setting "dbms.directories.certificates" "/ssl" neo4j.conf
-    fi
-
-    if [ -d /plugins ]; then
-        setting "dbms.directories.plugins" "/plugins" neo4j.conf
-    fi
-
-    if [ -d /logs ]; then
-        setting "dbms.directories.logs" "/logs" neo4j.conf
-    fi
-    
-    if [ -d /import ]; then
-        setting "dbms.directories.import" "/import" neo4j.conf
-    fi
 
     exec bin/neo4j console
 elif [ "$1" == "dump-config" ]; then

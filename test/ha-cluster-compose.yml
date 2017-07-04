@@ -1,0 +1,49 @@
+version: '2'
+
+networks:
+  lan:
+
+services:
+
+  master:
+    image: neo4j:3.1-enterprise
+    container_name: core-placeholder
+    networks:
+      - lan
+    environment:
+      - NEO4J_AUTH=neo4j/neo
+      - NEO4J_ha_serverId=1
+      - NEO4J_dbms_mode=HA
+      - NEO4J_ha_initialHosts=master:5001,slave1:5555,slave2:5001
+
+# Use this to make sure master pushes TXs to both slaves, by default it will be only one
+#      - NEO4J_ha_tx__push__factor=2
+
+  slave1:
+    image: neo4j:3.1-enterprise
+    networks:
+      - lan
+    environment:
+      - NEO4J_AUTH=neo4j/neo
+      - NEO4J_dbms_mode=HA
+      - NEO4J_ha_serverId=2
+      - NEO4J_ha_initialHosts=master:5001,slave1:5555,slave2:5001
+      - NEO4J_ha_host_coordination=slave1:5555
+      - NEO4J_ha_host_data=slave1:6666
+      - NEO4J_ha_slave__only=true
+      - NEO4J_ha_pull__interval=5s # Default value is disabled but we want slave to poll master for test
+
+  slave2:
+    image: neo4j:3.1-enterprise
+    container_name: read-placeholder
+    networks:
+      - lan
+    environment:
+      - NEO4J_AUTH=neo4j/neo
+      - NEO4J_dbms_mode=HA
+      - NEO4J_ha_server__id=3
+      - NEO4J_ha_initial__hosts=master:5001,slave1:5555,slave2:5001
+      - NEO4J_ha_host_coordination=slave2:5001
+      - NEO4J_ha_host_data=slave2:6001
+      - NEO4J_ha_slave__only=true
+      - NEO4J_ha_pull__interval=5s # Default value is disabled but we want slave to poll master for test

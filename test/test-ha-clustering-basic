@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+readonly edition="$3"
+
+if [[ "${series}" == "2.3" ]]; then
+  echo "Skipping: High-Availability Test not compatible pre 3.0"
+  exit 0
+fi
+
+if ! [[ "${edition}" == "enterprise" ]]; then
+  echo "Skipping: High-Availability only available in enterprise"
+  exit 0
+fi
+
+if ! which docker-compose >/dev/null; then
+  echo "Skipping: no docker-compose in path"
+  exit 0
+fi
+
+# Make a temp copy of compose file
+mkdir -p tmp/out
+readonly compose_file=$(mktemp tmp/out/XXXXXXXX.yml)
+
+cp "$(dirname "$0")/ha-cluster-compose.yml" "${compose_file}"
+
+readonly cname="core-$(uuidgen)"
+readonly rname="slave-$(uuidgen)"
+
+docker_compose_up "${image}" "${compose_file}" "${cname}" "${rname}"
+readonly master_ip="$(docker_compose_ip "${cname}")"
+readonly slave_ip="$(docker_compose_ip "${rname}")"
+# Make sure master and read replica are up
+echo "master: ${master_ip}"
+echo "slave: ${slave_ip}"
+
+echo "Waiting for up..."
+neo4j_wait_for_ha_master "${master_ip}" "neo4j:neo" "120"
+neo4j_wait_for_ha_slave "${slave_ip}" "neo4j:neo" "120"
+
+echo "Creating node..."
+# create node on master
+neo4j_createnode "${master_ip}" "neo4j:neo"
+
+echo "Reading node..."
+# read back on slave
+neo4j_readnode "${slave_ip}" "neo4j:neo" "30"
