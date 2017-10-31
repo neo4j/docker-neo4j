@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -o nounset
+
+[[ -n "${TRACE:-}" ]] && set -o xtrace
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+readonly edition="$3"
+readonly cname="neo4j-$(uuidgen)"
+
+if [[ "${series}" == "2.3" ]] ||
+    [[ "${series}" == "3.0" ]] ||
+    [[ "${series}" == "3.1" ]] ||
+    [[ "${series}" == "3.2" ]]; then
+  echo "Skipping: License agreement acceptance not required pre-3.3"
+  exit 0
+fi
+
+if ! [[ "${edition}" == "enterprise" ]]; then
+  echo "Skipping: License agreement acceptance only required in enterprise"
+  exit 0
+fi
+
+output=$(docker run --name="$cname" "${image}")
+
+if [[ $output == *"must accept the license"* ]]; then
+  exit 0
+else
+  echo "Not accepting the license agreement should have failed."
+  exit 1
+fi

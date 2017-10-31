@@ -61,6 +61,7 @@ tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.
 > <$(filter %/Dockerfile,$^) sed \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
     -e "s|%%NEO4J_TARBALL%%|$(call tarball,$*,$(NEO4J_VERSION))|" \
+    -e "s|%%NEO4J_EDITION%%|$*|" \
     -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
@@ -69,6 +70,7 @@ tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.
 
 run = trapping-sigint \
     docker run --publish 7474:7474 --publish 7687:7687 \
+    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
     --env=NEO4J_AUTH=neo4j/foo --rm $$(cat $1)
 build-enterprise: tmp/.image-id-enterprise
 > @echo "Neo4j $(NEO4J_VERSION)-enterprise available as: $$(cat $<)"
