@@ -5,7 +5,8 @@ RUN apk add --no-cache --quiet \
     curl
 
 ENV NEO4J_SHA256=%%NEO4J_SHA%% \
-    NEO4J_TARBALL=%%NEO4J_TARBALL%%
+    NEO4J_TARBALL=%%NEO4J_TARBALL%% \
+    NEO4J_EDITION=%%NEO4J_EDITION%%
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
 COPY ./local-package/* /tmp/
