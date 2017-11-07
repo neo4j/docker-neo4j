@@ -11,6 +11,7 @@ services:
     networks:
       - lan
     environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
       - NEO4J_AUTH=none
       - NEO4J_dbms_mode=CORE
       - NEO4J_causalClustering_expectedCoreClusterSize=3
@@ -21,6 +22,7 @@ services:
     networks:
       - lan
     environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
       - NEO4J_AUTH=neo4j/neo
       - NEO4J_dbms_mode=CORE
       - NEO4J_causalClustering_expectedCoreClusterSize=3
@@ -31,6 +33,7 @@ services:
     networks:
       - lan
     environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
       - NEO4J_AUTH=neo4j/neo
       - NEO4J_dbms_mode=CORE
       - NEO4J_causalClustering_discoveryAdvertisedAddress=core3:5000
@@ -45,6 +48,7 @@ services:
     networks:
       - lan
     environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
       - NEO4J_AUTH=neo4j/neo
       - NEO4J_dbms_mode=READ_REPLICA
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000

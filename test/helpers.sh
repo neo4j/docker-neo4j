@@ -17,8 +17,10 @@ docker_run() {
   local l_image="$1" l_cname="$2"; shift; shift
 
   local envs=()
-  for env in "$@"; do
+  if [[ ! "$@" =~ "NEO4J_ACCEPT_LICENSE_AGREEMENT=no" ]]; then
     envs+=("--env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes")
+  fi
+  for env in "$@"; do
     envs+=("--env=${env}")
   done
   local cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" "${l_image}")"
