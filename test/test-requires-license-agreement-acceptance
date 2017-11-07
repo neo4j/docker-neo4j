@@ -23,9 +23,11 @@ if ! [[ "${edition}" == "enterprise" ]]; then
   exit 0
 fi
 
-output=$(docker run --name="$cname" "${image}")
+output=$(docker_run "$image" "$cname" "NEO4J_ACCEPT_LICENSE_AGREEMENT=no")
+logfile=$(echo $output | awk '{print $2}')
 
-if [[ $output == *"must accept the license"* ]]; then
+if grep --quiet "must accept the license" $logfile; then
+  echo "License agreement not accepted."
   exit 0
 else
   echo "Not accepting the license agreement should have failed."
