@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+[[ -n "${TRACE:-}" ]] && set -o xtrace
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly cname="neo4j-$(uuidgen)"
+
+
+readonly result="$(docker run --name "${cname}"  "${image}" which cypher-shell)"
+
+if [$result -eq "/var/lib/neo4j/bin/cypher-shell"]; then
+  echo "cypher-shell (and by extension all neo4j/bin) on path."
+  exit 0
+else
+  echo "cypher-shell (and by extension all neo4j/bin) not on path"
+  exit 1
+fi
