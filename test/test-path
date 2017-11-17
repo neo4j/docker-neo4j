@@ -10,7 +10,7 @@ readonly cname="neo4j-$(uuidgen)"
 
 readonly result="$(docker run --name "${cname}"  "${image}" which cypher-shell)"
 
-if [$result -eq "/var/lib/neo4j/bin/cypher-shell"]; then
+if [[ "${result}" == "/var/lib/neo4j/bin/cypher-shell" ]]; then
   echo "cypher-shell (and by extension all neo4j/bin) on path."
   exit 0
 else
