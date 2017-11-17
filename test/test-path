@@ -5,15 +5,25 @@ set -o errexit -o nounset
 . "$(dirname "$0")/helpers.sh"
 
 readonly image="$1"
+readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
+if [[ "${series}" == "2.3" ]] ||
+   [[ "${series}" == "3.0" ]]; then
+  cypher_shell_cmd='neo4j-shell'
+else
+  cypher_shell_cmd='cypher-shell'
+fi
 
-readonly result="$(docker run --name "${cname}"  "${image}" which cypher-shell)"
+readonly result="$(docker run --name "${cname}"  "${image}" which ${cypher_shell_cmd})"
 
-if [[ "${result}" == "/var/lib/neo4j/bin/cypher-shell" ]]; then
-  echo "cypher-shell (and by extension all neo4j/bin) on path."
+if [[ "${result}" == "/var/lib/neo4j/bin/${cypher_shell_cmd}" ]]; then
+  echo "${cypher_shell_cmd} (and by implication all neo4j/bin) on path."
   exit 0
 else
-  echo "cypher-shell (and by extension all neo4j/bin) not on path"
+  echo "${cypher_shell_cmd} (and by implication all neo4j/bin) not on path"
   exit 1
 fi
+
+
+
