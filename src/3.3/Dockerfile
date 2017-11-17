@@ -20,6 +20,8 @@ RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && ln -s /data /var/lib/neo4j/data \
     && apk del curl
 
+ENV PATH /var/lib/neo4j/bin:$PATH
+
 WORKDIR /var/lib/neo4j
 
 VOLUME /data

@@ -16,6 +16,8 @@ RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm ${NEO4J_TARBALL}
 
+ENV PATH /var/lib/neo4j/bin:$PATH
+
 WORKDIR /var/lib/neo4j
 
 RUN mv data /data \
