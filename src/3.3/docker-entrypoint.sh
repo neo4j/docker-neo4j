@@ -57,7 +57,7 @@ To do this you can use the following docker argument:
     : ${NEO4J_dbms_connectors_default__listen__address:="0.0.0.0"}
     : ${NEO4J_dbms_connector_http_listen__address:="0.0.0.0:7474"}
     : ${NEO4J_dbms_connector_https_listen__address:="0.0.0.0:7473"}
-    : ${NEO4J_dbms_connector_bolt_listen__address:="0.0.0.0:7687"}
+    : ${NEO4J_dbms_connector_bolt_listen__address:=${NEO4J_dbms_connector_bolt_listenAddress:-"0.0.0.0:7687"}}    
     : ${NEO4J_ha_host_coordination:="$(hostname):5001"}
     : ${NEO4J_ha_host_data:="$(hostname):6001"}
 
@@ -73,7 +73,8 @@ To do this you can use the following docker argument:
         NEO4J_causalClustering_transactionListenAddress \
         NEO4J_causalClustering_transactionAdvertisedAddress \
         NEO4J_causalClustering_raftListenAddress \
-        NEO4J_causalClustering_raftAdvertisedAddress
+        NEO4J_causalClustering_raftAdvertisedAddress \
+        NEO4J_dbms_connector_bolt_listenAddress
 
     # Custom settings for dockerized neo4j
     : ${NEO4J_dbms_tx__log_rotation_retention__policy:=100M size}

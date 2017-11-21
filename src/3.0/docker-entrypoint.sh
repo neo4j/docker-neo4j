@@ -43,7 +43,7 @@ if [ "$1" == "neo4j" ]; then
 
     : ${NEO4J_dbms_connector_http_address:="0.0.0.0:7474"}
     : ${NEO4J_dbms_connector_https_address:="0.0.0.0:7473"}
-    : ${NEO4J_dbms_connector_bolt_address:="0.0.0.0:7687"}
+    : ${NEO4J_dbms_connector_bolt_address:=${NEO4J_dbms_connector_bolt_listenAddress:-"0.0.0.0:7687"}}        
     : ${NEO4J_ha_host_coordination:="$(hostname):5001"}
     : ${NEO4J_ha_host_data:="$(hostname):6001"}
 
@@ -51,7 +51,8 @@ if [ "$1" == "neo4j" ]; then
     unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
         NEO4J_dbms_memory_heap_maxSize NEO4J_dbms_memory_heap_maxSize \
         NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
-        NEO4J_ha_initialHosts
+        NEO4J_ha_initialHosts \
+        NEO4J_dbms_connector_bolt_listenAddress
 
     if [ -d /conf ]; then
         find /conf -type f -exec cp {} conf \;
