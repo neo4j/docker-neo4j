@@ -30,6 +30,8 @@ docker run --rm --volume="${dir}:/var/lib/neo4j/conf" \
                 --env=NEO4J_dbms_memory_heap_max__size=3000m \
                 "${image}" neo4j-admin help >/dev/null
 
+cat "${dir}/neo4j.conf"
+
 assert_property_overridden "${dir}" "dbms.memory.pagecache.size=1000m"
 assert_property_overridden "${dir}" "dbms.memory.heap.initial_size=2000m"
 assert_property_overridden "${dir}" "dbms.memory.heap.max_size=3000m"
