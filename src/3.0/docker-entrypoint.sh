@@ -20,63 +20,74 @@ setting() {
     fi
 }
 
-if [ "$1" == "neo4j" ]; then
+cmd="$1"
 
-    # Env variable naming convention:
-    # - prefix NEO4J_
-    # - double underscore char '__' instead of single underscore '_' char in the setting name
-    # - underscore char '_' instead of dot '.' char in the setting name
-    # Example:
-    # NEO4J_dbms_tx__log_rotation_retention__policy env variable to set
-    #       dbms.tx_log.rotation.retention_policy setting
-
-    # Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
-    # Set some to default values if unset
-    : ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-"100M size"}}
-    : ${NEO4J_wrapper_java_additional:=${NEO4J_UDC_SOURCE:-"-Dneo4j.ext.udc.source=docker"}}
-    : ${NEO4J_dbms_memory_heap_initial__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
-    : ${NEO4J_dbms_memory_heap_max__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
-    : ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
-    : ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
-    : ${NEO4J_ha_server__id:=${NEO4J_ha_serverId:-}}
-    : ${NEO4J_ha_initial__hosts:=${NEO4J_ha_initialHosts:-}}
-
-    : ${NEO4J_dbms_connector_http_address:="0.0.0.0:7474"}
-    : ${NEO4J_dbms_connector_https_address:="0.0.0.0:7473"}
-    : ${NEO4J_dbms_connector_bolt_address:="0.0.0.0:7687"}
-    : ${NEO4J_ha_host_coordination:="$(hostname):5001"}
-    : ${NEO4J_ha_host_data:="$(hostname):6001"}
-
-    # unset old hardcoded unsupported env variables
-    unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
-        NEO4J_dbms_memory_heap_maxSize NEO4J_dbms_memory_heap_maxSize \
-        NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
-        NEO4J_ha_initialHosts
-
+if [ "${cmd}" == "dump-config" ]; then
     if [ -d /conf ]; then
-        find /conf -type f -exec cp {} conf \;
+        cp --recursive conf/* /conf
+        exit 0
+    else
+        echo "You must provide a /conf volume"
+        exit 1
     fi
+fi
 
-    if [ -d /ssl ]; then
-        NEO4J_dbms_directories_certificates="/ssl"
-    fi
+# Env variable naming convention:
+# - prefix NEO4J_
+# - double underscore char '__' instead of single underscore '_' char in the setting name
+# - underscore char '_' instead of dot '.' char in the setting name
+# Example:
+# NEO4J_dbms_tx__log_rotation_retention__policy env variable to set
+#       dbms.tx_log.rotation.retention_policy setting
 
-    if [ -d /plugins ]; then
-        NEO4J_dbms_directories_plugins="/plugins"
-    fi
+# Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
+# Set some to default values if unset
+: ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-"100M size"}}
+: ${NEO4J_wrapper_java_additional:=${NEO4J_UDC_SOURCE:-"-Dneo4j.ext.udc.source=docker"}}
+: ${NEO4J_dbms_memory_heap_initial__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
+: ${NEO4J_dbms_memory_heap_max__size:=${NEO4J_dbms_memory_heap_maxSize:-"512"}}
+: ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
+: ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
+: ${NEO4J_ha_server__id:=${NEO4J_ha_serverId:-}}
+: ${NEO4J_ha_initial__hosts:=${NEO4J_ha_initialHosts:-}}
 
-    if [ -d /logs ]; then
-        NEO4J_dbms_directories_logs="/logs"
-    fi
+: ${NEO4J_dbms_connector_http_address:="0.0.0.0:7474"}
+: ${NEO4J_dbms_connector_https_address:="0.0.0.0:7473"}
+: ${NEO4J_dbms_connector_bolt_address:="0.0.0.0:7687"}
+: ${NEO4J_ha_host_coordination:="$(hostname):5001"}
+: ${NEO4J_ha_host_data:="$(hostname):6001"}
 
-    if [ -d /import ]; then
-        NEO4J_dbms_directories_import="/import"
-    fi
+# unset old hardcoded unsupported env variables
+unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
+    NEO4J_dbms_memory_heap_maxSize NEO4J_dbms_memory_heap_maxSize \
+    NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
+    NEO4J_ha_initialHosts
 
-    if [ -d /metrics ]; then
-        NEO4J_dbms_directories_metrics="/metrics"
-    fi
+if [ -d /conf ]; then
+    find /conf -type f -exec cp {} conf \;
+fi
 
+if [ -d /ssl ]; then
+    NEO4J_dbms_directories_certificates="/ssl"
+fi
+
+if [ -d /plugins ]; then
+    NEO4J_dbms_directories_plugins="/plugins"
+fi
+
+if [ -d /logs ]; then
+    NEO4J_dbms_directories_logs="/logs"
+fi
+
+if [ -d /import ]; then
+    NEO4J_dbms_directories_import="/import"
+fi
+
+if [ -d /metrics ]; then
+    NEO4J_dbms_directories_metrics="/metrics"
+fi
+
+if [ "${cmd}" == "neo4j" ] ; then
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
         NEO4J_dbms_security_auth__enabled=false
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
@@ -120,32 +131,27 @@ if [ "$1" == "neo4j" ]; then
         echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
     fi
+fi
 
-    # list env variables with prefix NEO4J_ and create settings from them
-    unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
-    for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
-        setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
-        value=$(echo ${!i})
-        if [[ -n ${value} ]]; then
-            if grep -q -F "${setting}=" conf/neo4j.conf; then
-                # Remove any lines containing the setting already
-                sed --in-place "/${setting}=.*/d" conf/neo4j.conf
-            fi
-            # Then always append setting to file
-            echo "${setting}=${value}" >> conf/neo4j.conf
+# list env variables with prefix NEO4J_ and create settings from them
+unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
+for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
+    setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
+    value=$(echo ${!i})
+    if [[ -n ${value} ]]; then
+        if grep -q -F "${setting}=" conf/neo4j.conf; then
+            # Remove any lines containing the setting already
+            sed --in-place "/${setting}=.*/d" conf/neo4j.conf
         fi
-    done
-
-    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
-    exec bin/neo4j console
-elif [ "$1" == "dump-config" ]; then
-    if [ -d /conf ]; then
-        cp --recursive conf/* /conf
-    else
-        echo "You must provide a /conf volume"
-        exit 1
+        # Then always append setting to file
+        echo "${setting}=${value}" >> conf/neo4j.conf
     fi
+done
+
+[ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
+
+if [ "${cmd}" == "neo4j" ] ; then
+    exec bin/neo4j console
 else
     exec "$@"
 fi
