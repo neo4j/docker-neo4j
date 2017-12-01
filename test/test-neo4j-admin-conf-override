@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+readonly image="$1"
+readonly series="$2"
+
+assert_property_overridden() {
+    local path="$1"
+    local property="$2"
+    if [[ -z "$(cat "${path}/neo4j.conf" | grep "${property}")" ]] ; then
+        exit 1
+    fi
+}
+
+# there is no neo4j-admin for 2.3
+if [[ "${series}" == "2.3" ]]; then
+   exit 0;
+fi
+
+. "$(dirname "$0")/helpers.sh"
+readonly cname="neo4j-$(uuidgen)"
+
+readonly dir=$(mktemp --directory)
+touch "${dir}/neo4j.conf"
+
+docker run --rm --volume="${dir}:/var/lib/neo4j/conf" \
+                --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+                --env=NEO4J_dbms_memory_pagecache_size=1000m \
+                --env=NEO4J_dbms_memory_heap_initial__size=2000m \
+                --env=NEO4J_dbms_memory_heap_max__size=3000m \
+                "${image}" neo4j-admin help >/dev/null
+
+cat "${dir}/neo4j.conf"
+
+assert_property_overridden "${dir}" "dbms.memory.pagecache.size=1000m"
+assert_property_overridden "${dir}" "dbms.memory.heap.initial_size=2000m"
+assert_property_overridden "${dir}" "dbms.memory.heap.max_size=3000m"
