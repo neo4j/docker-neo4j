@@ -14,6 +14,7 @@ assert_property_overridden() {
 
 # there is no neo4j-admin for 2.3
 if [[ "${series}" == "2.3" ]]; then
+   echo "No neo4j-admin in 2.3: skipping neo4j-admin-conf-override test"
    exit 0;
 fi
 
