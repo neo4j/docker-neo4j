@@ -1,3 +1,19 @@
+#!/usr/bin/env bash
+
+set -o pipefail -o errtrace -o errexit -o nounset
+# ubuntu in ci might not have bash 4.4
+if [[ -n "$(shopt | grep inherit_errexit)" ]] ; then
+  shopt -s inherit_errexit
+fi
+
+[[ -n "${TRACE:-}" ]] && set -o xtrace
+
+declare errmsg="ERROR (${0##*/})":
+trap 'echo >&2 $errmsg trap on error \(rc=${PIPESTATUS[@]}\) near line $LINENO' ERR
+
+EXEC=(docker exec --interactive "${NETWORK_CONTAINER:?Network container name unset}")
+CURL=(curl --silent --write-out '%{http_code}' --output /dev/null --connect-timeout 10)
+
 docker_cleanup() {
   local cid="$1"
   # Place logs in similarly named file
@@ -5,7 +21,18 @@ docker_cleanup() {
   local l_logfile="tmp/out/${cid}.log"
 
   docker logs "${cid}" > "${l_logfile}" || echo "failed to write log"
-  docker rm --force "${cid}" >/dev/null
+  docker rm --force "${cid}" > /dev/null 2>&1 || true
+  docker network disconnect "${COMPOSE_NETWORK}" "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
+  docker rm --force "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
+}
+
+docker_ensure_network_container() {
+  if ! output=$(docker inspect "${NETWORK_CONTAINER:?Network container name unset}" 2> /dev/null); then
+    network_container_image_id=$(cat tmp/.image-id-network-container)
+    docker run --rm --detach --interactive --name="${NETWORK_CONTAINER:?Network container name unset}" > /dev/null \
+    "${network_container_image_id}"
+  fi
+  docker network connect "${COMPOSE_NETWORK}" "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
 }
 
 docker_restart() {
@@ -33,8 +60,10 @@ docker_compose_cleanup() {
   # Place compose logs in similarly named file
   local l_logfile="${1}.log"
 
+  docker network disconnect "${COMPOSE_NETWORK}" "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
   docker-compose --file "${l_composefile}" --project-name neo4jcomposetest logs --no-color > "${l_logfile}" || echo "failed to write compose log"
   docker-compose --file "${l_composefile}" --project-name neo4jcomposetest down --volumes > /dev/null
+  docker rm --force "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
 }
 
 docker_compose_up() {
@@ -51,7 +80,7 @@ docker_compose_up() {
 
 docker_compose_ip() {
   local l_cname="$1"
-  docker inspect --format '{{ .NetworkSettings.Networks.neo4jcomposetest_lan.IPAddress }}' "${l_cname}"
+  docker inspect --format "{{ .NetworkSettings.Networks.${COMPOSE_NETWORK}.IPAddress }}" "${l_cname}"
 }
 
 docker_ip() {
@@ -60,6 +89,7 @@ docker_ip() {
 }
 
 neo4j_wait() {
+  docker_ensure_network_container
   local l_time="${3:-30}"
   local l_ip="$1" end="$((SECONDS+${l_time}))"
   if [[ -n "${2:-}" ]]; then
@@ -67,13 +97,14 @@ neo4j_wait() {
   fi
 
   while true; do
-    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474)" ]] && break
+    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474)" ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
 }
 
 neo4j_wait_for_ha_available() {
+  docker_ensure_network_container
   local l_time="${3:-30}"
   local l_ip="$1" end="$((SECONDS+${l_time}))"
   if [[ -n "${2:-}" ]]; then
@@ -81,13 +112,14 @@ neo4j_wait_for_ha_available() {
   fi
 
   while true; do
-    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/manage/server/ha/available)" ]] && break
+    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474/db/manage/server/ha/available)" ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
 }
 
 neo4j_wait_for_ha_master() {
+  docker_ensure_network_container
   local l_time="${3:-30}"
   local l_ip="$1" end="$((SECONDS+${l_time}))"
   if [[ -n "${2:-}" ]]; then
@@ -95,13 +127,14 @@ neo4j_wait_for_ha_master() {
   fi
 
   while true; do
-    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/manage/server/ha/master)" ]] && break
+    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474/db/manage/server/ha/master)" ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
 }
 
 neo4j_wait_for_ha_slave() {
+  docker_ensure_network_container
   local l_time="${3:-30}"
   local l_ip="$1" end="$((SECONDS+${l_time}))"
   if [[ -n "${2:-}" ]]; then
@@ -109,28 +142,30 @@ neo4j_wait_for_ha_slave() {
   fi
 
   while true; do
-    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/manage/server/ha/slave)" ]] && break
+    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474/db/manage/server/ha/slave)" ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
 }
 
 neo4j_createnode() {
+  docker_ensure_network_container
   local l_ip="$1" end="$((SECONDS+30))"
   if [[ -n "${2:-}" ]]; then
     local auth="--user $2"
   fi
-  [[ "201" = "$(curl --silent --write-out '%{http_code}' --request POST --output /dev/null ${auth:-} http://${l_ip}:7474/db/data/node)" ]] || exit 1
+  [[ "201" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} --request POST http://${l_ip}:7474/db/data/node)" ]] || exit 1
 }
 
 neo4j_readnode() {
+  docker_ensure_network_container
   local l_time="${3:-5}"
   local l_ip="$1" end="$((SECONDS+${l_time}))"
   if [[ -n "${2:-}" ]]; then
     local auth="--user $2"
   fi
   while true; do
-    [[ "200" = "$(curl --silent --write-out '%{http_code}' ${auth:-} --output /dev/null http://${l_ip}:7474/db/data/node/0)" ]] && break
+    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474/db/data/node/0)" ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
