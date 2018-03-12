@@ -2,6 +2,51 @@
 
 PATH="./build:${PATH}"
 
+# MacOS specific checks
+if [ "$(uname)" == "Darwin" ] ; then
+
+  echo "Setting PATH with MacOS specific locations"
+  export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
+  export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+  export PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
+
+  if ! grep --version 2>/dev/null | grep -q "GNU grep" ; then
+    cat >&2 <<EOF
+== GNU grep is required. Fix with ==
+
+  brew install grep --with-default-names
+
+EOF
+  fi
+
+  if ! sed --version 2>/dev/null | grep -q "GNU sed" ; then
+    cat >&2 <<EOF
+== GNU sed is required. Fix with ==
+
+  brew install gnu-sed
+
+EOF
+  fi
+
+  if ! readlink --version 2>/dev/null | grep -q "GNU coreutils" ; then
+    cat >&2 <<EOF
+== GNU coreutils is required. Fix with ==
+
+  brew install coreutils  --with-default-names
+
+EOF
+  fi
+
+  # have to use || here because BSD find doesnt even support --version (it errors)
+  # shellcheck disable=SC2185
+  find --version 1>/dev/null 2>/dev/null || cat >&2 <<EOF
+== GNU findutils is required. Fix with ==
+
+    brew install findutils  --with-default-names
+
+EOF
+fi # MacOS specific checks
+
 if ! which make >/dev/null; then
     if which apt-get >/dev/null; then
         sudo apt-get install make
