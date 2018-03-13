@@ -20,7 +20,7 @@ docker_cleanup() {
   mkdir -p tmp/out
   local l_logfile="tmp/out/${cid}.log"
 
-  docker logs "${cid}" > "${l_logfile}" || echo "failed to write log"
+  docker logs "${cid}" >> "${l_logfile}" 2>&1 || echo "failed to write log"
   docker rm --force "${cid}" > /dev/null 2>&1 || true
   docker network disconnect "${COMPOSE_NETWORK}" "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
   docker rm --force "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
