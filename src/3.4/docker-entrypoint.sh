@@ -2,10 +2,76 @@
 
 cmd="$1"
 
+# We intentionally chown /data to root in Dockerfile so we can detect
+# if no volume is mounted
+if [[ "$(stat -c %u /data)" != "0" ]]; then
+  # /data is a volume, is the same uid/gid for neo4j user
+  user_uid="$(stat -c %u /data)"
+  user_gid="$(stat -c %g /data)"
+elif [ -d /conf ] && [[ "${cmd}" == "dump-config" ]]; then
+  # A configuration volume has been mounted and we are dumping config
+  user_uid="$(stat -c %u /conf)"
+  user_gid="$(stat -c %g /conf)"
+else
+  # Set to zero (root) to signal no mounting has been done
+  user_uid="0"
+  user_gid="0"
+fi
+
+
+# Only add group if it does not already exist which can happen
+#   1. if the docker container is restarted
+#   2. if the mounted directory has group "nobody" for example which is a default group
+# And only add with specific GID if mounted directory
+if [[ "${user_gid}" = 0 ]]; then
+  if ! getent group neo4j >/dev/null; then
+    addgroup -S neo4j
+  fi
+  user_gid=$(getent group neo4j | awk -F ':' '{ print $3 }')
+# Check if a group with that gid already exists, and if so don't add a neo4j group
+elif ! getent group | awk -F ':' '{ print $3 }' | grep -q "${user_gid}"; then
+  addgroup -S -g "${user_gid}" neo4j
+fi
+
+group_name=$(getent group "${user_gid}" | awk -F ':' '{ print $1 }')
+readonly group_name
+
+# Only add user if it does not already exist
+if [[ "${user_uid}" = 0 ]]; then
+  if ! getent passwd neo4j >/dev/null; then
+    adduser -S -H -h /var/lib/neo4j -G "${group_name}" neo4j
+  fi
+  user_uid=$(getent passwd neo4j | awk -F ':' '{ print $3 }')
+elif ! getent passwd | awk -F ':' '{ print $3 }' | grep -q "${user_uid}"; then
+  adduser -S -u "${user_uid}" -H -h /var/lib/neo4j -G "${group_name}" neo4j
+fi
+
+user_name=$(getent passwd "${user_uid}" | awk -F ':' '{ print $1 }')
+readonly user_name
+
+# Need to chown the home directory - but a user might have mounted a
+# volume here. So take care not to chown volumes (stuff not owned by
+# root due to our intentional chowning to root in the Dockerfile)
+if [[ "$(stat -c %u /var/lib/neo4j)" = "0" ]]; then
+  # Non-recursive chown for the base directory
+  chown "${user_name}:${group_name}" /var/lib/neo4j
+fi
+
+while IFS= read -r -d '' dir
+do
+  if [[ "$(stat -c %u "${dir}")" = "0" ]]; then
+    # Using mindepth 1 to avoid the base directory here so recursive is OK
+    chown -R "${user_name}:${group_name}" "${dir}"
+  fi
+done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
+
+# Data dir is chowned later
+
 if [[ "${cmd}" != *"neo4j"* ]]; then
   if [ "${cmd}" == "dump-config" ]; then
     if [ -d /conf ]; then
-      cp --recursive conf/* /conf
+      # Run with neo4j user so we write files with correct permissions
+      su-exec "${user_name}" cp --recursive conf/* /conf
       exit 0
     else
       echo >&2 "You must provide a /conf volume"
@@ -126,19 +192,19 @@ if [ -d /metrics ]; then
 fi
 
 # set the neo4j initial password only if you run the database server
-if [ "${cmd}" == "neo4j" ] ; then
+if [ "${cmd}" == "neo4j" ]; then
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
         NEO4J_dbms_security_auth__enabled=false
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
         if [ "${password}" == "neo4j" ]; then
-            echo "Invalid value for password. It cannot be 'neo4j', which is the default."
+            echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
         # Will exit with error if users already exist (and print a message explaining that)
         bin/neo4j-admin set-initial-password "${password}" || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
-        echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
+        echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
     fi
 fi
@@ -158,10 +224,17 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
+# Chown the data dir now that (maybe) an initial password has been
+# set (this is a file in the data dir)
+if [[ "$(stat -c %u /data)" = "0" ]]; then
+  chown -R "${user_name}:${group_name}" /data
+fi
+
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
-if [ "${cmd}" == "neo4j" ] ; then
-    exec neo4j console
+# Use su-exec to drop privileges to neo4j user
+if [ "${cmd}" == "neo4j" ]; then
+    su-exec "${user_name}" neo4j console
 else
-    exec "$@"
+    su-exec "${user_name}" "$@"
 fi

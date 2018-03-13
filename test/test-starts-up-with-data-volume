@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+readonly cname="neo4j-$(uuidgen)"
+
+readonly datadir=$(mktemp --directory)
+GID="$(gid_of "${datadir}")"
+readonly GID
+
+docker_run_with_volume "$image" "$cname" "${datadir}:/data" "NEO4J_AUTH=none"
+readonly ip="$(docker_ip "${cname}")"
+neo4j_wait "${ip}"
+
+if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
+  echo "Skipping: UID checks, code not present pre-3.1"
+  exit 0
+fi
+
+while IFS= read -r -d '' file
+do
+  if [[ "${UID}" != "$(uid_of "${file}")" ]]; then
+    echo >&2 Unexpected UID of "${file}" after running with mounted data volume
+    exit 1
+  fi
+
+  if [[ "${GID}" != "$(gid_of "${file}")" ]]; then
+    echo >&2 Unexpected GID of "${file}" after running with mounted data volume
+    exit 1
+  fi
+done <   <(find "${datadir}" -print0)
