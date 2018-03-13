@@ -30,6 +30,7 @@ if grep --quiet "must accept the license" $logfile; then
   echo "License agreement not accepted."
   exit 0
 else
-  echo "Not accepting the license agreement should have failed."
+  echo >&2 "Not accepting the license agreement should have failed."
+  echo >&2 "${output}"
   exit 1
 fi
