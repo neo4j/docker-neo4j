@@ -4,7 +4,7 @@ docker_cleanup() {
   mkdir -p tmp/out
   local l_logfile="tmp/out/${cid}.log"
 
-  docker logs "${cid}" > "${l_logfile}" || echo "failed to write log"
+  docker logs "${cid}" >"${l_logfile}" 2>&1 || echo "failed to write log"
   docker rm --force "${cid}" >/dev/null
 }
 
