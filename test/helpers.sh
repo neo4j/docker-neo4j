@@ -28,6 +28,21 @@ docker_run() {
   trap "docker_cleanup ${cid}" EXIT
 }
 
+docker_run_with_volume() {
+  local l_image="$1" l_cname="$2" l_volume="$3"; shift; shift; shift
+
+  local envs=()
+  if [[ ! "$@" =~ "NEO4J_ACCEPT_LICENSE_AGREEMENT=no" ]]; then
+    envs+=("--env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes")
+  fi
+  for env in "$@"; do
+    envs+=("--env=${env}")
+  done
+  local cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" --volume="${l_volume}" "${l_image}")"
+  echo "log: tmp/out/${cid}.log"
+  trap "docker_cleanup ${cid}" EXIT
+}
+
 docker_compose_cleanup() {
   local l_composefile="$1"
   # Place compose logs in similarly named file
@@ -134,4 +149,12 @@ neo4j_readnode() {
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
+}
+
+uid_of() {
+  stat -c %u "$1"
+}
+
+gid_of() {
+  stat -c %g "$1"
 }
