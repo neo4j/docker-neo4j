@@ -3,19 +3,15 @@
 cmd="$1"
 
 if [[ "${cmd}" != *"neo4j"* ]]; then
-    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
-    if [ "${cmd}" == "dump-config" ]; then
-        if [ -d /conf ]; then
-            cp --recursive conf/* /conf
-            exit 0
-        else
-            echo "You must provide a /conf volume"
-            exit 1
-        fi
+  if [ "${cmd}" == "dump-config" ]; then
+    if [ -d /conf ]; then
+      cp --recursive conf/* /conf
+      exit 0
+    else
+      echo >&2 "You must provide a /conf volume"
+      exit 1
     fi
-    exec "$@"
-    exit $?
+  fi
 fi
 
 # Env variable naming convention:

@@ -3,24 +3,20 @@
 cmd="$1"
 
 if [[ "${cmd}" != *"neo4j"* ]]; then
-    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
-    if [ "${cmd}" == "dump-config" ]; then
-        if [ -d /conf ]; then
-            cp --recursive conf/* /conf
-            exit 0
-        else
-            echo "You must provide a /conf volume"
-            exit 1
-        fi
+  if [ "${cmd}" == "dump-config" ]; then
+    if [ -d /conf ]; then
+      cp --recursive conf/* /conf
+      exit 0
+    else
+      echo >&2 "You must provide a /conf volume"
+      exit 1
     fi
-    exec "$@"
-    exit $?
-fi
-
-if [ "$NEO4J_EDITION" == "enterprise" ]; then
+  fi
+else
+  # Only prompt for license agreement if command contains "neo4j" in it
+  if [ "$NEO4J_EDITION" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
-        echo "
+      echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
 (c) Network Engine for Objects in Lund AB.  2017.  All Rights Reserved.
@@ -39,8 +35,9 @@ To do this you can use the following docker argument:
 
         --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
 "
-        exit 1
+      exit 1
     fi
+  fi
 fi
 
 # Env variable naming convention:
