@@ -21,7 +21,7 @@ fi
 . "$(dirname "$0")/helpers.sh"
 readonly cname="neo4j-$(uuidgen)"
 
-# Docker for mac doesn't allow access from /var/
+# mktemp on OSX by default uses /var/folders/ which is not available to docker
 readonly dir=$(mktemp --directory --tmpdir=/tmp/)
 touch "${dir}/neo4j.conf"
 
