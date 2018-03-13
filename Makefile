@@ -21,7 +21,7 @@ tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
 series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
-all: out/enterprise/.sentinel out/community/.sentinel
+all: out/community/.sentinel out/enterprise/.sentinel
 .PHONY: all
 
 test: test-community test-enterprise
