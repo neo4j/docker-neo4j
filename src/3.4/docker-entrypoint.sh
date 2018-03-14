@@ -32,7 +32,7 @@ Email inquiries can be directed to: licensing@neo4j.com
 More information is also available at: https://neo4j.com/licensing/
 
 
-To accept the license agreemnt set the environment variable
+To accept the license agreement set the environment variable
 NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
 
 To do this you can use the following docker argument:
