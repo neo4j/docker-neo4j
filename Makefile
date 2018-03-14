@@ -14,6 +14,9 @@ ifndef NEO4J_VERSION
   $(error NEO4J_VERSION is not set)
 endif
 
+NETWORK_CONTAINER := "network"
+COMPOSE_NETWORK := "neo4jcomposetest_lan"
+
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
 series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
@@ -29,12 +32,29 @@ out/%/.sentinel: tmp/image-%/.sentinel tmp/.tests-pass-%
 > cp -r $(<D)/* $(@D)
 > touch $@
 
-tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*') $(shell find test -name '*.yml') $(shell find test -name '*.sh')
+tmp/test-context/.sentinel: test/container/Dockerfile
+> rm -rf $(@D)
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> touch $@
+
+tmp/.image-id-network-container: tmp/test-context/.sentinel
+> mkdir -p $(@D)
+> image=network-container
+> docker rmi $$image || true
+> docker build --tag=$$image $(<D)
+> echo -n $$image >$@
+
+tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*') \
+	$(shell find test -name '*.yml') $(shell find test -name '*.sh') \
+	tmp/.image-id-network-container
 > mkdir -p $(@D)
 > image_id=$$(cat $<)
 > for test in $(filter test/test-%,$^); do
->   echo "Running $${test}"
->   "$${test}" "$${image_id}" "${series}" "$*"
+>   echo "Running NETWORK_CONTAINER=$(NETWORK_CONTAINER)-"$*" \
+COMPOSE_NETWORK=$(COMPOSE_NETWORK) $${test} $${image_id} ${series} $*"
+>   NETWORK_CONTAINER=$(NETWORK_CONTAINER)-"$*" COMPOSE_NETWORK=$(COMPOSE_NETWORK) \
+"$${test}" "$${image_id}" "${series}" "$*"
 > done
 > touch $@
 
