@@ -28,6 +28,11 @@ readonly compose_file=$(mktemp tmp/out/XXXXXXXX.yml)
 
 cp "$(dirname "$0")/ha-cluster-compose.yml" "${compose_file}"
 
+if [[ "${series}" == "3.0" ]]; then
+  # Neo4j 3.0 series does not support [MG] type values for memory_heap_initial
+  sed --in-place -e "s/NEO4J_dbms_memory_heap_initial__size=10M/NEO4J_dbms_memory_heap_initial__size=10/g" "${compose_file}"
+fi
+
 readonly cname="core-$(uuidgen)"
 readonly rname="slave-$(uuidgen)"
 

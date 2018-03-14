@@ -7,7 +7,8 @@ readonly image="$1"
 readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
-readonly dir=$(mktemp --directory)
+# mktemp on OSX by default uses /var/folders/ which is not available to docker
+readonly dir=$(mktemp --directory --tmpdir=/tmp/)
 
 docker run --rm --volume="${dir}:/conf" "${image}" dump-config
 
