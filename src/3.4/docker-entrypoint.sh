@@ -2,25 +2,70 @@
 
 cmd="$1"
 
-if [[ "${cmd}" != *"neo4j"* ]]; then
-    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
-    if [ "${cmd}" == "dump-config" ]; then
-        if [ -d /conf ]; then
-            cp --recursive conf/* /conf
-            exit 0
-        else
-            echo "You must provide a /conf volume"
-            exit 1
-        fi
-    fi
-    exec "$@"
-    exit $?
+# We intentionally chown /data to root in Dockerfile so we can detect
+# if no volume is mounted
+if [[ "$(stat -c %u /data)" != "0" ]]; then
+  # /data is a volume, is the same uid/gid for neo4j user
+  user_uid="$(stat -c %u /data)"
+  user_gid="$(stat -c %g /data)"
+elif [ -d /conf ] && [[ "${cmd}" == "dump-config" ]]; then
+  # A configuration volume has been mounted and we are dumping config
+  user_uid="$(stat -c %u /conf)"
+  user_gid="$(stat -c %g /conf)"
+else
+  # Set to zero (root) to signal no mounting has been done
+  user_uid="0"
+  user_gid="0"
 fi
 
-if [ "$NEO4J_EDITION" == "enterprise" ]; then
+# Only add group if it does not already exist
+if ! getent group neo4j >/dev/null && [[ "${user_gid}" = 0 ]]; then
+  addgroup -S neo4j
+elif ! getent group neo4j >/dev/null; then
+  addgroup -S -g "${user_gid}" neo4j
+fi
+
+# Only add user if it does not already exist
+if ! getent passwd neo4j >/dev/null && [[ "${user_uid}" = 0 ]]; then
+  adduser -S -H -h /var/lib/neo4j -G neo4j neo4j
+elif ! getent passwd neo4j >/dev/null; then
+  adduser -S -u "${user_uid}" -H -h /var/lib/neo4j -G neo4j neo4j
+fi
+
+# Need to chown the home directory - but a user might have mounted a
+# volume here. So take care not to chown volumes (stuff not owned by
+# root due to our intentional chowning to root in the Dockerfile)
+if [[ "$(stat -c %u /var/lib/neo4j)" = "0" ]]; then
+  # Non-recursive chown for the base directory
+  chown neo4j:neo4j /var/lib/neo4j
+fi
+
+while IFS= read -r -d '' dir
+do
+  if [[ "$(stat -c %u "${dir}")" = "0" ]]; then
+    # Using mindepth 1 to avoid the base directory here so recursive is OK
+    chown -R neo4j:neo4j "${dir}"
+  fi
+done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
+
+# Data dir is chowned later
+
+if [[ "${cmd}" != *"neo4j"* ]]; then
+  if [ "${cmd}" == "dump-config" ]; then
+    if [ -d /conf ]; then
+      # Run with neo4j user so we write files with correct permissions
+      su-exec neo4j cp --recursive conf/* /conf
+      exit 0
+    else
+      echo >&2 "You must provide a /conf volume"
+      exit 1
+    fi
+  fi
+else
+  # Only prompt for license agreement if command contains "neo4j" in it
+  if [ "$NEO4J_EDITION" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
-        echo "
+      echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
 (c) Network Engine for Objects in Lund AB.  2017.  All Rights Reserved.
@@ -32,15 +77,16 @@ Email inquiries can be directed to: licensing@neo4j.com
 More information is also available at: https://neo4j.com/licensing/
 
 
-To accept the license agreemnt set the environment variable
+To accept the license agreement set the environment variable
 NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
 
 To do this you can use the following docker argument:
 
         --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
 "
-        exit 1
+      exit 1
     fi
+  fi
 fi
 
 # Env variable naming convention:
@@ -135,13 +181,13 @@ if [ "${cmd}" == "neo4j" ] ; then
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
         if [ "${password}" == "neo4j" ]; then
-            echo "Invalid value for password. It cannot be 'neo4j', which is the default."
+            echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
         # Will exit with error if users already exist (and print a message explaining that)
         bin/neo4j-admin set-initial-password "${password}" || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
-        echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
+        echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
     fi
 fi
@@ -161,10 +207,17 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
+# Chown the data dir now that (maybe) an initial password has been
+# set (this is a file in the data dir)
+if [[ "$(stat -c %u /data)" = "0" ]]; then
+  chown -R neo4j:neo4j /data
+fi
+
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
-if [ "${cmd}" == "neo4j" ] ; then
-    exec neo4j console
+# Use su-exec to drop privileges to neo4j user
+if [ "${cmd}" == "neo4j" ]; then
+    su-exec neo4j neo4j console
 else
-    exec "$@"
+    su-exec neo4j "$@"
 fi

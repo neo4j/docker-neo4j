@@ -9,10 +9,37 @@ readonly cname="neo4j-$(uuidgen)"
 
 readonly dir=$(mktemp --directory)
 
+GID="$(gid_of "${dir}")"
+readonly GID
+
 docker run --rm --volume="${dir}:/conf" "${image}" dump-config
 
 if [[ "${series}" == "2.3" ]]; then
-    [[ -f "${dir}/neo4j.properties" ]]
+  if ! [[ -f "${dir}/neo4j.properties" ]]; then
+    echo >&2 "no properties file found"
+    exit 1
+  fi
 else
-    [[ -f "${dir}/neo4j.conf" ]]
+  if ! [[ -f "${dir}/neo4j.conf" ]]; then
+    echo >&2 "No conf file found"
+    exit 1
+  fi
 fi
+
+if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
+  echo "Skipping: UID checks, code not present pre-3.1"
+  exit 0
+fi
+
+while IFS= read -r -d '' file
+do
+  if [[ "${UID}" != "$(uid_of "${file}")" ]]; then
+    echo >&2 Unexpected UID of "${file}" after dumping config
+    exit 1
+  fi
+
+  if [[ "${GID}" != "$(gid_of "${file}")" ]]; then
+    echo >&2 Unexpected GID of "${file}" after dumping config
+    exit 1
+  fi
+done <   <(find "${dir}" -print0)

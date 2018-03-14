@@ -27,7 +27,7 @@ if [ "${cmd}" == "dump-config" ]; then
         cp --recursive conf/* /conf
         exit 0
     else
-        echo "You must provide a /conf volume"
+        echo >&2 "You must provide a /conf volume"
         exit 1
     fi
 fi

@@ -18,7 +18,7 @@ tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
 series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
-all: out/enterprise/.sentinel out/community/.sentinel
+all: out/community/.sentinel out/enterprise/.sentinel
 .PHONY: all
 
 test: test-community test-enterprise
@@ -33,7 +33,7 @@ tmp/.tests-pass-%: tmp/.image-id-% $(shell find test -name 'test-*') $(shell fin
 > mkdir -p $(@D)
 > image_id=$$(cat $<)
 > for test in $(filter test/test-%,$^); do
->   echo "Running $${test}"
+>   echo "Running $${test} with ${series} $*"
 >   "$${test}" "$${image_id}" "${series}" "$*"
 > done
 > touch $@
