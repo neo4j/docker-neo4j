@@ -63,16 +63,14 @@ done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
 
 # Data dir is chowned later
 
-if [[ "${cmd}" != *"neo4j"* ]]; then
-  if [ "${cmd}" == "dump-config" ]; then
-    if [ -d /conf ]; then
-      # Run with neo4j user so we write files with correct permissions
-      su-exec "${user_name}" cp --recursive conf/* /conf
-      exit 0
-    else
-      echo >&2 "You must provide a /conf volume"
-      exit 1
-    fi
+if [ "${cmd}" == "dump-config" ]; then
+  if [ -d /conf ]; then
+    # Run with neo4j user so we write files with correct permissions
+    su-exec "${user_name}" cp --recursive conf/* /conf
+    exit 0
+  else
+    echo >&2 "You must provide a /conf volume"
+    exit 1
   fi
 fi
 
