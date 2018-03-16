@@ -78,7 +78,7 @@ elif [ "$1" == "dump-config" ]; then
     if [ -d /conf ]; then
         cp --recursive conf/* /conf
     else
-        echo "You must provide a /conf volume"
+        echo >&2 "You must provide a /conf volume"
         exit 1
     fi
 else

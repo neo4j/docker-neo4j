@@ -8,24 +8,13 @@ readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
 # mktemp on OSX by default uses /var/folders/ which is not available to docker
-readonly dir=$(mktemp --directory --tmpdir=/tmp/)
-
-GID="$(gid_of "${dir}")"
+readonly datadir=$(mktemp --directory --tmpdir=/tmp/)
+GID="$(gid_of "${datadir}")"
 readonly GID
 
-docker run --rm --volume="${dir}:/conf" "${image}" dump-config
-
-if [[ "${series}" == "2.3" ]]; then
-  if ! [[ -f "${dir}/neo4j.properties" ]]; then
-    echo >&2 "no properties file found"
-    exit 1
-  fi
-else
-  if ! [[ -f "${dir}/neo4j.conf" ]]; then
-    echo >&2 "No conf file found"
-    exit 1
-  fi
-fi
+docker_run_with_volume "$image" "$cname" "${datadir}:/data" "NEO4J_AUTH=none"
+readonly ip="$(docker_ip "${cname}")"
+neo4j_wait "${ip}"
 
 if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
   echo "Skipping: UID checks, code not present pre-3.1"
@@ -35,12 +24,12 @@ fi
 while IFS= read -r -d '' file
 do
   if [[ "${UID}" != "$(uid_of "${file}")" ]]; then
-    echo >&2 Unexpected UID of "${file}" after dumping config
+    echo >&2 Unexpected UID of "${file}" after running with mounted data volume
     exit 1
   fi
 
   if [[ "${GID}" != "$(gid_of "${file}")" ]]; then
-    echo >&2 Unexpected GID of "${file}" after dumping config
+    echo >&2 Unexpected GID of "${file}" after running with mounted data volume
     exit 1
   fi
-done <   <(find "${dir}" -print0)
+done <   <(find "${datadir}" -print0)

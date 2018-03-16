@@ -20,7 +20,7 @@ docker_cleanup() {
   mkdir -p tmp/out
   local l_logfile="tmp/out/${cid}.log"
 
-  docker logs "${cid}" > "${l_logfile}" || echo "failed to write log"
+  docker logs "${cid}" >> "${l_logfile}" 2>&1 || echo "failed to write log"
   docker rm --force "${cid}" > /dev/null 2>&1 || true
   docker network disconnect "${COMPOSE_NETWORK}" "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
   docker rm --force "${NETWORK_CONTAINER}" > /dev/null 2>&1 || true
@@ -51,6 +51,21 @@ docker_run() {
     envs+=("--env=${env}")
   done
   local cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" "${l_image}")"
+  echo "log: tmp/out/${cid}.log"
+  trap "docker_cleanup ${cid}" EXIT
+}
+
+docker_run_with_volume() {
+  local l_image="$1" l_cname="$2" l_volume="$3"; shift; shift; shift
+
+  local envs=()
+  if [[ ! "$@" =~ "NEO4J_ACCEPT_LICENSE_AGREEMENT=no" ]]; then
+    envs+=("--env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes")
+  fi
+  for env in "$@"; do
+    envs+=("--env=${env}")
+  done
+  local cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" --volume="${l_volume}" "${l_image}")"
   echo "log: tmp/out/${cid}.log"
   trap "docker_cleanup ${cid}" EXIT
 }
@@ -169,4 +184,12 @@ neo4j_readnode() {
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
+}
+
+uid_of() {
+  stat -c %u "$1"
+}
+
+gid_of() {
+  stat -c %g "$1"
 }
