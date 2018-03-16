@@ -23,13 +23,22 @@ if ! [[ "${edition}" == "enterprise" ]]; then
   exit 0
 fi
 
-output=$(docker_run "$image" "$cname" "NEO4J_ACCEPT_LICENSE_AGREEMENT=no")
-logfile=$(echo $output | awk '{print $2}')
+cid="$(docker run --detach --name="${cname}" "${image}")"
+trap "docker rm --force ${cid} > /dev/null 2>&1" EXIT
 
-if grep --quiet "must accept the license" $logfile; then
+# Wait until container exits before we check the logs
+while docker top "${cid}" &>/dev/null
+do
+  sleep 1
+done
+
+log="$(docker logs "${cid}" 2>&1)"
+
+if echo "${log}" | grep --quiet "must accept the license"; then
   echo "License agreement not accepted."
   exit 0
 else
-  echo "Not accepting the license agreement should have failed."
+  echo >&2 "Not accepting the license agreement should have failed."
+  cat >&2 "${log}"
   exit 1
 fi

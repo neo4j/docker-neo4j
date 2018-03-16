@@ -21,7 +21,7 @@ if [[ "${result}" == "/var/lib/neo4j/bin/${cypher_shell_cmd}" ]]; then
   echo "${cypher_shell_cmd} (and by implication all neo4j/bin) on path."
   exit 0
 else
-  echo "${cypher_shell_cmd} (and by implication all neo4j/bin) not on path"
+  echo >&2 "${cypher_shell_cmd} (and by implication all neo4j/bin) not on path"
   exit 1
 fi
 
