@@ -12,10 +12,6 @@ elif [ -d /conf ] && [[ "${cmd}" == "dump-config" ]]; then
   # A configuration volume has been mounted and we are dumping config
   user_uid="$(stat -c %u /conf)"
   user_gid="$(stat -c %g /conf)"
-else
-  # Set to zero (root) to signal no mounting has been done
-  user_uid="0"
-  user_gid="0"
 fi
 
 
@@ -23,7 +19,7 @@ fi
 #   1. if the docker container is restarted
 #   2. if the mounted directory has group "nobody" for example which is a default group
 # And only add with specific GID if mounted directory
-if [[ "${user_gid}" = 0 ]]; then
+if [[ "${user_gid:-0}" = 0 ]]; then
   if ! getent group neo4j >/dev/null; then
     addgroup -S neo4j
   fi
@@ -37,7 +33,7 @@ group_name=$(getent group "${user_gid}" | awk -F ':' '{ print $1 }')
 readonly group_name
 
 # Only add user if it does not already exist
-if [[ "${user_uid}" = 0 ]]; then
+if [[ "${user_uid:-0}" = 0 ]]; then
   if ! getent passwd neo4j >/dev/null; then
     adduser -S -H -h /var/lib/neo4j -G "${group_name}" neo4j
   fi
