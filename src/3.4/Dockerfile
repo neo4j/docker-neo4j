@@ -21,8 +21,7 @@ RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && mv /var/lib/neo4j/data /data \
     && chown -R root:root /data \
     && chown -R root:root /var/lib/neo4j \
-    && ln -s /data /var/lib/neo4j/data \
-    && apk del curl
+    && ln -s /data /var/lib/neo4j/data
 
 ENV PATH /var/lib/neo4j/bin:$PATH
 
