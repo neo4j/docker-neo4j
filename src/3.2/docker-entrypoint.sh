@@ -66,7 +66,9 @@ done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
 if [ "${cmd}" == "dump-config" ]; then
   if [ -d /conf ]; then
     # Run with neo4j user so we write files with correct permissions
-    su-exec "${user_name}" cp --recursive conf/* /conf
+    # Note that su-exec, despite its name, does not replicate the
+    # functionality of exec, so we need to use both
+    exec su-exec "${user_name}" cp --recursive conf/* /conf
     exit 0
   else
     echo >&2 "You must provide a /conf volume"
@@ -189,8 +191,10 @@ fi
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
 # Use su-exec to drop privileges to neo4j user
+# Note that su-exec, despite its name, does not replicate the
+# functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-    su-exec "${user_name}" neo4j console
+    exec su-exec "${user_name}" neo4j console
 else
-    su-exec "${user_name}" "$@"
+    exec su-exec "${user_name}" "$@"
 fi
