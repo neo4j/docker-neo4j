@@ -2,62 +2,38 @@
 
 cmd="$1"
 
-# We intentionally chown /data to root in Dockerfile so we can detect
-# if no volume is mounted
-if [[ "$(stat -c %u /data)" != "0" ]]; then
-  # /data is a volume, is the same uid/gid for neo4j user
-  user_uid="$(stat -c %u /data)"
-  user_gid="$(stat -c %g /data)"
-elif [ -d /conf ] && [[ "${cmd}" == "dump-config" ]]; then
-  # A configuration volume has been mounted and we are dumping config
-  user_uid="$(stat -c %u /conf)"
-  user_gid="$(stat -c %g /conf)"
+# If we're running as root, then run as the neo4j user. Otherwise
+# docker is running with --user and we simply use that user.  Note
+# that su-exec, despite its name, does not replicate the functionality
+# of exec, so we need to use both
+if [ "$(id -u)" = "0" ]; then
+  userid="neo4j"
+  groupid="neo4j"
+  exec_cmd="exec su-exec neo4j"
+else
+  userid="$(id -u)"
+  groupid="$(id -g)"
+  exec_cmd="exec"
 fi
-
-
-# Only add group if it does not already exist which can happen
-#   1. if the docker container is restarted
-#   2. if the mounted directory has group "nobody" for example which is a default group
-# And only add with specific GID if mounted directory
-if [[ "${user_gid:-0}" = 0 ]]; then
-  if ! getent group neo4j >/dev/null; then
-    addgroup -S neo4j
-  fi
-  user_gid=$(getent group neo4j | awk -F ':' '{ print $3 }')
-# Check if a group with that gid already exists, and if so don't add a neo4j group
-elif ! getent group | awk -F ':' '{ print $3 }' | grep -q "${user_gid}"; then
-  addgroup -S -g "${user_gid}" neo4j
-fi
-
-group_name=$(getent group "${user_gid}" | awk -F ':' '{ print $1 }')
-readonly group_name
-
-# Only add user if it does not already exist
-if [[ "${user_uid:-0}" = 0 ]]; then
-  if ! getent passwd neo4j >/dev/null; then
-    adduser -S -H -h /var/lib/neo4j -G "${group_name}" neo4j
-  fi
-  user_uid=$(getent passwd neo4j | awk -F ':' '{ print $3 }')
-elif ! getent passwd | awk -F ':' '{ print $3 }' | grep -q "${user_uid}"; then
-  adduser -S -u "${user_uid}" -H -h /var/lib/neo4j -G "${group_name}" neo4j
-fi
-
-user_name=$(getent passwd "${user_uid}" | awk -F ':' '{ print $1 }')
-readonly user_name
+readonly userid
+readonly groupid
+readonly exec_cmd
 
 # Need to chown the home directory - but a user might have mounted a
-# volume here. So take care not to chown volumes (stuff not owned by
-# root due to our intentional chowning to root in the Dockerfile)
-if [[ "$(stat -c %u /var/lib/neo4j)" = "0" ]]; then
+# volume here (notably a conf volume). So take care not to chown
+# volumes (stuff not owned by neo4j)
+if [[ "$(id -u)" = "0" ]]; then
   # Non-recursive chown for the base directory
-  chown "${user_name}:${group_name}" /var/lib/neo4j
+  chown "${userid}":"${groupid}" /var/lib/neo4j
+  chmod 700 /var/lib/neo4j
 fi
 
 while IFS= read -r -d '' dir
 do
-  if [[ "$(stat -c %u "${dir}")" = "0" ]]; then
+  if [[ "$(id -u)" = "0" ]] && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
     # Using mindepth 1 to avoid the base directory here so recursive is OK
-    chown -R "${user_name}:${group_name}" "${dir}"
+    chown -R "${userid}":"${groupid}" "${dir}"
+    chmod -R 700 "${dir}"
   fi
 done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
 
@@ -65,10 +41,7 @@ done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
 
 if [ "${cmd}" == "dump-config" ]; then
   if [ -d /conf ]; then
-    # Run with neo4j user so we write files with correct permissions
-    # Note that su-exec, despite its name, does not replicate the
-    # functionality of exec, so we need to use both
-    exec su-exec "${user_name}" cp --recursive conf/* /conf
+    ${exec_cmd} cp --recursive conf/* /conf
     exit 0
   else
     echo >&2 "You must provide a /conf volume"
@@ -184,8 +157,9 @@ done
 
 # Chown the data dir now that (maybe) an initial password has been
 # set (this is a file in the data dir)
-if [[ "$(stat -c %u /data)" = "0" ]]; then
-  chown -R "${user_name}:${group_name}" /data
+if [[ "$(id -u)" = "0" ]]; then
+  chmod -R 755 /data
+  chown -R "${userid}":"${groupid}" /data
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
@@ -194,7 +168,7 @@ fi
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-    exec su-exec "${user_name}" neo4j console
+  ${exec_cmd} neo4j console
 else
-    exec su-exec "${user_name}" "$@"
+  ${exec_cmd} "$@"
 fi
