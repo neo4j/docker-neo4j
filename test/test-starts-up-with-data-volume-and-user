@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+readonly cname="neo4j-$(uuidgen)"
+
+# mktemp on OSX by default uses /var/folders/ which is not available to docker
+readonly datadir=$(mktemp --directory --tmpdir=/tmp/)
+GID="$(gid_of "${datadir}")"
+readonly GID
+
+docker_run_with_volume_and_user "$image" "$cname" "${datadir}:/data" "$(id -u):$(id -g)" "NEO4J_AUTH=none"
+readonly ip="$(docker_ip "${cname}")"
+neo4j_wait "${ip}"
+
+if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
+  echo "Skipping: UID checks, code not present pre-3.1"
+  exit 0
+fi
+
+while IFS= read -r -d '' file
+do
+  if [[ "${UID}" != "$(uid_of "${file}")" ]]; then
+    echo >&2 Unexpected UID of "${file}" after running with mounted data volume: "$(uid_of "${file}")" != "${UID}"
+    exit 1
+  fi
+
+  if [[ "${GID}" != "$(gid_of "${file}")" ]]; then
+    echo >&2 Unexpected GID of "${file}" after running with mounted data volume: "$(gid_of "${file}")" != "${GID}"
+    exit 1
+  fi
+done <   <(find "${datadir}" -print0)

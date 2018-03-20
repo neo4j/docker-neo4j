@@ -13,7 +13,7 @@ readonly dir=$(mktemp --directory --tmpdir=/tmp/)
 GID="$(gid_of "${dir}")"
 readonly GID
 
-docker run --rm --volume="${dir}:/conf" "${image}" dump-config
+docker run --rm --volume="${dir}:/conf" --user="$(id -u):$(id -g)" "${image}" dump-config
 
 if [[ "${series}" == "2.3" ]]; then
   if ! [[ -f "${dir}/neo4j.properties" ]]; then
@@ -35,12 +35,12 @@ fi
 while IFS= read -r -d '' file
 do
   if [[ "${UID}" != "$(uid_of "${file}")" ]]; then
-    echo >&2 Unexpected UID of "${file}" after dumping config
+    echo >&2 Unexpected UID of "${file}" after dumping config: "$(uid_of "${file}")" != "${UID}"
     exit 1
   fi
 
   if [[ "${GID}" != "$(gid_of "${file}")" ]]; then
-    echo >&2 Unexpected GID of "${file}" after dumping config
+    echo >&2 Unexpected GID of "${file}" after dumping config: "$(gid_of "${file}")" != "${GID}"
     exit 1
   fi
 done <   <(find "${dir}" -print0)

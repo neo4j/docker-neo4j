@@ -65,7 +65,24 @@ docker_run_with_volume() {
   for env in "$@"; do
     envs+=("--env=${env}")
   done
-  local cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" --volume="${l_volume}" "${l_image}")"
+  local cid
+  cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" --volume="${l_volume}" "${l_image}")"
+  echo "log: tmp/out/${cid}.log"
+  trap "docker_cleanup ${cid}" EXIT
+}
+
+docker_run_with_volume_and_user() {
+  local l_image="$1" l_cname="$2" l_volume="$3" l_user="$4"; shift; shift; shift; shift
+
+  local envs=()
+  if [[ ! "$@" =~ "NEO4J_ACCEPT_LICENSE_AGREEMENT=no" ]]; then
+    envs+=("--env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes")
+  fi
+  for env in "$@"; do
+    envs+=("--env=${env}")
+  done
+  local cid
+  cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" --volume="${l_volume}" --user="${l_user}" "${l_image}")"
   echo "log: tmp/out/${cid}.log"
   trap "docker_cleanup ${cid}" EXIT
 }
