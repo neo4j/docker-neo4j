@@ -11,7 +11,8 @@ setting() {
         fi
     fi
 
-    if [ -n "${value}" ]; then
+    # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
+    if [[ -n ${value} ]] && [[ ! "${setting}" =~ ^NEO4J_[0-9]+.*$ ]]; then
         if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
             sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
         else
