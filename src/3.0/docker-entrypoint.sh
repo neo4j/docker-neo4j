@@ -12,7 +12,7 @@ setting() {
     fi
 
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
-    if [[ -n ${value} ]] && [[ ! "${setting}" =~ ^NEO4J_[0-9]+.*$ ]]; then
+    if [[ -n ${value} ]] && [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
         if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
             sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
         else
@@ -139,7 +139,7 @@ unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
     value=$(echo ${!i})
-    if [[ -n ${value} ]]; then
+    if [[ -n ${value} ]] && [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
         if grep -q -F "${setting}=" conf/neo4j.conf; then
             # Remove any lines containing the setting already
             sed --in-place "/${setting}=.*/d" conf/neo4j.conf
