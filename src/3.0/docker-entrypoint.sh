@@ -12,11 +12,15 @@ setting() {
     fi
 
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
-    if [[ -n ${value} ]] && [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-        if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
-            sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
+    if [[ -n ${value} ]]; then
+        if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
+            if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
+                sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
+            else
+                echo "${setting}=${value}" >>conf/"${file}"
+            fi
         else
-            echo "${setting}=${value}" >>conf/"${file}"
+            echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
     fi
 }
@@ -139,13 +143,17 @@ unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
     value=$(echo ${!i})
-    if [[ -n ${value} ]] && [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-        if grep -q -F "${setting}=" conf/neo4j.conf; then
-            # Remove any lines containing the setting already
-            sed --in-place "/${setting}=.*/d" conf/neo4j.conf
+    if [[ -n ${value} ]]; then
+        if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
+            if grep -q -F "${setting}=" conf/neo4j.conf; then
+                # Remove any lines containing the setting already
+                sed --in-place "/${setting}=.*/d" conf/neo4j.conf
+            fi
+            # Then always append setting to file
+            echo "${setting}=${value}" >> conf/neo4j.conf
+        else
+            echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
-        # Then always append setting to file
-        echo "${setting}=${value}" >> conf/neo4j.conf
     fi
 done
 
