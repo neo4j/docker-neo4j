@@ -100,6 +100,7 @@ docker_compose_cleanup() {
 
 docker_compose_up() {
   local l_image="$1" l_composefile="$2" l_cname="$3" l_rname="$4"; shift; shift; shift; shift;
+
   sed --in-place -e "s|image: .*|image: ${l_image}|g" "${l_composefile}"
   sed --in-place -e "s|container_name: core.*|container_name: ${l_cname}|g" "${l_composefile}"
   sed --in-place -e "s|container_name: read.*|container_name: ${l_rname}|g" "${l_composefile}"
@@ -187,6 +188,15 @@ neo4j_createnode() {
     local auth="--user $2"
   fi
   [[ "201" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} --request POST http://${l_ip}:7474/db/data/node)" ]] || exit 1
+}
+
+neo4j_cypher() {
+  local l_cname="$1"
+  local l_cypher="$2"
+  if [[ -n "${3:-}" ]]; then
+    local l_auth="$3"
+  fi
+  docker exec "${l_cname}" cypher-shell -u "$(echo "${l_auth}" | cut -d / -f 1)" -p "$(echo "${l_auth}" | cut -d / -f 2)" --non-interactive "${l_cypher}"
 }
 
 neo4j_readnode() {
