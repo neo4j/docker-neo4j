@@ -5,6 +5,20 @@ PATH="./build:${PATH}"
 # MacOS specific checks
 if [ "$(uname)" == "Darwin" ] ; then
 
+  # We use temporary directories during testing that need to be
+  # accessible to the Docker daemon. By default on Macs, $TMPDIR
+  # (which mktemp responds to) is set to a user-specific location that
+  # the Docker daemon cannot read from.
+  #
+  # In some environments, such as TeamCity, $TMPDIR is intentionally
+  # pointed elsewhere, so we only want to override the default
+  # value. (We don't currently run these builds on Macs, but you never
+  # know.) This default seems to be in /private/var/folders on some
+  # Macs and /var/folders on others, so we accommodate both.
+  if [[ "${TMPDIR}" == */var/folders* ]]; then
+    export TMPDIR=/tmp
+  fi
+
   echo "Setting PATH with MacOS specific locations"
   export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
   export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
