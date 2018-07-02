@@ -7,8 +7,7 @@ readonly image="$1"
 readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
-# mktemp on OSX by default uses /var/folders/ which is not available to docker
-readonly dir=$(mktemp --directory --tmpdir=/tmp/)
+readonly dir=$(mktemp --directory)
 
 GID="$(gid_of "${dir}")"
 readonly GID
