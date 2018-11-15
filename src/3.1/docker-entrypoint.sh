@@ -155,7 +155,7 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
             if grep -q -F "${setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
                 # Remove any lines containing the setting already
-                sed --in-place "/${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
+                sed --in-place "/^${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
             fi
             # Then always append setting to file
             echo "${setting}=${value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
