@@ -8,7 +8,8 @@ readonly series="$2"
 readonly edition="$3"
 
 not_supported_series=3.6
-if (( $(echo "${series} >= $not_supported_series" |bc -l) )) || [[ "${series}" == "2.3" ]]; then
+
+if (( ${series%%.*} >= ${not_supported_series%%.*} && ${series##*.} >= ${not_supported_series##*.} )) || [[ "${series}" == "2.3" ]]; then
   echo "Skipping: High-Availability Test not compatible pre 3.0 and removed post 3.5"
   exit 0
 fi
