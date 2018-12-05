@@ -27,6 +27,18 @@ all: out/community/.sentinel out/enterprise/.sentinel
 test: test-community test-enterprise
 .PHONY: test
 
+package: package-community package-enterprise
+
+package-community: tmp/.image-id-community
+> mkdir -p out
+> docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)
+> docker save neo4j:$(NEO4J_VERSION) > out/neo4j-community-$(NEO4J_VERSION)-docker-complete.tar
+
+package-enterprise: tmp/.image-id-enterprise
+> mkdir -p out
+> docker tag $$(cat $<) neo4j-enterprise:$(NEO4J_VERSION)
+> docker save neo4j-enterprise:$(NEO4J_VERSION) > out/neo4j-enterprise-$(NEO4J_VERSION)-docker-complete.tar
+
 out/%/.sentinel: tmp/image-%/.sentinel tmp/.tests-pass-%
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
