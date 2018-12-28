@@ -130,7 +130,7 @@ neo4j_wait() {
 
   while true; do
     [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474)" ]] && break
-    [[ "${SECONDS}" -ge "${end}" ]] && exit 1
+    [[ "${SECONDS}" -ge "${end}" ]] && echo "timed out waiting for neo4j" && exit 1
     sleep 1
   done
 }
