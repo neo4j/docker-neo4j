@@ -19,7 +19,6 @@ if [[ "${series}" == "2.3" ]]; then
 fi
 
 . "$(dirname "$0")/helpers.sh"
-readonly cname="neo4j-$(uuidgen)"
 
 readonly dir=$(mktemp --directory)
 touch "${dir}/neo4j.conf"
