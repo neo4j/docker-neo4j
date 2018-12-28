@@ -12,6 +12,7 @@ readonly dir=$(mktemp --directory)
 GID="$(gid_of "${dir}")"
 readonly GID
 
+echo "dumping config to ${dir}"
 docker run --rm --volume="${dir}:/conf" --user="$(id -u):$(id -g)" "${image}" dump-config
 
 if [[ "${series}" == "2.3" ]]; then

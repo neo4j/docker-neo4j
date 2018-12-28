@@ -11,9 +11,10 @@ readonly cname="neo4j-$(uuidgen)"
 
 docker_run "$image" "$cname" "NEO4J_1a=1 NEO4J_AUTH=none"
 readonly ip="$(docker_ip "${cname}")"
+echo "waiting for neo4j"
 neo4j_wait "${ip}"
 
-stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
+stderr="$( (docker logs "${cname}" 1>/dev/null) 2>&1 )"
 
 if [[ "${series}" == "2.3" ]]; then
   expected_err=""
