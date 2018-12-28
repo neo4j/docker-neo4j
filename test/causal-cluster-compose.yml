@@ -31,6 +31,7 @@ services:
       - NEO4J_dbms_mode=CORE
       - NEO4J_causalClustering_expectedCoreClusterSize=3
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+      - NEO4J_causalClustering_refuseToBeLeader=true
 
   core3:
     image: neo4j:3.1-enterprise
@@ -47,6 +48,7 @@ services:
       - NEO4J_causalClustering_raftAdvertisedAddress=core3:7000
       - NEO4J_causalClustering_expectedCoreClusterSize=3
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
+      - NEO4J_causalClustering_refuseToBeLeader=true
 
   readreplica1:
     image: neo4j:3.1-enterprise
