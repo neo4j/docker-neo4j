@@ -26,7 +26,8 @@ fi
 
 # Make a temp copy of compose file
 mkdir -p tmp/out
-readonly compose_file=$(mktemp tmp/out/XXXXXXXX.yml)
+readonly logs_id="$(pwgen -1 --no-capitalize 8 1)"
+readonly compose_file="tmp/out/${logs_id}.yml"
 
 cp "$(dirname "$0")/ha-cluster-compose.yml" "${compose_file}"
 
@@ -37,8 +38,9 @@ fi
 
 readonly cname="core-$(uuidgen)"
 readonly rname="slave-$(uuidgen)"
+readonly logs_dir="tmp/out/${logs_id}"
 
-docker_compose_up "${image}" "${compose_file}" "${cname}" "${rname}"
+docker_compose_up "${image}" "${compose_file}" "${cname}" "${rname}" "$(pwd)/${logs_dir}"
 readonly master_ip="$(docker_compose_ip "${cname}")"
 readonly slave_ip="$(docker_compose_ip "${rname}")"
 # Make sure master and read replica are up

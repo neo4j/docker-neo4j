@@ -99,12 +99,22 @@ docker_compose_cleanup() {
 }
 
 docker_compose_up() {
-  local l_image="$1" l_composefile="$2" l_cname="$3" l_rname="$4"; shift; shift; shift; shift;
+  local l_image="$1" l_composefile="$2" l_cname="$3" l_rname="$4"; logs_d="$5"; shift; shift; shift; shift;
+
+  # Create the log directories. If we let docker create them then they will be owned by docker not our current user
+  # TODO: use some jq/yq magic to read out the volumes from the docker compose file
+  mkdir --parents "${logs_d}/core1"
+  mkdir --parents "${logs_d}/core2"
+  mkdir --parents "${logs_d}/core3"
+  mkdir --parents "${logs_d}/readreplica1"
+
   sed --in-place -e "s|image: .*|image: ${l_image}|g" "${l_composefile}"
   sed --in-place -e "s|container_name: core.*|container_name: ${l_cname}|g" "${l_composefile}"
   sed --in-place -e "s|container_name: read.*|container_name: ${l_rname}|g" "${l_composefile}"
+  sed --in-place -e "s|LOGS_DIR|${logs_d}|g" "${l_composefile}"
+  sed --in-place -e "s|USER_INFO|$(id -u):$(id -g)|g" "${l_composefile}"
 
-  echo "logs: ${l_composefile}.log"
+  echo "logs: ${l_composefile}.log and ${logs_dir}"
 
   docker-compose --file "${l_composefile}" --project-name neo4jcomposetest up -d
   trap "docker_compose_cleanup ${l_composefile}" EXIT
@@ -209,4 +219,31 @@ uid_of() {
 
 gid_of() {
   stat -c %g "$1"
+}
+
+get_completed_container_output() {
+    # Gets the log output for a container that we want to run to completion
+    # also rms the container
+    local container_id="$1"; shift;
+    local output_file="$1"; shift;
+    local deadline="$((SECONDS+60))"
+    readonly deadline
+    while true; do
+        [[ "${SECONDS}" -ge "${deadline}" ]] && echo "timed out waiting for container to finish" && exit 1
+        sleep 1
+        # Wait until the container isn't running any more
+        if ! docker top "${container_id}" &> /dev/null; then
+
+            ( docker logs "${container_id}" || echo "no logs found" ) > "${output_file}.stdout" 2>"${output_file}.stderr"
+
+            if [[ "$(docker inspect "${container_id}" --format='{{.State.ExitCode}}')" -ne 0 ]]; then
+                cat "${output_file}."*
+                echo "ERROR: container exited with an error code"
+                exit 1
+            fi
+
+            docker rm "${container_id}" || echo "error removing container"
+            break
+        fi
+    done
 }
