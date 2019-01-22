@@ -73,7 +73,8 @@ assert_backup_success() {
     fi
 }
 
-if [ "${series}" == "3.6" ] then
+if [["${series}" == "3.6"]]; then
+    echo "use --protocol argument for backups in 3.6"
     backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
                     --user="$(id -u):$(id -g)" \
                     --volume="${backup_dir}":/backup \
