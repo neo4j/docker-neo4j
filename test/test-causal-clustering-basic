@@ -73,19 +73,34 @@ assert_backup_success() {
     fi
 }
 
-backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
-                --user="$(id -u):$(id -g)" \
-                --volume="${backup_dir}":/backup \
-                --volume="$(pwd)/${backup_logs_dir}":/logs \
-                --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
-                --env=NEO4J_DEBUG=yes \
-                "${image}" neo4j-admin backup \
-                --protocol=catchup \
-                --from="core3:6362" \
-                --backup-dir=/backup \
-                --database="graph.db" \
-                --check-consistency=true \
-                --name="${backup_name}")"
+if [ "${series}" == "3.6" ] then
+    backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
+                    --user="$(id -u):$(id -g)" \
+                    --volume="${backup_dir}":/backup \
+                    --volume="$(pwd)/${backup_logs_dir}":/logs \
+                    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+                    --env=NEO4J_DEBUG=yes \
+                    "${image}" neo4j-admin backup \
+                    --protocol=catchup \
+                    --from="core3:6362" \
+                    --backup-dir=/backup \
+                    --database="graph.db" \
+                    --check-consistency=true \
+                    --name="${backup_name}")"
+else
+    backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
+                    --user="$(id -u):$(id -g)" \
+                    --volume="${backup_dir}":/backup \
+                    --volume="$(pwd)/${backup_logs_dir}":/logs \
+                    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+                    --env=NEO4J_DEBUG=yes \
+                    "${image}" neo4j-admin backup \
+                    --from="core3:6362" \
+                    --backup-dir=/backup \
+                    --database="graph.db" \
+                    --check-consistency=true \
+                    --name="${backup_name}")"
+fi
 
 get_completed_container_output "${backup_container}" "${backup_output}"
 assert_backup_success
