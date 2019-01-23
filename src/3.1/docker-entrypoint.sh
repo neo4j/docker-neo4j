@@ -165,6 +165,9 @@ done
 if [[ "$(id -u)" = "0" ]]; then
   chmod -R 755 /data
   chown -R "${userid}":"${groupid}" /data
+  # Chown the log dir also
+  chmod -R 755 /logs
+  chown -R "${userid}":"${groupid}" /logs
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
