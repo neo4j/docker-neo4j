@@ -35,11 +35,11 @@ readonly image="$1"
 readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
-readonly datadir=$(mktemp --directory)
-GID="$(gid_of "${datadir}")"
+readonly data_and_logs_dir=$(mktemp --directory)
+GID="$(gid_of "${data_and_logs_dir}")"
 readonly GID
 
-docker_run_with_data_and_logs_volumes "$image" "$cname" "${datadir}" "NEO4J_AUTH=none"
+docker_run_with_data_and_logs_volumes "$image" "$cname" "${data_and_logs_dir}" "NEO4J_AUTH=none"
 readonly ip="$(docker_ip "${cname}")"
 neo4j_wait "${ip}"
 
@@ -59,4 +59,4 @@ do
     echo >&2 "Did not expect GID of ${file} to be root (0) after running with mounted data volume"
     exit 1
   fi
-done <   <(find "${datadir}" -print0)
+done <   <(find "${data_and_logs_dir}" -print0)
