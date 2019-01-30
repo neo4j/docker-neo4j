@@ -20,12 +20,12 @@ RUN apk add --no-cache --quiet \
     && rm ${NEO4J_TARBALL} \
     && mv /var/lib/neo4j/data /data \
     && chown -R neo4j:neo4j /data \
-    && chmod -R 777 /data \
+    && chmod -R 755 /data \
     && mv /var/lib/neo4j/logs /logs \
     && chown -R neo4j:neo4j /logs \
-    && chmod -R 777 /logs \
+    && chmod -R 755 /logs \
     && chown -R neo4j:neo4j /var/lib/neo4j \
-    && chmod -R 777 /var/lib/neo4j \
+    && chmod -R 755 /var/lib/neo4j \
     && ln -s /data /var/lib/neo4j/data \
     && ln -s /logs /var/lib/neo4j/logs \
     && apk del curl
@@ -34,8 +34,7 @@ ENV PATH /var/lib/neo4j/bin:$PATH
 
 WORKDIR /var/lib/neo4j
 
-VOLUME /data
-VOLUME /logs
+VOLUME /data /logs
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
