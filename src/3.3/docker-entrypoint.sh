@@ -215,11 +215,26 @@ done
 # Chown the data dir now that (maybe) an initial password has been
 # set (this is a file in the data dir)
 if running_as_root; then
-  chmod -R 755 /data
+  chmod -R 777 /data
   chown -R "${userid}":"${groupid}" /data
-  # chown the log dir also
-  chmod -R 755 /logs
-  chown -R "${userid}":"${groupid}" /logs
+fi
+
+# if we're running as root and the logs directory is not writable by the neo4j user, then chown it.
+# this situation happens if no user is passed to docker run and the /logs directory is mounted.
+if running_as_root && [[ "$(stat -c %U /logs)" != "neo4j" ]]; then
+#if [[ $(stat -c %u /logs) != $(id -u "${userid}") ]]; then
+    echo "/logs directory is not writable. Changing the directory owner to ${userid}:${groupid}"
+    # chown the log dir if it's not writable
+    chmod -R 777 /logs
+    chown -R "${userid}":"${groupid}" /logs
+fi
+
+# If we're running as a non-default user and we can't write to the logs directory then user needs to change directory permissions manually.
+# This happens if a user is passed to docker run and an unwritable log directory is mounted.
+if ! running_as_root && [[ ! -w /logs ]]; then
+    echo "User does not have write permissions to mounted log directory."
+    echo "Manually grant write permissions for the directory and try again."
+    exit 1
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
