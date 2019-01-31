@@ -2,11 +2,16 @@
 
 cmd="$1"
 
+function running_as_root
+{
+    test "$(id -u)" = "0"
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
 # of exec, so we need to use both
-if [ "$(id -u)" = "0" ]; then
+if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   exec_cmd="exec su-exec neo4j"
@@ -22,7 +27,7 @@ readonly exec_cmd
 # Need to chown the home directory - but a user might have mounted a
 # volume here (notably a conf volume). So take care not to chown
 # volumes (stuff not owned by neo4j)
-if [[ "$(id -u)" = "0" ]]; then
+if running_as_root; then
   # Non-recursive chown for the base directory
   chown "${userid}":"${groupid}" /var/lib/neo4j
   chmod 700 /var/lib/neo4j
@@ -30,7 +35,7 @@ fi
 
 while IFS= read -r -d '' dir
 do
-  if [[ "$(id -u)" = "0" ]] && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
+  if running_as_root && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
     # Using mindepth 1 to avoid the base directory here so recursive is OK
     chown -R "${userid}":"${groupid}" "${dir}"
     chmod -R 700 "${dir}"
@@ -209,9 +214,27 @@ done
 
 # Chown the data dir now that (maybe) an initial password has been
 # set (this is a file in the data dir)
-if [[ "$(id -u)" = "0" ]]; then
-  chmod -R 755 /data
+if running_as_root; then
+  chmod -R 777 /data
   chown -R "${userid}":"${groupid}" /data
+fi
+
+# if we're running as root and the logs directory is not writable by the neo4j user, then chown it.
+# this situation happens if no user is passed to docker run and the /logs directory is mounted.
+if running_as_root && [[ "$(stat -c %U /logs)" != "neo4j" ]]; then
+#if [[ $(stat -c %u /logs) != $(id -u "${userid}") ]]; then
+    echo "/logs directory is not writable. Changing the directory owner to ${userid}:${groupid}"
+    # chown the log dir if it's not writable
+    chmod -R 777 /logs
+    chown -R "${userid}":"${groupid}" /logs
+fi
+
+# If we're running as a non-default user and we can't write to the logs directory then user needs to change directory permissions manually.
+# This happens if a user is passed to docker run and an unwritable log directory is mounted.
+if ! running_as_root && [[ ! -w /logs ]]; then
+    echo "User does not have write permissions to mounted log directory."
+    echo "Manually grant write permissions for the directory and try again."
+    exit 1
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
