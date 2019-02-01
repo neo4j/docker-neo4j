@@ -29,8 +29,8 @@ readonly exec_cmd
 # volumes (stuff not owned by neo4j)
 if running_as_root; then
   # Non-recursive chown for the base directory
-  chown "${userid}":"${groupid}" /var/lib/neo4j
-  chmod 700 /var/lib/neo4j
+  chown "${userid}":"${groupid}" "${NEO4J_HOME}"
+  chmod 700 "${NEO4J_HOME}"
 fi
 
 while IFS= read -r -d '' dir
@@ -40,14 +40,14 @@ do
     chown -R "${userid}":"${groupid}" "${dir}"
     chmod -R 700 "${dir}"
   fi
-done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
+done <   <(find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -print0)
 
 # Data dir is chowned later
 
 if [[ "${cmd}" != *"neo4j"* ]]; then
   if [ "${cmd}" == "dump-config" ]; then
     if [ -d /conf ]; then
-      ${exec_cmd} cp --recursive /var/lib/neo4j/conf/* /conf
+      ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
       exit 0
     else
       echo >&2 "You must provide a /conf volume"
@@ -151,7 +151,7 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 
 if [ -d /conf ]; then
-    find /conf -type f -exec cp {} /var/lib/neo4j/conf \;
+    find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
@@ -200,12 +200,12 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            if grep -q -F "${setting}=" /var/lib/neo4j/conf/neo4j.conf; then
+            if grep -q -F "${setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
                 # Remove any lines containing the setting already
-                sed --in-place "/${setting}=.*/d" /var/lib/neo4j/conf/neo4j.conf
+                sed --in-place "/${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
             fi
             # Then always append setting to file
-            echo "${setting}=${value}" >> /var/lib/neo4j/conf/neo4j.conf
+            echo "${setting}=${value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
         else
             echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi

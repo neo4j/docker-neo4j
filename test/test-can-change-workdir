@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+
+[[ -n "${TRACE:-}" ]] && set -o xtrace
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly cname="neo4j-$(uuidgen)"
+readonly expected_work_dir="/tmp"
+
+docker_run_with_args "$image" "$cname" "--env=NEO4J_AUTH=none" "--workdir "${expected_work_dir}""
+
+readonly ip="$(docker_ip "${cname}")"
+echo "checking docker working directory using:"
+echo "docker exec "${cname}" pwd"
+actual_work_dir=$(docker exec "${cname}" pwd)
+neo4j_wait "${ip}"
+
+if [[ "${actual_work_dir}" != "${expected_work_dir}" ]]; then
+    echo "Expected workdir to be "${expected_work_dir}" but instead was "${actual_work_dir}""
+    exit 1
+fi
+
+stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
+if [[ "${stderr}" != "" ]]; then
+    echo "Unexpected output from container:"
+    echo "${stderr}"
+    exit 1
+fi
