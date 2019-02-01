@@ -22,8 +22,6 @@ docker_run_with_data_and_logs_volumes() {
   done
   local cid
   cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" \
-  --publish=7474:7474 \
-  --publish=7687:7687 \
   --volume="${l_volumedir}"/data:/data \
   --volume="${l_volumedir}"/logs:/logs \
   "${l_image}")"
