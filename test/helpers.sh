@@ -13,6 +13,7 @@ trap 'echo >&2 $errmsg trap on error \(rc=${PIPESTATUS[@]}\) near line $LINENO' 
 
 EXEC=(docker exec --interactive "${NETWORK_CONTAINER:?Network container name unset}")
 CURL=(curl --silent --write-out '%{http_code}' --output /dev/null --connect-timeout 10)
+CYPHER_CURL=(curl --silent --connect-timeout 10 -H accept:application/json -H content-type:application/json)
 
 docker_cleanup() {
   local cid="$1"
@@ -196,7 +197,11 @@ neo4j_createnode() {
   if [[ -n "${2:-}" ]]; then
     local auth="--user $2"
   fi
-  [[ "201" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} --request POST http://${l_ip}:7474/db/data/node)" ]] || exit 1
+
+  # create node 0
+  RESPONSE=$("${EXEC[@]}" "${CYPHER_CURL[@]}" ${auth:-} -d '{"statements":[{"statement":"CREATE (n) RETURN n"}]}' http://${l_ip}:7474/db/data/transaction/commit)
+  # this is not so elegant way how to figure out if the response contains the node without parsing the JSON
+  [[ $RESPONSE == *'"id":0'* ]] || exit 1
 }
 
 neo4j_readnode() {
@@ -207,7 +212,10 @@ neo4j_readnode() {
     local auth="--user $2"
   fi
   while true; do
-    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474/db/data/node/0)" ]] && break
+    # check if node 0 is present
+    RESPONSE=$("${EXEC[@]}" "${CYPHER_CURL[@]}" ${auth:-} -d '{"statements":[{"statement":"MATCH (n) WHERE ID(n)=0 RETURN n"}]}' http://${l_ip}:7474/db/data/transaction/commit)
+    # this is not so elegant way how to figure out if the response contains the node without parsing the JSON
+    [[ $RESPONSE == *'"id":0'* ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
