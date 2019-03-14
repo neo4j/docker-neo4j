@@ -204,6 +204,16 @@ neo4j_createnode() {
   [[ $RESPONSE == *'"id":0'* ]] || exit 1
 }
 
+neo4j_createnode_pre_40() {
+  docker_ensure_network_container
+  local l_ip="$1" end="$((SECONDS+30))"
+  if [[ -n "${2:-}" ]]; then
+    local auth="--user $2"
+  fi
+
+  [[ "201" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} --request POST http://${l_ip}:7474/db/data/node)" ]] || exit 1
+}
+
 neo4j_readnode() {
   docker_ensure_network_container
   local l_time="${3:-5}"
@@ -216,6 +226,20 @@ neo4j_readnode() {
     RESPONSE=$("${EXEC[@]}" "${CYPHER_CURL[@]}" ${auth:-} -d '{"statements":[{"statement":"MATCH (n) WHERE ID(n)=0 RETURN n"}]}' http://${l_ip}:7474/db/data/transaction/commit)
     # this is not so elegant way how to figure out if the response contains the node without parsing the JSON
     [[ $RESPONSE == *'"id":0'* ]] && break
+    [[ "${SECONDS}" -ge "${end}" ]] && exit 1
+    sleep 1
+  done
+}
+
+neo4j_readnode_pre_40() {
+  docker_ensure_network_container
+  local l_time="${3:-5}"
+  local l_ip="$1" end="$((SECONDS+${l_time}))"
+  if [[ -n "${2:-}" ]]; then
+    local auth="--user $2"
+  fi
+  while true; do
+    [[ "200" = "$("${EXEC[@]}" "${CURL[@]}" ${auth:-} http://${l_ip}:7474/db/data/node/0)" ]] && break
     [[ "${SECONDS}" -ge "${end}" ]] && exit 1
     sleep 1
   done
