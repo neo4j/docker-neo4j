@@ -94,8 +94,6 @@ fi
 : ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
 : ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
 : ${NEO4J_dbms_connectors_default__advertised__address:=${NEO4J_dbms_connectors_defaultAdvertisedAddress:-}}
-: ${NEO4J_ha_server__id:=${NEO4J_ha_serverId:-}}
-: ${NEO4J_ha_initial__hosts:=${NEO4J_ha_initialHosts:-}}
 : ${NEO4J_causal__clustering_expected__core__cluster__size:=${NEO4J_causalClustering_expectedCoreClusterSize:-}}
 : ${NEO4J_causal__clustering_initial__discovery__members:=${NEO4J_causalClustering_initialDiscoveryMembers:-}}
 : ${NEO4J_causal__clustering_discovery__listen__address:=${NEO4J_causalClustering_discoveryListenAddress:-"0.0.0.0:5000"}}
@@ -109,8 +107,8 @@ fi
 unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
     NEO4J_dbms_memory_heap_maxSize NEO4J_dbms_memory_heap_maxSize \
     NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
-    NEO4J_dbms_connectors_defaultAdvertisedAddress NEO4J_ha_serverId \
-    NEO4J_ha_initialHosts NEO4J_causalClustering_expectedCoreClusterSize \
+    NEO4J_dbms_connectors_defaultAdvertisedAddress \
+    NEO4J_causalClustering_expectedCoreClusterSize \
     NEO4J_causalClustering_initialDiscoveryMembers \
     NEO4J_causalClustering_discoveryListenAddress \
     NEO4J_causalClustering_discoveryAdvertisedAddress \
@@ -129,8 +127,6 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 : ${NEO4J_dbms_connector_http_listen__address:=0.0.0.0:7474}
 : ${NEO4J_dbms_connector_https_listen__address:=0.0.0.0:7473}
 : ${NEO4J_dbms_connector_bolt_listen__address:=0.0.0.0:7687}
-: ${NEO4J_ha_host_coordination:=$(hostname):5001}
-: ${NEO4J_ha_host_data:=$(hostname):6001}
 : ${NEO4J_causal__clustering_discovery__listen__address:=0.0.0.0:5000}
 : ${NEO4J_causal__clustering_discovery__advertised__address:=$(hostname):5000}
 : ${NEO4J_causal__clustering_transaction__listen__address:=0.0.0.0:6000}
