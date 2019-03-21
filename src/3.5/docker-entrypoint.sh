@@ -35,7 +35,6 @@ FAIL_MESSAGE
 )
 
 function check_write_or_fail (){
-  id
   _directory=${1}
   if [ -d "${_directory}" ]; then :;else
     echo >&2 "Not a directory: ${_directory}"
@@ -43,10 +42,10 @@ function check_write_or_fail (){
   fi
 
   if running_as_root; then
-    CHECKFILE=$(su -s /bin/bash ${userid} -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo >&2 ${_directory} ${fail_message}; exit 1;}
+    CHECKFILE=$(su -s /bin/bash ${userid} -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo -e >&2 "\n${_directory} ${fail_message}"; exit 1;}
     rm ${CHECKFILE}
   else
-    CHECKFILE=$(/bin/bash -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo >&2 ${_directory} ${fail_message}; exit 1;}
+    CHECKFILE=$(/bin/bash -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo -e >&2 "\n${_directory} ${fail_message}"; exit 1;}
     rm ${CHECKFILE}
   fi
 }
@@ -210,7 +209,8 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
-for _dir in 'ssl plugins logs import data logs'; do
+directories_to_check="ssl plugins logs import data logs"
+for _dir in $directories_to_check; do
   if [ -d "/${_dir}" ]; then
       check_write_or_fail "/${_dir}"
   fi
