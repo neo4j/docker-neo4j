@@ -182,7 +182,7 @@ if [ "${cmd}" == "neo4j" ]; then
             exit 1
         fi
         # Will exit with error if users already exist (and print a message explaining that)
-        bin/neo4j-admin set-initial-password "${password}" || true
+        su -c "bin/neo4j-admin set-initial-password '${password}'" -s /bin/sh ${userid} || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
