@@ -16,7 +16,7 @@ expected_40_err==`echo -e "WARNING: An illegal reflective access operation has o
 stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
 if [[ "${stderr}" != "" ]]; then
     if [[ "${series}" == "4.0" ]]; then
-	if [[ "${stderr}" == expected_40_err ]]
+	if [[ "${stderr}" == expected_40_err ]]; then
           echo "Expected jdk11 warnings are tolerated for 4.0"
         else
           echo "Unexpected output from container:"
