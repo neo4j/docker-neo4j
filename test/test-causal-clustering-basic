@@ -88,6 +88,19 @@ if [[ "${series}" == "3.6" ]]; then
                     --database="graph.db" \
                     --check-consistency=true \
                     --name="${backup_name}")"
+elif  [[ "${series}" == "4.0" ]]; then
+    echo "no --name argument for backups in 4.0"
+    backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
+                    --user="$(id -u):$(id -g)" \
+                    --volume="${backup_dir}":/backup \
+                    --volume="$(pwd)/${backup_logs_dir}":/logs \
+                    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+                    --env=NEO4J_DEBUG=yes \
+                    "${image}" neo4j-admin backup \
+                    --from="core3:6362" \
+                    --backup-dir=/backup \
+                    --database="graph.db" \
+                    --check-consistency=true")"
 else
     backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
                     --user="$(id -u):$(id -g)" \
