@@ -11,10 +11,21 @@ readonly cname="neo4j-$(uuidgen)"
 docker_run "$image" "$cname" "NEO4J_AUTH=none"
 readonly ip="$(docker_ip "${cname}")"
 neo4j_wait "${ip}"
+expected_40_err==`echo -e "WARNING: An illegal reflective access operation has occurred\nWARNING: Illegal reflective access by org.eclipse.collections.impl.utility.ArrayListIterate (file:/var/lib/neo4j/lib/eclipse-collections-9.2.0.jar) to field java.util.ArrayList.elementData\nWARNING: Please consider reporting this to the maintainers of org.eclipse.collections.impl.utility.ArrayListIterate\nWARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations\nWARNING: All illegal access operations will be denied in a future release"`
 
 stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
 if [[ "${stderr}" != "" ]]; then
-    echo "Unexpected output from container:"
-    echo "${stderr}"
-    exit 1
+    if [[ "${series}" == "4.0" ]]; then
+	if [[ "${stderr}" == expected_40_err ]]
+          echo "Expected jdk11 warnings are tolerated for 4.0"
+        else
+          echo "Unexpected output from container:"
+          echo "${stderr}"
+          exit 1
+        fi
+    else
+          echo "Unexpected output from container:"
+          echo "${stderr}"
+          exit 1
+    fi
 fi
