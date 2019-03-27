@@ -99,7 +99,7 @@ elif  [[ "${series}" == "4.0" ]]; then
                     "${image}" neo4j-admin backup \
                     --from="core3:6362" \
                     --backup-dir=/backup \
-                    --database="graph.db" \
+                    --database="neo4j" \
                     --check-consistency=true")")"
 else
     backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
