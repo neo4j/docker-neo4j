@@ -100,7 +100,7 @@ elif  [[ "${series}" == "4.0" ]]; then
                     --from="core3:6362" \
                     --backup-dir=/backup \
                     --database="graph.db" \
-                    --check-consistency=true")"
+                    --check-consistency=true")")"
 else
     backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
                     --user="$(id -u):$(id -g)" \
