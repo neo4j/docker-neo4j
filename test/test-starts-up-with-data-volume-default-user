@@ -7,7 +7,7 @@ readonly image="$1"
 readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
-readonly datadir=$(mktemp --directory)
+readonly datadir=$(mktemp --directory --tmpdir=/tmp/)
 GID="$(gid_of "${datadir}")"
 readonly GID
 

@@ -23,7 +23,7 @@ else
 fi
 
 if [[ "${series}" == "4.0" ]]; then
-  expected_err=`echo -e "WARNING: 1a not written to conf file because settings that start with a number are not permitted\nWARNING: An illegal reflective access operation has occurred\nWARNING: Illegal reflective access by org.eclipse.collections.impl.utility.ArrayListIterate (file:/var/lib/neo4j/lib/eclipse-collections-9.2.0.jar) to field java.util.ArrayList.elementData\nWARNING: Please consider reporting this to the maintainers of org.eclipse.collections.impl.utility.ArrayListIterate\nWARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations\nWARNING: All illegal access operations will be denied in a future release"`
+  expected_err=`echo -e "WARNING: 1a not written to conf file because settings that start with a number are not permitted\nPicked up JAVA_TOOL_OPTIONS: \nWARNING: An illegal reflective access operation has occurred\nWARNING: Illegal reflective access by org.eclipse.collections.impl.utility.ArrayListIterate (file:/var/lib/neo4j/lib/eclipse-collections-9.2.0.jar) to field java.util.ArrayList.elementData\nWARNING: Please consider reporting this to the maintainers of org.eclipse.collections.impl.utility.ArrayListIterate\nWARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations\nWARNING: All illegal access operations will be denied in a future release"`
 fi
 
 

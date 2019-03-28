@@ -1,4 +1,4 @@
-FROM dperezcabrera/openjdk11-alpine
+FROM adoptopenjdk/openjdk11:alpine
 
 RUN addgroup -S neo4j && adduser -S -H -h /var/lib/neo4j -G neo4j neo4j
 
