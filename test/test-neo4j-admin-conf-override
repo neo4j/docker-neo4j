@@ -20,7 +20,7 @@ fi
 
 . "$(dirname "$0")/helpers.sh"
 
-readonly dir=$(mktemp --directory)
+readonly dir=$(mktemp --directory --tmpdir=/tmp/)
 touch "${dir}/neo4j.conf"
 
 docker run --rm --volume="${dir}:/var/lib/neo4j/conf" \
