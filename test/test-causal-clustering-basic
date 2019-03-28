@@ -49,7 +49,7 @@ neo4j_readnode "${read_ip}" "neo4j:neo"
 echo "Successfully wrote and read back from the causal cluster"
 
 # take a backup using the catchup protocol
-readonly backup_dir="$(mktemp --directory)"
+readonly backup_dir="$(mktemp --directory --tmpdir=/tmp/)"
 readonly backup_logs_dir="${logs_dir}/backup"
 mkdir --parents "${backup_logs_dir}"
 readonly backup_output="${backup_logs_dir}/neo4j-admin"
@@ -66,10 +66,18 @@ assert_backup_success() {
         echo "No backup files found in backup directory ${backup_dir}"
         exit 1
     fi
-    if [[ "$(ls "${backup_dir}/${backup_name}" | wc -l)" -lt 1 ]]; then
-        cat "${backup_output}."*
-        echo "No backup files found in backup directory ${backup_dir}/${backup_name}"
-        exit 1
+    if  [[ "${series}" == "4.0" ]]; then
+        if [[ "$(ls "${backup_dir}/neo4j" | wc -l)" -lt 1 ]]; then
+          cat "${backup_output}."*
+          echo "No backup files found in backup directory ${backup_dir}/neo4j"
+          exit 1
+        fi
+    else
+        if [[ "$(ls "${backup_dir}/${backup_name}" | wc -l)" -lt 1 ]]; then
+            cat "${backup_output}."*
+            echo "No backup files found in backup directory ${backup_dir}/${backup_name}"
+            exit 1
+        fi
     fi
 }
 
@@ -77,7 +85,7 @@ if [[ "${series}" == "3.6" ]]; then
     echo "use --protocol argument for backups in 3.6"
     backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
                     --user="$(id -u):$(id -g)" \
-                    --volume="${backup_dir}":/backup/neo4j \
+                    --volume="${backup_dir}":/backup \
                     --volume="$(pwd)/${backup_logs_dir}":/logs \
                     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
                     --env=NEO4J_DEBUG=yes \
@@ -128,7 +136,7 @@ echo "Checking that we can restore a backup"
 readonly restore_logs_dir="${logs_dir}/restore"
 mkdir --parents "${restore_logs_dir}"
 readonly restore_output="${restore_logs_dir}/neo4j-admin"
-readonly restore_dir="$(mktemp --directory)"
+readonly restore_dir="$(mktemp --directory --tmpdir=/tmp/)"
 
 assert_restore_success() {
     if [[ "$(ls "${restore_dir}" | wc -l)" -lt 1 ]]; then
@@ -136,23 +144,45 @@ assert_restore_success() {
         echo "No restore files found in restore directory ${restore_dir}"
         exit 1
     fi
-    if [[ "$(ls "${restore_dir}/databases/graph.db/" | wc -l)" -lt 1 ]]; then
-        cat "${restore_output}."*
-        echo "No backup files found in restore directory ${restore_dir}/databases/graph.db/"
-        exit 1
+
+    if  [[ "${series}" == "4.0" ]]; then
+        if [[ "$(ls "${restore_dir}/databases/neo4j/" | wc -l)" -lt 1 ]]; then
+            cat "${restore_output}."*
+            echo "No backup files found in restore directory ${restore_dir}/databases/neo4j/"
+            exit 1
+        fi
+    else
+        if  [[ "$(ls "${restore_dir}/databases/graph.db/" | wc -l)" -lt 1 ]]; then
+            cat "${restore_output}."*
+            echo "No backup files found in restore directory ${restore_dir}/databases/graph.db/"
+            exit 1
+        fi
     fi
 }
 
-restore_container="$(docker run -d \
-                --user="$(id -u):$(id -g)" \
-                --volume="${backup_dir}":/backup \
-                --volume="${restore_dir}":/data \
-                --volume="$(pwd)/${restore_logs_dir}":/logs \
-                --env=NEO4J_DEBUG=yes \
-                --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
-                "${image}" neo4j-admin restore \
-                --from="/backup/${backup_name}" \
-                --database="graph.db")"
+if  [[ "${series}" == "4.0" ]]; then
+    restore_container="$(docker run -d \
+                    --user="$(id -u):$(id -g)" \
+                    --volume="${backup_dir}":/backup \
+                    --volume="${restore_dir}":/data \
+                    --volume="$(pwd)/${restore_logs_dir}":/logs \
+                    --env=NEO4J_DEBUG=yes \
+                    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+                    "${image}" neo4j-admin restore \
+                    --from="/backup/neo4j" \
+                    --database="neo4j")"
+else
+    restore_container="$(docker run -d \
+                    --user="$(id -u):$(id -g)" \
+                    --volume="${backup_dir}":/backup \
+                    --volume="${restore_dir}":/data \
+                    --volume="$(pwd)/${restore_logs_dir}":/logs \
+                    --env=NEO4J_DEBUG=yes \
+                    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+                    "${image}" neo4j-admin restore \
+                    --from="/backup/${backup_name}" \
+                    --database="graph.db")"
+fi
 
 get_completed_container_output "${restore_container}" "${restore_output}"
 assert_restore_success
