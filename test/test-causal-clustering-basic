@@ -77,7 +77,7 @@ if [[ "${series}" == "3.6" ]]; then
     echo "use --protocol argument for backups in 3.6"
     backup_container="$(docker run -d --network="${COMPOSE_NETWORK}" \
                     --user="$(id -u):$(id -g)" \
-                    --volume="${backup_dir}":/backup \
+                    --volume="${backup_dir}":/backup/neo4j \
                     --volume="$(pwd)/${backup_logs_dir}":/logs \
                     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
                     --env=NEO4J_DEBUG=yes \
