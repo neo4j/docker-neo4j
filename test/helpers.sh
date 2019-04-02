@@ -56,6 +56,25 @@ docker_run() {
   trap "docker_cleanup ${cid}" EXIT
 }
 
+docker_run_with_args() {
+  local l_image="$1" l_cname="$2"; shift; shift
+
+  local cmd=("docker" "run" "--detach")
+  if [[ ! "$@" =~ "NEO4J_ACCEPT_LICENSE_AGREEMENT=no" ]]; then
+    cmd+=("--env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes")
+  fi
+  for arg in "$@"; do
+    cmd+=("${arg}")
+  done
+  cmd+=("--name="${l_cname}"")
+  cmd+=("${l_image}")
+  # echoing the full command to stdout for greater transparency.
+  echo "${cmd[@]}"
+  local cid="$(${cmd[@]})"
+  echo "log: tmp/out/${cid}.log"
+  trap "docker_cleanup ${cid}" EXIT
+}
+
 docker_run_with_volume() {
   local l_image="$1" l_cname="$2" l_volume="$3"; shift; shift; shift
 

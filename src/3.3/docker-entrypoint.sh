@@ -2,11 +2,16 @@
 
 cmd="$1"
 
+function running_as_root
+{
+    test "$(id -u)" = "0"
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
 # of exec, so we need to use both
-if [ "$(id -u)" = "0" ]; then
+if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   exec_cmd="exec su-exec neo4j"
@@ -22,27 +27,27 @@ readonly exec_cmd
 # Need to chown the home directory - but a user might have mounted a
 # volume here (notably a conf volume). So take care not to chown
 # volumes (stuff not owned by neo4j)
-if [[ "$(id -u)" = "0" ]]; then
+if running_as_root; then
   # Non-recursive chown for the base directory
-  chown "${userid}":"${groupid}" /var/lib/neo4j
-  chmod 700 /var/lib/neo4j
+  chown "${userid}":"${groupid}" "${NEO4J_HOME}"
+  chmod 700 "${NEO4J_HOME}"
 fi
 
 while IFS= read -r -d '' dir
 do
-  if [[ "$(id -u)" = "0" ]] && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
+  if running_as_root && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
     # Using mindepth 1 to avoid the base directory here so recursive is OK
     chown -R "${userid}":"${groupid}" "${dir}"
     chmod -R 700 "${dir}"
   fi
-done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
+done <   <(find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -print0)
 
 # Data dir is chowned later
 
 if [[ "${cmd}" != *"neo4j"* ]]; then
   if [ "${cmd}" == "dump-config" ]; then
     if [ -d /conf ]; then
-      ${exec_cmd} cp --recursive conf/* /conf
+      ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
       exit 0
     else
       echo >&2 "You must provide a /conf volume"
@@ -146,7 +151,7 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 
 if [ -d /conf ]; then
-    find /conf -type f -exec cp {} conf \;
+    find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
@@ -195,12 +200,12 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            if grep -q -F "${setting}=" conf/neo4j.conf; then
+            if grep -q -F "${setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
                 # Remove any lines containing the setting already
-                sed --in-place "/${setting}=.*/d" conf/neo4j.conf
+                sed --in-place "/^${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
             fi
             # Then always append setting to file
-            echo "${setting}=${value}" >> conf/neo4j.conf
+            echo "${setting}=${value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
         else
             echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
@@ -209,9 +214,27 @@ done
 
 # Chown the data dir now that (maybe) an initial password has been
 # set (this is a file in the data dir)
-if [[ "$(id -u)" = "0" ]]; then
-  chmod -R 755 /data
+if running_as_root; then
+  chmod -R 777 /data
   chown -R "${userid}":"${groupid}" /data
+fi
+
+# if we're running as root and the logs directory is not writable by the neo4j user, then chown it.
+# this situation happens if no user is passed to docker run and the /logs directory is mounted.
+if running_as_root && [[ "$(stat -c %U /logs)" != "neo4j" ]]; then
+#if [[ $(stat -c %u /logs) != $(id -u "${userid}") ]]; then
+    echo "/logs directory is not writable. Changing the directory owner to ${userid}:${groupid}"
+    # chown the log dir if it's not writable
+    chmod -R 777 /logs
+    chown -R "${userid}":"${groupid}" /logs
+fi
+
+# If we're running as a non-default user and we can't write to the logs directory then user needs to change directory permissions manually.
+# This happens if a user is passed to docker run and an unwritable log directory is mounted.
+if ! running_as_root && [[ ! -w /logs ]]; then
+    echo "User does not have write permissions to mounted log directory."
+    echo "Manually grant write permissions for the directory and try again."
+    exit 1
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
