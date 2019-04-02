@@ -211,7 +211,6 @@ fi
 # if we're running as root and the logs directory is not writable by the neo4j user, then chown it.
 # this situation happens if no user is passed to docker run and the /logs directory is mounted.
 if running_as_root && [[ "$(stat -c %U /logs)" != "neo4j" ]]; then
-#if [[ $(stat -c %u /logs) != $(id -u "${userid}") ]]; then
     echo "/logs directory is not writable. Changing the directory owner to ${userid}:${groupid}"
     # chown the log dir if it's not writable
     chmod -R 777 /logs
