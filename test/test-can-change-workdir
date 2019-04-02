@@ -6,6 +6,7 @@ set -o errexit -o nounset
 . "$(dirname "$0")/helpers.sh"
 
 readonly image="$1"
+readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 readonly expected_work_dir="/tmp"
 
@@ -16,6 +17,7 @@ echo "checking docker working directory using:"
 echo "docker exec "${cname}" pwd"
 actual_work_dir=$(docker exec "${cname}" pwd)
 neo4j_wait "${ip}"
+expected_40_err=`echo -e "Picked up JAVA_TOOL_OPTIONS: \nWARNING: An illegal reflective access operation has occurred\nWARNING: Illegal reflective access by org.eclipse.collections.impl.utility.ArrayListIterate (file:/var/lib/neo4j/lib/eclipse-collections-9.2.0.jar) to field java.util.ArrayList.elementData\nWARNING: Please consider reporting this to the maintainers of org.eclipse.collections.impl.utility.ArrayListIterate\nWARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations\nWARNING: All illegal access operations will be denied in a future release"`
 
 if [[ "${actual_work_dir}" != "${expected_work_dir}" ]]; then
     echo "Expected workdir to be "${expected_work_dir}" but instead was "${actual_work_dir}""
@@ -24,7 +26,20 @@ fi
 
 stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
 if [[ "${stderr}" != "" ]]; then
-    echo "Unexpected output from container:"
-    echo "${stderr}"
-    exit 1
+    if [[ "${series}" == "4.0" ]]; then
+          if [[ "${stderr}" == ${expected_40_err} ]]; then
+              echo "Expected jdk11 warnings are tolerated for 4.0"
+          else
+              echo "Unexpected output from container:"
+              echo "Expected output:"
+              echo "${expected_40_err}"
+              echo "Actual output:"
+              echo "${stderr}"
+              exit 1
+          fi
+    else
+        echo "Unexpected output from container:"
+        echo "${stderr}"
+        exit 1
+    fi
 fi
