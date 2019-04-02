@@ -38,8 +38,8 @@ docker_compose_up "${image}" "${compose_file}" "${cname}" "${rname}" "$(pwd)/${l
 readonly core_ip="$(docker_compose_ip "${cname}")"
 readonly read_ip="$(docker_compose_ip "${rname}")"
 # Make sure core and read replica are up
-neo4j_wait "${core_ip}" "" "120"
-neo4j_wait "${read_ip}" "" "120"
+neo4j_wait "${core_ip}" "" "180"
+neo4j_wait "${read_ip}" "" "180"
 
 # create node on core
 neo4j_createnode "${core_ip}" "neo4j:neo"
