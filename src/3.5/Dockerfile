@@ -25,9 +25,10 @@ RUN apk add --no-cache --quiet \
     && mv "${NEO4J_HOME}"/logs /logs \
     && chown -R neo4j:neo4j /logs \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
+    && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
-    && for _dir in "/data /logs $NEO4J_HOME";do find ${_dir} -type d -exec chmod 750 {} ";";done \
+    && for _dir in "/data /logs";do find ${_dir} -type d -exec chmod 750 {} ";";done \
     && for _dir in "/data /logs";do find ${_dir} -type f -exec chmod 640 {} ";";done \
     && apk del curl
 
