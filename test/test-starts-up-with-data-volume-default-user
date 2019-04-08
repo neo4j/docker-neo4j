@@ -8,6 +8,9 @@ readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
 readonly datadir=$(mktemp --directory)
+sudo chown -R 100:100 ${datadir}
+sudo find ${datadir} -type d -exec chmod 750 {} ";"
+sudo find ${datadir} -type f -exec chmod 640 {} ";"
 GID="$(gid_of "${datadir}")"
 readonly GID
 
