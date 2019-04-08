@@ -90,7 +90,7 @@ docker_run_with_volume() {
   trap "docker_cleanup ${cid}" EXIT
 }
 
-docker_run_with_volume_and_user() {
+docker_run_with_data_and_logs_volumes_and_user() {
   local l_image="$1" l_cname="$2" l_volume="$3" l_user="$4"; shift; shift; shift; shift
 
   local envs=()
@@ -101,7 +101,11 @@ docker_run_with_volume_and_user() {
     envs+=("--env=${env}")
   done
   local cid
-  cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" --volume="${l_volume}" --user="${l_user}" "${l_image}")"
+  cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" \
+  --volume="${l_volume}"/data:/data \
+  --volume="${l_volume}"/logs:/logs \
+  --user="${l_user}" \
+  "${l_image}")"
   echo "log: tmp/out/${cid}.log"
   trap "docker_cleanup ${cid}" EXIT
 }
