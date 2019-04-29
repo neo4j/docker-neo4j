@@ -25,8 +25,10 @@ fi
 
 if [[ "${series}" == "4.0" ]] && [[ "${edition}" == "community" ]]; then
   expected_err=`echo -e "WARNING: 1a not written to conf file because settings that start with a number are not permitted\nSLF4J: Failed to load class \"org.slf4j.impl.StaticLoggerBinder\".\nSLF4J: Defaulting to no-operation (NOP) logger implementation\nSLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.\nWARNING: An illegal reflective access operation has occurred\nWARNING: Illegal reflective access by org.eclipse.collections.impl.utility.ArrayListIterate (file:/var/lib/neo4j/lib/eclipse-collections-9.2.0.jar) to field java.util.ArrayList.elementData\nWARNING: Please consider reporting this to the maintainers of org.eclipse.collections.impl.utility.ArrayListIterate\nWARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations\nWARNING: All illegal access operations will be denied in a future release"`
-else
+elif [[ "${series}" == "4.0" ]] && [[ "${edition}" == "enterprise " ]]; then
   expected_err=`echo -e "WARNING: 1a not written to conf file because settings that start with a number are not permitted\nWARNING: An illegal reflective access operation has occurred\nWARNING: Illegal reflective access by org.eclipse.collections.impl.utility.ArrayListIterate (file:/var/lib/neo4j/lib/eclipse-collections-9.2.0.jar) to field java.util.ArrayList.elementData\nWARNING: Please consider reporting this to the maintainers of org.eclipse.collections.impl.utility.ArrayListIterate\nWARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations\nWARNING: All illegal access operations will be denied in a future release"`
+else
+  expected_err=`echo -e "WARNING: 1a not written to conf file because settings that start with a number are not permitted"`
 fi
 
 if [[ "${stderr}" != "${expected_err}" ]]; then
