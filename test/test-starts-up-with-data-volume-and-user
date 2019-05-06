@@ -7,11 +7,16 @@ readonly image="$1"
 readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
-readonly datadir=$(mktemp --directory)
-GID="$(gid_of "${datadir}")"
+readonly data_and_logs_dir=$(mktemp --directory)
+mkdir -p ${data_and_logs_dir}/data
+mkdir -p ${data_and_logs_dir}/logs
+sudo chown -R "$(id -u):$(id -g)" ${data_and_logs_dir}
+sudo find ${data_and_logs_dir} -type d -exec chmod 750 {} ";"
+sudo find ${data_and_logs_dir} -type f -exec chmod 640 {} ";"
+GID="$(gid_of "${data_and_logs_dir}")"
 readonly GID
 
-docker_run_with_volume_and_user "$image" "$cname" "${datadir}:/data" "$(id -u):$(id -g)" "NEO4J_AUTH=none"
+docker_run_with_data_and_logs_volumes_and_user "$image" "$cname" "${data_and_logs_dir}" "$(id -u):$(id -g)" "NEO4J_AUTH=none"
 readonly ip="$(docker_ip "${cname}")"
 neo4j_wait "${ip}"
 
@@ -31,4 +36,4 @@ do
     echo >&2 Unexpected GID of "${file}" after running with mounted data volume: "$(gid_of "${file}")" != "${GID}"
     exit 1
   fi
-done <   <(find "${datadir}" -print0)
+done <   <(find "${data_and_logs_dir}" -print0)
