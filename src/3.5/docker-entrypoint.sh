@@ -24,37 +24,41 @@ readonly userid
 readonly groupid
 readonly exec_cmd
 
-# Need to chown the home directory - but a user might have mounted a
-# volume here (notably a conf volume). So take care not to chown
-# volumes (stuff not owned by neo4j)
-if running_as_root; then
-  # Non-recursive chown for the base directory
-  chown "${userid}":"${groupid}" "${NEO4J_HOME}"
-  chmod 700 "${NEO4J_HOME}"
+fail_message=$(cat <<FAIL_MESSAGE
+in container not writable for user: ${userid} or group ${groupid}, this looks like a rights issue
+
+Hint to solve the issue:
+chown -R ${userid}:${groupid} /path/to/mount_dir
+sudo find /path/to/mount_dir -type d -exec chmod 750 {} ";"
+sudo find /path/to/mount_dir -type f -exec chmod 640 {} ";"
+FAIL_MESSAGE
+)
+
+function check_write_or_fail (){
+  _directory=${1}
+  if [ -d "${_directory}" ]; then :;else
+    echo >&2 "Not a directory: ${_directory}"
+    exit 1
+  fi
+
+  if running_as_root; then
+    CHECKFILE=$(su -s /bin/bash ${userid} -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo -e >&2 "\n${_directory} ${fail_message}"; exit 1;}
+    rm ${CHECKFILE}
+  else
+    CHECKFILE=$(/bin/bash -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo -e >&2 "\n${_directory} ${fail_message}"; exit 1;}
+    rm ${CHECKFILE}
+  fi
+}
+
+check_write_or_fail "${NEO4J_HOME}"
+
+if [ "${cmd}" == "dump-config" ]; then
+  check_write_or_fail "/conf"
+  ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
+  exit 0
 fi
 
-while IFS= read -r -d '' dir
-do
-  if running_as_root && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
-    # Using mindepth 1 to avoid the base directory here so recursive is OK
-    chown -R "${userid}":"${groupid}" "${dir}"
-    chmod -R 700 "${dir}"
-  fi
-done <   <(find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -print0)
-
-# Data dir is chowned later
-
-if [[ "${cmd}" != *"neo4j"* ]]; then
-  if [ "${cmd}" == "dump-config" ]; then
-    if [ -d /conf ]; then
-      ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
-      exit 0
-    else
-      echo >&2 "You must provide a /conf volume"
-      exit 1
-    fi
-  fi
-else
+if [[ "${cmd}" == *"neo4j"* ]]; then
   # Only prompt for license agreement if command contains "neo4j" in it
   if [ "$NEO4J_EDITION" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
@@ -178,7 +182,7 @@ if [ "${cmd}" == "neo4j" ]; then
             exit 1
         fi
         # Will exit with error if users already exist (and print a message explaining that)
-        bin/neo4j-admin set-initial-password "${password}" || true
+        su -c "bin/neo4j-admin set-initial-password '${password}'" -s /bin/sh ${userid} || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
@@ -205,30 +209,12 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
-# Chown the data dir now that (maybe) an initial password has been
-# set (this is a file in the data dir)
-if running_as_root; then
-  chmod -R 777 /data
-  chown -R "${userid}":"${groupid}" /data
-fi
-
-# if we're running as root and the logs directory is not writable by the neo4j user, then chown it.
-# this situation happens if no user is passed to docker run and the /logs directory is mounted.
-if running_as_root && [[ "$(stat -c %U /logs)" != "neo4j" ]]; then
-#if [[ $(stat -c %u /logs) != $(id -u "${userid}") ]]; then
-    echo "/logs directory is not writable. Changing the directory owner to ${userid}:${groupid}"
-    # chown the log dir if it's not writable
-    chmod -R 777 /logs
-    chown -R "${userid}":"${groupid}" /logs
-fi
-
-# If we're running as a non-default user and we can't write to the logs directory then user needs to change directory permissions manually.
-# This happens if a user is passed to docker run and an unwritable log directory is mounted.
-if ! running_as_root && [[ ! -w /logs ]]; then
-    echo "User does not have write permissions to mounted log directory."
-    echo "Manually grant write permissions for the directory and try again."
-    exit 1
-fi
+directories_to_check="ssl plugins logs import data logs"
+for _dir in $directories_to_check; do
+  if [ -d "/${_dir}" ]; then
+      check_write_or_fail "/${_dir}"
+  fi
+done
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 

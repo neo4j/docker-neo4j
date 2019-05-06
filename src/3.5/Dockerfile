@@ -22,14 +22,14 @@ RUN apk add --no-cache --quiet \
     && rm ${NEO4J_TARBALL} \
     && mv "${NEO4J_HOME}"/data /data \
     && chown -R neo4j:neo4j /data \
-    && chmod -R 777 /data \
     && mv "${NEO4J_HOME}"/logs /logs \
     && chown -R neo4j:neo4j /logs \
-    && chmod -R 777 /logs \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
+    && for _dir in "/data /logs";do find ${_dir} -type d -exec chmod 750 {} ";";done \
+    && for _dir in "/data /logs";do find ${_dir} -type f -exec chmod 640 {} ";";done \
     && apk del curl
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
