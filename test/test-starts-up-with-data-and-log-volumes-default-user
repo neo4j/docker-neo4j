@@ -20,13 +20,8 @@ docker_run_with_data_and_logs_volumes() {
   for env in "$@"; do
     envs+=("--env=${env}")
   done
-  #local user
-  #user="$(stat -c %u $l_volumedir):$(stat -c %g $l_volumedir)"
-  echo "temp folder $l_volumedir owned by $(stat -c %u $l_volumedir):$(stat -c %g $l_volumedir)"
-  echo "test running as $(id -u):$(id -g)"
   local cid
   cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" \
-  --user="$(id -u):$(id -g)" \
   --volume="${l_volumedir}"/data:/data \
   --volume="${l_volumedir}"/logs:/logs \
   "${l_image}")"
