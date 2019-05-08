@@ -55,9 +55,6 @@ readonly userid
 readonly groupid
 readonly exec_cmd
 
-ls -la "${NEO4J_HOME}"
-ls -la /
-
 # Need to chown the home directory - but a user might have mounted a
 # volume here (notably a conf volume). So take care not to chown
 # volumes (stuff not owned by neo4j)
@@ -65,10 +62,18 @@ if running_as_root; then
   # Non-recursive chown for the base directory
   chown "${userid}":"${groupid}" "${NEO4J_HOME}"
   chmod 700 "${NEO4J_HOME}"
-  find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -exec "chown ${userid}:${groupid} {}; chmod 700 {}" \;
-#else
-#    check_write_or_fail "${NEO4J_HOME}"
+    #  find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -exec chown -R ${userid}:${groupid} {} \;
+    #  find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -exec chmod 700 {} \;
 fi
+
+while IFS= read -r -d '' dir
+do
+  if running_as_root && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
+    # Using mindepth 1 to avoid the base directory here so recursive is OK
+    chown -R "${userid}":"${groupid}" "${dir}"
+    chmod -R 700 "${dir}"
+  fi
+done <   <(find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -print0)
 
 
 if [ "${cmd}" == "dump-config" ]; then
@@ -256,4 +261,4 @@ if [ "${cmd}" == "neo4j" ]; then
   ${exec_cmd} neo4j console
 else
   ${exec_cmd} "$@"
-qfi
+fi
