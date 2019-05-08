@@ -7,6 +7,37 @@ function running_as_root
     test "$(id -u)" = "0"
 }
 
+function is_not_writable
+{
+    _file=${1}
+    echo "File ${_file} owner stats: $(stat -c %U ${_file}):$(stat -c %G ${_file}) and $(stat -c %u ${_file}):$(stat -c %g ${_file})"
+    echo "comparing to ${userid}:${groupid}"
+    test "$(stat -c %U ${_file})" != "${userid}"  &&  \
+    test "$(stat -c %u ${_file})" != "${userid}"
+}
+
+function check_write_or_fail ()
+{
+  _directory=${1}
+  if [[ ! -d "${_directory}" ]]; then
+    echo >&2 "Not a directory: ${_directory}"
+    exit 1
+  fi
+
+  if is_not_writable "${_directory}"; then
+       echo >&2 "
+Folder ${_directory} is not writable for user: ${userid} or group ${groupid}, this looks like a file permissions
+issue on the mounted folder.
+
+Hint to solve the issue:
+chown -R ${userid}:${groupid} /path/to/mount_dir
+sudo find /path/to/mount_dir -type d -exec chmod 750 {} \";\"
+sudo find /path/to/mount_dir -type f -exec chmod 640 {} \";\"
+       "
+       exit 1
+  fi
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -24,33 +55,21 @@ readonly userid
 readonly groupid
 readonly exec_cmd
 
-fail_message=$(cat <<FAIL_MESSAGE
-in container not writable for user: ${userid} or group ${groupid}, this looks like a rights issue
+ls -la "${NEO4J_HOME}"
+ls -la /
 
-Hint to solve the issue:
-chown -R ${userid}:${groupid} /path/to/mount_dir
-sudo find /path/to/mount_dir -type d -exec chmod 750 {} ";"
-sudo find /path/to/mount_dir -type f -exec chmod 640 {} ";"
-FAIL_MESSAGE
-)
+# Need to chown the home directory - but a user might have mounted a
+# volume here (notably a conf volume). So take care not to chown
+# volumes (stuff not owned by neo4j)
+if running_as_root; then
+  # Non-recursive chown for the base directory
+  chown "${userid}":"${groupid}" "${NEO4J_HOME}"
+  chmod 700 "${NEO4J_HOME}"
+  find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -exec "chown ${userid}:${groupid} {}; chmod 700 {}" \;
+#else
+#    check_write_or_fail "${NEO4J_HOME}"
+fi
 
-function check_write_or_fail (){
-  _directory=${1}
-  if [ -d "${_directory}" ]; then :;else
-    echo >&2 "Not a directory: ${_directory}"
-    exit 1
-  fi
-
-  if running_as_root; then
-    CHECKFILE=$(su -s /bin/bash ${userid} -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo -e >&2 "\n${_directory} ${fail_message}"; exit 1;}
-    rm ${CHECKFILE}
-  else
-    CHECKFILE=$(/bin/bash -c "mktemp ${_directory}/output.XXXXXXXXXX") || { echo -e >&2 "\n${_directory} ${fail_message}"; exit 1;}
-    rm ${CHECKFILE}
-  fi
-}
-
-check_write_or_fail "${NEO4J_HOME}"
 
 if [ "${cmd}" == "dump-config" ]; then
   check_write_or_fail "/conf"
@@ -60,12 +79,12 @@ fi
 
 if [[ "${cmd}" == *"neo4j"* ]]; then
   # Only prompt for license agreement if command contains "neo4j" in it
-  if [ "$NEO4J_EDITION" == "enterprise" ]; then
+  if [ "${NEO4J_EDITION}" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-(c) Network Engine for Objects in Lund AB.  2017.  All Rights Reserved.
+(c) Neo4j Sweden AB.  2019.  All Rights Reserved.
 Use of this Software without a proper commercial license with Neo4j,
 Inc. or its affiliates is prohibited.
 
@@ -148,27 +167,45 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 
 if [ -d /conf ]; then
+    check_write_or_fail "/conf"
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
+    check_write_or_fail "/ssl"
     NEO4J_dbms_directories_certificates="/ssl"
 fi
 
 if [ -d /plugins ]; then
+    check_write_or_fail "/plugins"
     NEO4J_dbms_directories_plugins="/plugins"
 fi
 
-if [ -d /logs ]; then
-    NEO4J_dbms_directories_logs="/logs"
-fi
-
 if [ -d /import ]; then
+    check_write_or_fail "/import"
     NEO4J_dbms_directories_import="/import"
 fi
 
 if [ -d /metrics ]; then
+    check_write_or_fail "/metrics"
     NEO4J_dbms_directories_metrics="/metrics"
+fi
+
+if [ -d /data ]; then
+    if is_not_writable "/data"; then
+        # warn that we're about to chown the /data folder and then chown it
+        echo >&2 "Folder mounted to \"/data\" is not writable from inside container."
+        chown -R "${userid}":"${groupid}" /data
+    fi
+fi
+
+if [ -d /logs ]; then
+    NEO4J_dbms_directories_logs="/logs"
+    if is_not_writable "/logs"; then
+        # warn that we're about to chown the /data folder and then chown it
+        echo >&2 "Folder mounted to \"/logs\" is not writable from inside container."
+        chown -R "${userid}":"${groupid}" /logs
+    fi
 fi
 
 # set the neo4j initial password only if you run the database server
@@ -182,7 +219,7 @@ if [ "${cmd}" == "neo4j" ]; then
             exit 1
         fi
         # Will exit with error if users already exist (and print a message explaining that)
-        su -c "bin/neo4j-admin set-initial-password '${password}'" -s /bin/sh ${userid} || true
+        ${exec_cmd} bin/neo4j-admin set-initial-password "${password}" || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
@@ -209,12 +246,6 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
-directories_to_check="ssl plugins logs import data logs"
-for _dir in $directories_to_check; do
-  if [ -d "/${_dir}" ]; then
-      check_write_or_fail "/${_dir}"
-  fi
-done
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
@@ -225,4 +256,4 @@ if [ "${cmd}" == "neo4j" ]; then
   ${exec_cmd} neo4j console
 else
   ${exec_cmd} "$@"
-fi
+qfi
