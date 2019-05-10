@@ -232,7 +232,7 @@ gid_of() {
 
 check_mount_folder_owner_matches()
 {
-    readonly datadir=${1}
+    local mount_folder=${1}
     local expected_UID=${2}
     local expected_GID=${3}
     while IFS= read -r -d '' file
@@ -246,7 +246,7 @@ check_mount_folder_owner_matches()
         echo >&2 Unexpected GID of "${file}" after running with mounted data volume: "$(gid_of "${file}")" != "${expected_GID}"
         exit 1
       fi
-    done <   <(find "${datadir}" -print0)
+    done <   <(find "${mount_folder}" -print0)
 }
 
 check_mount_folder_owner_does_not_match()
