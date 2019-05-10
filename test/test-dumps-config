@@ -31,15 +31,4 @@ if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
   exit 0
 fi
 
-while IFS= read -r -d '' file
-do
-  if [[ "${UID}" != "$(uid_of "${file}")" ]]; then
-    echo >&2 Unexpected UID of "${file}" after dumping config: "$(uid_of "${file}")" != "${UID}"
-    exit 1
-  fi
-
-  if [[ "${GID}" != "$(gid_of "${file}")" ]]; then
-    echo >&2 Unexpected GID of "${file}" after dumping config: "$(gid_of "${file}")" != "${GID}"
-    exit 1
-  fi
-done <   <(find "${dir}" -print0)
+check_mount_folder_owner_matches "${dir}" "${UID}" "${GID}"
