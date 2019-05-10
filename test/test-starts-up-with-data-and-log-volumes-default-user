@@ -46,15 +46,4 @@ if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
   exit 0
 fi
 
-while IFS= read -r -d '' file
-do
-  if [[ "0" = "$(uid_of "${file}")" ]]; then
-    echo >&2 "Did not expect UID of ${file} to be root (0) after running with mounted data volume"
-    exit 1
-  fi
-
-  if [[ "$0" = "$(gid_of "${file}")" ]]; then
-    echo >&2 "Did not expect GID of ${file} to be root (0) after running with mounted data volume"
-    exit 1
-  fi
-done <   <(find "${data_and_logs_dir}" -print0)
+check_mount_folder_owner_does_not_match "${data_and_logs_dir}" "0" "$0"

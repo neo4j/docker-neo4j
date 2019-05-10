@@ -255,8 +255,17 @@ if [ "${cmd}" == "neo4j" ]; then
             echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
+
+        if running_as_root; then
+            # running set-initial-password as root will create subfolders to /data as root, causing startup fail when
+            # neo4j can't read or write the /data/dbms folders
+            # creating the folder first will avoid that
+            mkdir -p /data/dbms
+            chown "${userid}":"${groupid}" /data/dbms
+        fi
         # Will exit with error if users already exist (and print a message explaining that)
-        ${exec_cmd} bin/neo4j-admin set-initial-password "${password}" || true
+        # we probably don't want the message though?
+        neo4j-admin set-initial-password "${password}" 2>/dev/null || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
