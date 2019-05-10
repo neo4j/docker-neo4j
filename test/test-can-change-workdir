@@ -22,9 +22,4 @@ if [[ "${actual_work_dir}" != "${expected_work_dir}" ]]; then
     exit 1
 fi
 
-stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
-if [[ "${stderr}" != "" ]]; then
-    echo "Unexpected output from container:"
-    echo "${stderr}"
-    exit 1
-fi
+check_stderr_is_empty "${cname}"

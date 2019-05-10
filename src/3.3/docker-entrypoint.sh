@@ -7,6 +7,76 @@ function running_as_root
     test "$(id -u)" = "0"
 }
 
+function is_not_writable
+{
+    _file=${1}
+#    echo "File ${_file} owner stats: $(stat -c %U ${_file}):$(stat -c %G ${_file}) and $(stat -c %u ${_file}):$(stat -c %g ${_file})"
+#    echo "comparing to ${userid}:${groupid}"
+    test "$(stat -c %U ${_file})" != "${userid}"  &&  \
+    test "$(stat -c %u ${_file})" != "${userid}"
+}
+
+function print_permissions_advice_and_fail ()
+{
+    _directory=${1}
+    echo >&2 "
+Folder ${_directory} is not writable for user: ${userid} or group ${groupid}, this is commonly a file permissions issue on the mounted folder.
+
+Hints to solve the issue:
+1) Make sure the folder exists before mounting it. Docker will create the folder using root permissions before starting the Neo4j container. The root permissions disallow Neo4j from writing to the mounted folder.
+2) Pass the folder owner's user ID and group ID to docker run, so that docker runs as that user.
+If the folder is owned by the current user, this can be done by adding this flag to your docker run command:
+  --user=\$(id -u):\$(id -g)
+       "
+    exit 1
+}
+
+function check_mounted_folder
+{
+    _directory=${1}
+    if is_not_writable "${_directory}"; then
+        print_permissions_advice_and_fail "${_directory}"
+    fi
+}
+
+function check_mounted_folder_with_chown
+{
+# The /data and /log directory are a bit different because they are very likely to be mounted by the user but not
+# necessarily writable.
+# This depends on whether a user ID is passed to the container and which folders are mounted.
+#
+#   No user ID passed to container:
+#   1) No folders are mounted.
+#      The /data and /log folder are owned by neo4j by default, so should be writable already.
+#   2) Both /log and /data are mounted.
+#      This means on start up, /data and /logs are owned by an unknown user and we should chown them to neo4j for
+#      backwards compatibility.
+#
+#   User ID passed to container:
+#   1) Both /data and /logs are mounted
+#      The /data and /logs folders are owned by an unknown user but we *should* have rw permission to them.
+#      That should be verified and error (helpfully) if not.
+#   2) User mounts /data or /logs *but not both*
+#      The  unmounted folder is still owned by neo4j, which should already be writable. The mounted folder should
+#      have rw permissions through user id. This should be verified.
+#   4) No folders are mounted.
+#      The /data and /log folder are owned by neo4j by default, and these are already writable by the user.
+#      (This is a very unlikely use case).
+
+    mountFolder=${1}
+    if running_as_root; then
+        if is_not_writable "${mountFolder}"; then
+            # warn that we're about to chown the /data folder and then chown it
+            echo >&2 "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
+            chown -R "${userid}":"${groupid}" "${mountFolder}"
+        fi
+    else
+        if [ ! -w "${mountFolder}" ]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
+            print_permissions_advice_and_fail "${mountFolder}"
+        fi
+    fi
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -28,40 +98,27 @@ readonly exec_cmd
 # volume here (notably a conf volume). So take care not to chown
 # volumes (stuff not owned by neo4j)
 if running_as_root; then
-  # Non-recursive chown for the base directory
-  chown "${userid}":"${groupid}" "${NEO4J_HOME}"
-  chmod 700 "${NEO4J_HOME}"
+    # Non-recursive chown for the base directory
+    chown "${userid}":"${groupid}" "${NEO4J_HOME}"
+    chmod 700 "${NEO4J_HOME}"
+    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chown -R ${userid}:${groupid} {} \;
+    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chmod 700 {} \;
 fi
 
-while IFS= read -r -d '' dir
-do
-  if running_as_root && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
-    # Using mindepth 1 to avoid the base directory here so recursive is OK
-    chown -R "${userid}":"${groupid}" "${dir}"
-    chmod -R 700 "${dir}"
-  fi
-done <   <(find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -print0)
+if [ "${cmd}" == "dump-config" ]; then
+  check_mounted_folder "/conf"
+  ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
+  exit 0
+fi
 
-# Data dir is chowned later
-
-if [[ "${cmd}" != *"neo4j"* ]]; then
-  if [ "${cmd}" == "dump-config" ]; then
-    if [ -d /conf ]; then
-      ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
-      exit 0
-    else
-      echo >&2 "You must provide a /conf volume"
-      exit 1
-    fi
-  fi
-else
+if [[ "${cmd}" == *"neo4j"* ]]; then
   # Only prompt for license agreement if command contains "neo4j" in it
-  if [ "$NEO4J_EDITION" == "enterprise" ]; then
+  if [ "${NEO4J_EDITION}" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-(c) Network Engine for Objects in Lund AB.  2017.  All Rights Reserved.
+(c) Neo4j Sweden AB.  2019.  All Rights Reserved.
 Use of this Software without a proper commercial license with Neo4j,
 Inc. or its affiliates is prohibited.
 
@@ -151,28 +208,39 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 
 if [ -d /conf ]; then
+    check_mounted_folder "/conf"
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
+    check_mounted_folder "/ssl"
     NEO4J_dbms_directories_certificates="/ssl"
 fi
 
 if [ -d /plugins ]; then
+    check_mounted_folder "/plugins"
     NEO4J_dbms_directories_plugins="/plugins"
 fi
 
-if [ -d /logs ]; then
-    NEO4J_dbms_directories_logs="/logs"
-fi
-
 if [ -d /import ]; then
+    check_mounted_folder "/import"
     NEO4J_dbms_directories_import="/import"
 fi
 
 if [ -d /metrics ]; then
+    check_mounted_folder "/metrics"
     NEO4J_dbms_directories_metrics="/metrics"
 fi
+
+if [ -d /logs ]; then
+    check_mounted_folder_with_chown "/logs"
+    NEO4J_dbms_directories_logs="/logs"
+fi
+
+if [ -d /data ]; then
+    check_mounted_folder_with_chown "/data"
+fi
+
 
 # set the neo4j initial password only if you run the database server
 if [ "${cmd}" == "neo4j" ]; then
@@ -184,8 +252,16 @@ if [ "${cmd}" == "neo4j" ]; then
             echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
+
+        if running_as_root; then
+            # running set-initial-password as root will create subfolders to /data as root, causing startup fail when neo4j can't read or write the /data/dbms folder
+            # creating the folder first will avoid that
+            mkdir -p /data/dbms
+            chown "${userid}":"${groupid}" /data/dbms
+        fi
         # Will exit with error if users already exist (and print a message explaining that)
-        bin/neo4j-admin set-initial-password "${password}" || true
+        # we probably don't want the message though, since it throws an error message on restarting the container.
+        neo4j-admin set-initial-password "${password}" 2>/dev/null || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
@@ -212,30 +288,6 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
-# Chown the data dir now that (maybe) an initial password has been
-# set (this is a file in the data dir)
-if running_as_root; then
-  chmod -R 777 /data
-  chown -R "${userid}":"${groupid}" /data
-fi
-
-# if we're running as root and the logs directory is not writable by the neo4j user, then chown it.
-# this situation happens if no user is passed to docker run and the /logs directory is mounted.
-if running_as_root && [[ "$(stat -c %U /logs)" != "neo4j" ]]; then
-#if [[ $(stat -c %u /logs) != $(id -u "${userid}") ]]; then
-    echo "/logs directory is not writable. Changing the directory owner to ${userid}:${groupid}"
-    # chown the log dir if it's not writable
-    chmod -R 777 /logs
-    chown -R "${userid}":"${groupid}" /logs
-fi
-
-# If we're running as a non-default user and we can't write to the logs directory then user needs to change directory permissions manually.
-# This happens if a user is passed to docker run and an unwritable log directory is mounted.
-if ! running_as_root && [[ ! -w /logs ]]; then
-    echo "User does not have write permissions to mounted log directory."
-    echo "Manually grant write permissions for the directory and try again."
-    exit 1
-fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 

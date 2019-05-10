@@ -15,20 +15,24 @@ docker_run_with_volume "$image" "$cname" "${datadir}:/data" "NEO4J_AUTH=none"
 readonly ip="$(docker_ip "${cname}")"
 neo4j_wait "${ip}"
 
+#echo "changing permissions on test folder ${datadir} so it can be deleted"
+#sudo chmod -R 777 "${datadir}"
+
 if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
   echo "Skipping: UID checks, code not present pre-3.1"
   exit 0
 fi
 
-while IFS= read -r -d '' file
-do
-  if [[ "0" = "$(uid_of "${file}")" ]]; then
-    echo >&2 "Did not expect UID of ${file} to be root (0) after running with mounted data volume"
+# just check top level folder, since the rest is chowned to neo4j user so test cannot read it
+expected_UID="100"
+expected_GID="101"
+if [[ ${expected_UID} != "$(uid_of "${datadir}")" ]]; then
+    echo >&2 "Unexpected UID of "${datadir}" after running with mounted data volume: "$(uid_of "${datadir}")" != ${expected_UID}"
     exit 1
-  fi
+fi
 
-  if [[ "$0" = "$(gid_of "${file}")" ]]; then
-    echo >&2 "Did not expect GID of ${file} to be root (0) after running with mounted data volume"
+if [[ "${expected_GID}" != "$(gid_of "${datadir}")" ]]; then
+    echo >&2 "Unexpected GID of "${datadir}" after running with mounted data volume: "$(gid_of "${datadir}")" != "${expected_GID}""
     exit 1
-  fi
-done <   <(find "${datadir}" -print0)
+fi
+
