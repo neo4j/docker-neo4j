@@ -25,7 +25,7 @@ Folder ${_directory} is not writable for user: ${userid} or group ${groupid}, th
 Hints to solve the issue:
 1) Make sure the folder exists before mounting it. Docker will create the folder using root permissions before starting the Neo4j container. The root permissions disallow Neo4j from writing to the mounted folder.
 2) Pass the folder owner's user ID and group ID to docker run, so that docker runs as that user.
-This can be done by adding this flag to your docker run command:
+If the folder is owned by the current user, this can be done by adding this flag to your docker run command:
   --user=\$(id -u):\$(id -g)
        "
     exit 1
@@ -104,16 +104,6 @@ if running_as_root; then
     find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chown -R ${userid}:${groupid} {} \;
     find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chmod 700 {} \;
 fi
-
-#while IFS= read -r -d '' dir
-#do
-#  if running_as_root && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
-#    # Using mindepth 1 to avoid the base directory here so recursive is OK
-#    chown -R "${userid}":"${groupid}" "${dir}"
-#    chmod -R 700 "${dir}"
-#  fi
-#done <   <(find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -print0)
-
 
 if [ "${cmd}" == "dump-config" ]; then
   check_mounted_folder "/conf"
@@ -257,14 +247,13 @@ if [ "${cmd}" == "neo4j" ]; then
         fi
 
         if running_as_root; then
-            # running set-initial-password as root will create subfolders to /data as root, causing startup fail when
-            # neo4j can't read or write the /data/dbms folders
+            # running set-initial-password as root will create subfolders to /data as root, causing startup fail when neo4j can't read or write the /data/dbms folder
             # creating the folder first will avoid that
             mkdir -p /data/dbms
             chown "${userid}":"${groupid}" /data/dbms
         fi
         # Will exit with error if users already exist (and print a message explaining that)
-        # we probably don't want the message though?
+        # we probably don't want the message though, since it throws an error message on restarting the container.
         neo4j-admin set-initial-password "${password}" 2>/dev/null || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
         echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
