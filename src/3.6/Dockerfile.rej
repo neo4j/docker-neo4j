@@ -1,0 +1,7 @@
+*** /dev/null
+--- /dev/null
+***************
+*** 11,12
+- RUN addgroup -S neo4j && adduser -S -H -h "${NEO4J_HOME}" -G neo4j neo4j
+- 
+--- 0 -----
