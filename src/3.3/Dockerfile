@@ -1,12 +1,12 @@
 FROM openjdk:8-jre-alpine
 
-RUN addgroup -S neo4j && adduser -S -H -h /var/lib/neo4j -G neo4j neo4j
-
 ENV NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
     NEO4J_HOME="/var/lib/neo4j"
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
+
+RUN addgroup -S neo4j && adduser -S -H -h "${NEO4J_HOME}" -G neo4j neo4j
 
 COPY ./local-package/* /tmp/
 
@@ -21,9 +21,9 @@ RUN apk add --no-cache --quiet \
     && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
     && rm ${NEO4J_TARBALL} \
     && mv "${NEO4J_HOME}"/data /data \
+    && mv "${NEO4J_HOME}"/logs /logs \
     && chown -R neo4j:neo4j /data \
     && chmod -R 777 /data \
-    && mv "${NEO4J_HOME}"/logs /logs \
     && chown -R neo4j:neo4j /logs \
     && chmod -R 777 /logs \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
