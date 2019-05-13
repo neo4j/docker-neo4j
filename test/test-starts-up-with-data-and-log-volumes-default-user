@@ -20,15 +20,11 @@ docker_run_with_data_and_logs_volumes() {
   for env in "$@"; do
     envs+=("--env=${env}")
   done
-  #local user
-  mkdir "${data_and_logs_dir}"/data
-  mkdir "${data_and_logs_dir}"/logs
   local cid
   cid="$(docker run --detach "${envs[@]}" --name="${l_cname}" \
-      --user="$(id -u):$(id -g)" \
-      --volume="${l_volumedir}"/data:/data \
-      --volume="${l_volumedir}"/logs:/logs \
-      "${l_image}")"
+  --volume="${l_volumedir}"/data:/data \
+  --volume="${l_volumedir}"/logs:/logs \
+  "${l_image}")"
   echo "log: tmp/out/${cid}.log"
   trap "docker_cleanup ${cid}" EXIT
 }
@@ -37,7 +33,7 @@ readonly image="$1"
 readonly series="$2"
 readonly cname="neo4j-$(uuidgen)"
 
-readonly data_and_logs_dir=$(mktemp --directory --tmpdir=/tmp/)
+readonly data_and_logs_dir=$(mktemp --directory)
 GID="$(gid_of "${data_and_logs_dir}")"
 readonly GID
 

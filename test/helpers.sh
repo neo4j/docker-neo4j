@@ -298,3 +298,72 @@ get_completed_container_output() {
         fi
     done
 }
+
+check_mount_folder_owner_matches()
+{
+    local mount_folder=${1}
+    local expected_UID=${2}
+    local expected_GID=${3}
+    while IFS= read -r -d '' file
+    do
+      if [[ "${expected_UID}" != "$(uid_of "${file}")" ]]; then
+        echo >&2 Unexpected UID of "${file}" after running with mounted data volume: "$(uid_of "${file}")" != "${expected_UID}"
+        exit 1
+      fi
+
+      if [[ "${expected_GID}" != "$(gid_of "${file}")" ]]; then
+        echo >&2 Unexpected GID of "${file}" after running with mounted data volume: "$(gid_of "${file}")" != "${expected_GID}"
+        exit 1
+      fi
+    done <   <(find "${mount_folder}" -print0)
+}
+
+check_mount_folder_owner_does_not_match()
+{
+    local datadir=${1}
+    local wrong_UID=${2}
+    local wrong_GID=${3}
+    while IFS= read -r -d '' file
+    do
+      if [[ "${wrong_UID}" = "$(uid_of "${file}")" ]]; then
+        echo >&2 "Did not expect UID of ${file} to be ${wrong_UID} after running with mounted volume"
+        exit 1
+      fi
+
+      if [[ "${wrong_GID}" = "$(gid_of "${file}")" ]]; then
+        echo >&2 "Did not expect GID of ${file} to be ${wrong_GID} after running with mounted volume"
+        exit 1
+      fi
+    done <   <(find "${datadir}" -print0)
+}
+
+check_stderr_is_empty()
+{
+    local container_name=${1}
+
+    stderr="$((docker logs "${container_name}" 1>/dev/null) 2>&1)"
+    echo $stderr
+
+    if [[ "${stderr}" != "" ]]; then
+        echo "Unexpected output from container:"
+        echo "${stderr}"
+        exit 1
+    fi
+}
+
+check_stderr_matches()
+{
+    local container_name=${1}
+    local expected_err=${2}
+    stderr="$((docker logs "${container_name}" 1>/dev/null) 2>&1)"
+    if [[ "${stderr}" == ${expected_err} ]]; then
+        echo "Expected warnings are tolerated for 4.0"
+    else
+        echo "Unexpected output from container:"
+        echo "Expected output:"
+        echo "${expected_err}"
+        echo "Actual output:"
+        echo "${stderr}"
+        exit 1
+    fi
+}
