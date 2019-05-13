@@ -24,22 +24,8 @@ if [[ "${actual_work_dir}" != "${expected_work_dir}" ]]; then
     exit 1
 fi
 
-stderr="$((docker logs "${cname}" 1>/dev/null) 2>&1)"
-if [[ "${stderr}" != "" ]]; then
-    if [[ "${series}" == "4.0" ]]; then
-          if [[ "${stderr}" == ${expected_40_err} ]]; then
-              echo "Expected jdk11 warnings are tolerated for 4.0"
-          else
-              echo "Unexpected output from container:"
-              echo "Expected output:"
-              echo "${expected_40_err}"
-              echo "Actual output:"
-              echo "${stderr}"
-              exit 1
-          fi
-    else
-        echo "Unexpected output from container:"
-        echo "${stderr}"
-        exit 1
-    fi
+if [[ "${series}" == "4.0" ]]; then
+    check_stderr_matches "${cname}" "${expected_40_err}"
+else
+    check_stderr_is_empty "${cname}"
 fi
