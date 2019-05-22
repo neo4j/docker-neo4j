@@ -271,7 +271,7 @@ check_mount_folder_owner_does_not_match()
 check_stderr_is_empty()
 {
     local container_name=${1}
-
+    echo "checking stderr contains no unexpected errors"
     stderr="$($(docker logs "${container_name}" 1>/dev/null) 2>&1)"
     if [[ "${stderr}" != "" ]]; then
         echo "Unexpected output from container:"
