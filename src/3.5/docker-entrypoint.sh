@@ -61,7 +61,7 @@ function check_mounted_folder_with_chown
 #   2) User mounts /data or /logs *but not both*
 #      The  unmounted folder is still owned by neo4j, which should already be writable. The mounted folder should
 #      have rw permissions through user id. This should be verified.
-#   4) No folders are mounted.
+#   3) No folders are mounted.
 #      The /data and /log folder are owned by neo4j by default, and these are already writable by the user.
 #      (This is a very unlikely use case).
 
@@ -123,8 +123,8 @@ if [ "${cmd}" == "dump-config" ]; then
   exit 0
 fi
 
+# Only prompt for license agreement if command contains "neo4j" in it
 if [[ "${cmd}" == *"neo4j"* ]]; then
-  # Only prompt for license agreement if command contains "neo4j" in it
   if [ "${NEO4J_EDITION}" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
       echo >&2 "
