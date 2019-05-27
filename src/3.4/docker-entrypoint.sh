@@ -13,14 +13,16 @@ function is_not_writable
 #    echo "File ${_file} owner stats: $(stat -c %U ${_file}):$(stat -c %G ${_file}) and $(stat -c %u ${_file}):$(stat -c %g ${_file})"
 #    echo "comparing to ${userid}:${groupid}"
     test "$(stat -c %U ${_file})" != "${userid}"  &&  \
-    test "$(stat -c %u ${_file})" != "${userid}"
+    test "$(stat -c %u ${_file})" != "${userid}" && \
+    ! containsElement "$(stat -c %g ${_file})" "${groups[@]}" && \
+    ! containsElement "$(stat -c %G ${_file})" "${groups[@]}"
 }
 
 function print_permissions_advice_and_fail ()
 {
     _directory=${1}
     echo >&2 "
-Folder ${_directory} is not writable for user: ${userid} or group ${groupid}, this is commonly a file permissions issue on the mounted folder.
+Folder ${_directory} is not writable for user: ${userid} or group ${groupid} or groups ${groups[@]}, this is commonly a file permissions issue on the mounted folder.
 
 Hints to solve the issue:
 1) Make sure the folder exists before mounting it. Docker will create the folder using root permissions before starting the Neo4j container. The root permissions disallow Neo4j from writing to the mounted folder.
@@ -59,7 +61,7 @@ function check_mounted_folder_with_chown
 #   2) User mounts /data or /logs *but not both*
 #      The  unmounted folder is still owned by neo4j, which should already be writable. The mounted folder should
 #      have rw permissions through user id. This should be verified.
-#   4) No folders are mounted.
+#   3) No folders are mounted.
 #      The /data and /log folder are owned by neo4j by default, and these are already writable by the user.
 #      (This is a very unlikely use case).
 
@@ -84,15 +86,25 @@ function check_mounted_folder_with_chown
 if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
+  groups=($(id -G neo4j))
   exec_cmd="exec su-exec neo4j"
 else
   userid="$(id -u)"
   groupid="$(id -g)"
+  groups=($(id -G))
   exec_cmd="exec"
 fi
 readonly userid
 readonly groupid
+readonly groups
 readonly exec_cmd
+
+containsElement () {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
 
 # Need to chown the home directory - but a user might have mounted a
 # volume here (notably a conf volume). So take care not to chown
@@ -111,8 +123,8 @@ if [ "${cmd}" == "dump-config" ]; then
   exit 0
 fi
 
+# Only prompt for license agreement if command contains "neo4j" in it
 if [[ "${cmd}" == *"neo4j"* ]]; then
-  # Only prompt for license agreement if command contains "neo4j" in it
   if [ "${NEO4J_EDITION}" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
       echo >&2 "
