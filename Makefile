@@ -27,6 +27,9 @@ all: out/community/.sentinel out/enterprise/.sentinel
 test: test-community test-enterprise
 .PHONY: test
 
+local: tmp/.image-id-community tmp/.image-id-enterprise
+.PHONY: local
+
 package: package-community package-enterprise
 
 package-community: tmp/.image-id-community
@@ -85,7 +88,7 @@ tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
 > touch $@
 
-tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.sh \
+tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(series)/docker-entrypoint.sh \
                        in/$(call tarball,%,$(NEO4J_VERSION))
 > mkdir -p $(@D)
 > cp $(filter %/docker-entrypoint.sh,$^) $(@D)/docker-entrypoint.sh
