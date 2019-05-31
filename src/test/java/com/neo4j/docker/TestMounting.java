@@ -41,7 +41,8 @@ public class TestMounting
         container = new Neo4jContainer( TestSettings.IMAGE_ID );
         container.withExposedPorts( 7474 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
+                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                 .withEnv( "NEO4J_AUTH", "none" );
     }
 
     private Path createHostFolderAndMountAsVolume(String hostFolderNamePrefix, String containerMountPoint ) throws IOException
@@ -72,6 +73,27 @@ public class TestMounting
         container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( uidgid ) );
     }
 
+    private void verifyDataFolderContentsArePresentOnHost( Path dataMount )
+    {
+        Assert.assertTrue( "Neo4j did not write /data/dbms folder",
+                           dataMount.resolve( "dbms" ).toFile().exists());
+        Assert.assertTrue( "Neo4j did not write /data/databases folder",
+                           dataMount.resolve( "databases" ).toFile().exists());
+
+        if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
+        {
+            Assert.assertTrue( "Neo4j did not write /data/tx-logs folder",
+                               dataMount.resolve( "tx-logs" ).toFile().exists());
+        }
+    }
+
+    private void verifyFolderOwnerIsCurrentUser(Path folderToCheck)
+    {
+        String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
+        Assert.assertTrue( "cannot read host "+folderForDiagnostics+" folder", folderToCheck.toFile().canRead());
+        Assert.assertTrue( "cannot write to host "+folderForDiagnostics+" folder", folderToCheck.toFile().canWrite());
+    }
+
     @Test
     void testDumpConfig( ) throws Exception
     {
@@ -93,17 +115,32 @@ public class TestMounting
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
         Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
-        container.withEnv( "NEO4J_AUTH", "none" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
         // we need to check that stuff is readable and owned by the correct user
-
-        Assert.assertTrue( "Neo4j did not write /data/dbms folder",
-                           dataMount.resolve( "dbms" ).toFile().exists());
-//        /databases /tx-logs
-        UserPrincipal x = Files.getOwner( dataMount, LinkOption.NOFOLLOW_LINKS );
-//        UnixUserPrincipals x = Files.getOwner( dataMount, LinkOption.NOFOLLOW_LINKS );
-
+        verifyDataFolderContentsArePresentOnHost( dataMount );
     }
+
+    @Test
+    void testCanMountDataVolumeWithSpecifiedUser( ) throws IOException
+    {
+        Assume.assumeTrue("User checks not valid before 3.1",
+                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        setupBasicContainer();
+        setUserFlagToCurrentlyRunningUser();
+        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        container.start();
+
+        verifyDataFolderContentsArePresentOnHost( dataMount );
+        // verify data folder contents are still owned by the current user
+        verifyFolderOwnerIsCurrentUser( dataMount.resolve( "dbms" ) );
+        verifyFolderOwnerIsCurrentUser( dataMount.resolve( "databases" ) );
+
+        if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
+        {
+            verifyFolderOwnerIsCurrentUser( dataMount.resolve( "tx-logs" ) );
+        }
+    }
+
 }
