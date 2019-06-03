@@ -1,4 +1,4 @@
-package utils;
+package com.neo4j.docker.utils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
