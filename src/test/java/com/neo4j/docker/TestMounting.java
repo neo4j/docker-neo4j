@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import utils.FolderMounting;
-import utils.Neo4jVersion;
-import utils.TestSettings;
+import com.neo4j.docker.utils.FolderMounting;
+import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.TestSettings;
 
 import java.io.IOException;
 import java.nio.file.Path;

@@ -12,8 +12,8 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
-import utils.Neo4jVersion;
-import utils.TestSettings;
+import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.TestSettings;
 
 import java.util.concurrent.TimeUnit;
 

@@ -1,4 +1,4 @@
-package utils;
+package com.neo4j.docker.utils;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.sun.security.auth.module.UnixSystem;
