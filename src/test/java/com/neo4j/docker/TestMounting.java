@@ -66,26 +66,40 @@ public class TestMounting
         container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( uidgid ) );
     }
 
-    private void verifyDataFolderContentsArePresentOnHost( Path dataMount, boolean shouldBeWritable )
+    private void verifySingleFolder(Path folderToCheck, boolean shouldBeWritable)
     {
-        Assert.assertTrue( "Neo4j did not write /data/dbms folder",
-                           dataMount.resolve( "dbms" ).toFile().exists());
-        Assert.assertTrue( "Neo4j did not write /data/databases folder",
-                           dataMount.resolve( "databases" ).toFile().exists());
+        String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
 
-        if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
+        Assert.assertTrue( "did not create "+folderForDiagnostics+" folder on host", folderToCheck.toFile().exists());
+        if(shouldBeWritable)
         {
-            Assert.assertTrue( "Neo4j did not write /data/tx-logs folder",
-                               dataMount.resolve( "tx-logs" ).toFile().exists());
+            Assert.assertTrue( "cannot read host "+folderForDiagnostics+" folder", folderToCheck.toFile().canRead());
+            Assert.assertTrue( "cannot write to host "+folderForDiagnostics+" folder", folderToCheck.toFile().canWrite());
         }
     }
 
-    private void verifyFolderOwnerIsCurrentUser(Path folderToCheck)
+    private void verifyDataFolderContentsArePresentOnHost( Path dataMount, boolean shouldBeWritable )
     {
-        String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
-        Assert.assertTrue( "cannot read host "+folderForDiagnostics+" folder", folderToCheck.toFile().canRead());
-        Assert.assertTrue( "cannot write to host "+folderForDiagnostics+" folder", folderToCheck.toFile().canWrite());
+        verifySingleFolder( dataMount.resolve( "dbms" ), shouldBeWritable );
+        verifySingleFolder( dataMount.resolve( "databases" ), shouldBeWritable );
+
+        if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
+        {
+            verifySingleFolder( dataMount.resolve( "tx-logs" ), shouldBeWritable );
+        }
     }
+
+    private void verifyLogsFolderContentsArePresentOnHost( Path logsMount, boolean shouldBeWritable )
+    {
+        verifySingleFolder( logsMount, shouldBeWritable );
+        Assert.assertTrue( "Neo4j did not write a debug.log file to logs",
+                           logsMount.resolve( "debug.log" ).toFile().exists() );
+
+        Assert.assertEquals( String.format( "The debug.log file should %sbe writable", shouldBeWritable?"":"not "),
+                             shouldBeWritable,
+                             logsMount.resolve( "debug.log" ).toFile().canWrite() );
+    }
+
 
     @Test
     void testDumpConfig( ) throws Exception
@@ -100,6 +114,8 @@ public class TestMounting
         Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
         assertTrue( "dump-config did not dump the config file to disk", expectedConfDumpFile.toFile().exists() );
     }
+
+    // ==== just mounting /data volume
 
     @Test
     void testCanMountDataVolumeWithDefaultUser( ) throws IOException
@@ -126,14 +142,66 @@ public class TestMounting
         container.start();
 
         verifyDataFolderContentsArePresentOnHost( dataMount, true );
-        // verify data folder contents are still owned by the current user
-        verifyFolderOwnerIsCurrentUser( dataMount.resolve( "dbms" ) );
-        verifyFolderOwnerIsCurrentUser( dataMount.resolve( "databases" ) );
-
-        if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
-        {
-            verifyFolderOwnerIsCurrentUser( dataMount.resolve( "tx-logs" ) );
-        }
     }
 
+    // ==== just mounting /logs volume
+
+
+    @Test
+    void testCanMountLogsVolumeWithDefaultUser( ) throws IOException
+    {
+        Assume.assumeTrue("User checks not valid before 3.1",
+                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        setupBasicContainer();
+        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        container.start();
+
+        verifyLogsFolderContentsArePresentOnHost( logsMount, false );
+    }
+
+    @Test
+    void testCanMountLogsVolumeWithSpecifiedUser( ) throws IOException
+    {
+        Assume.assumeTrue("User checks not valid before 3.1",
+                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        setupBasicContainer();
+        setUserFlagToCurrentlyRunningUser();
+        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        container.start();
+
+        verifyLogsFolderContentsArePresentOnHost( logsMount, true );
+    }
+
+    // ==== mounting /data and /logs volumes
+
+    @Test
+    void testCanMountDataAndLogsVolumesWithDefaultUser( ) throws IOException
+    {
+        Assume.assumeTrue("User checks not valid before 3.1",
+                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        setupBasicContainer();
+        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        container.start();
+
+        // neo4j should now have started, so there'll be stuff in the data folder
+        // we need to check that stuff is readable and owned by the correct user
+        verifyDataFolderContentsArePresentOnHost( dataMount, false );
+        verifyLogsFolderContentsArePresentOnHost( logsMount, false );
+    }
+
+    @Test
+    void testCanMountDataAndLogsVolumesWithSpecifiedUser( ) throws IOException
+    {
+        Assume.assumeTrue("User checks not valid before 3.1",
+                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        setupBasicContainer();
+        setUserFlagToCurrentlyRunningUser();
+        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        container.start();
+
+        verifyDataFolderContentsArePresentOnHost( dataMount, true );
+        verifyLogsFolderContentsArePresentOnHost( logsMount, true );
+    }
 }
