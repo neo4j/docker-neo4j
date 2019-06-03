@@ -6,7 +6,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.TempDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -17,13 +16,7 @@ import utils.TestSettings;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.UserPrincipal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -45,7 +38,7 @@ public class TestMounting
                  .withEnv( "NEO4J_AUTH", "none" );
     }
 
-    private Path createHostFolderAndMountAsVolume(String hostFolderNamePrefix, String containerMountPoint ) throws IOException
+    private Path createHostFolderAndMountAsVolume( String hostFolderNamePrefix, String containerMountPoint ) throws IOException
     {
         String randomStr = String.format( "%4d", rng.nextInt(10000 ) );  // random 4 digit number
         Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( hostFolderNamePrefix + randomStr);
@@ -73,7 +66,7 @@ public class TestMounting
         container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( uidgid ) );
     }
 
-    private void verifyDataFolderContentsArePresentOnHost( Path dataMount )
+    private void verifyDataFolderContentsArePresentOnHost( Path dataMount, boolean shouldBeWritable )
     {
         Assert.assertTrue( "Neo4j did not write /data/dbms folder",
                            dataMount.resolve( "dbms" ).toFile().exists());
@@ -119,7 +112,7 @@ public class TestMounting
 
         // neo4j should now have started, so there'll be stuff in the data folder
         // we need to check that stuff is readable and owned by the correct user
-        verifyDataFolderContentsArePresentOnHost( dataMount );
+        verifyDataFolderContentsArePresentOnHost( dataMount, false );
     }
 
     @Test
@@ -132,7 +125,7 @@ public class TestMounting
         Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
         container.start();
 
-        verifyDataFolderContentsArePresentOnHost( dataMount );
+        verifyDataFolderContentsArePresentOnHost( dataMount, true );
         // verify data folder contents are still owned by the current user
         verifyFolderOwnerIsCurrentUser( dataMount.resolve( "dbms" ) );
         verifyFolderOwnerIsCurrentUser( dataMount.resolve( "databases" ) );
