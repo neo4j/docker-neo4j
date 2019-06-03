@@ -1,33 +1,24 @@
 package com.neo4j.docker;
 
-import com.github.dockerjava.api.command.CreateContainerCmd;
-import com.sun.security.auth.module.UnixSystem;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import utils.FolderMounting;
 import utils.Neo4jVersion;
 import utils.TestSettings;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
-import java.util.function.Consumer;
 
-import static junit.framework.TestCase.assertTrue;
 
-@Ignore
 public class TestMounting
 {
     private static Logger log = LoggerFactory.getLogger( TestMounting.class );
     private Neo4jContainer container;
-    private Random rng = new Random(  );
 
     private void setupBasicContainer()
     {
@@ -38,33 +29,6 @@ public class TestMounting
                  .withEnv( "NEO4J_AUTH", "none" );
     }
 
-    private Path createHostFolderAndMountAsVolume( String hostFolderNamePrefix, String containerMountPoint ) throws IOException
-    {
-        String randomStr = String.format( "%4d", rng.nextInt(10000 ) );  // random 4 digit number
-        Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( hostFolderNamePrefix + randomStr);
-        try
-        {
-            Files.createDirectories( hostFolder );
-        }
-        catch ( IOException e )
-        {
-            log.error( "could not create directory: " + hostFolder.toAbsolutePath().toString() );
-            e.printStackTrace();
-            throw e;
-        }
-        container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
-                                      containerMountPoint,
-                                      BindMode.READ_WRITE );
-
-        return hostFolder;
-    }
-
-    private void setUserFlagToCurrentlyRunningUser()
-    {
-        UnixSystem fs = new UnixSystem();
-        String uidgid = fs.getUid() + ":" + fs.getGid() ;
-        container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( uidgid ) );
-    }
 
     private void verifySingleFolder(Path folderToCheck, boolean shouldBeWritable)
     {
@@ -105,14 +69,14 @@ public class TestMounting
     void testDumpConfig( ) throws Exception
     {
         setupBasicContainer();
-        Path confMount = createHostFolderAndMountAsVolume( "conf-", "/conf" );
-        setUserFlagToCurrentlyRunningUser();
+        Path confMount = FolderMounting.createHostFolderAndMountAsVolume( container, "conf-", "/conf" );
+        FolderMounting.setUserFlagToCurrentlyRunningUser(container);
         container.setWaitStrategy( null ); //otherwise will hang waiting for Neo4j to start
         container.withCommand( "dump-config" );
         container.start();
 
         Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
-        assertTrue( "dump-config did not dump the config file to disk", expectedConfDumpFile.toFile().exists() );
+        Assert.assertTrue( "dump-config did not dump the config file to disk", expectedConfDumpFile.toFile().exists() );
     }
 
     // ==== just mounting /data volume
@@ -123,7 +87,7 @@ public class TestMounting
         Assume.assumeTrue("User checks not valid before 3.1",
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
-        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        Path dataMount = FolderMounting.createHostFolderAndMountAsVolume( container, "data-", "/data" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
@@ -137,8 +101,8 @@ public class TestMounting
         Assume.assumeTrue("User checks not valid before 3.1",
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
-        setUserFlagToCurrentlyRunningUser();
-        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        FolderMounting.setUserFlagToCurrentlyRunningUser(container);
+        Path dataMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "data-", "/data" );
         container.start();
 
         verifyDataFolderContentsArePresentOnHost( dataMount, true );
@@ -153,7 +117,7 @@ public class TestMounting
         Assume.assumeTrue("User checks not valid before 3.1",
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
-        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        Path logsMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "logs-", "/logs" );
         container.start();
 
         verifyLogsFolderContentsArePresentOnHost( logsMount, false );
@@ -165,8 +129,8 @@ public class TestMounting
         Assume.assumeTrue("User checks not valid before 3.1",
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
-        setUserFlagToCurrentlyRunningUser();
-        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        FolderMounting.setUserFlagToCurrentlyRunningUser(container);
+        Path logsMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "logs-", "/logs" );
         container.start();
 
         verifyLogsFolderContentsArePresentOnHost( logsMount, true );
@@ -180,8 +144,8 @@ public class TestMounting
         Assume.assumeTrue("User checks not valid before 3.1",
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
-        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
-        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        Path dataMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "data-", "/data" );
+        Path logsMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "logs-", "/logs" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
@@ -196,9 +160,9 @@ public class TestMounting
         Assume.assumeTrue("User checks not valid before 3.1",
                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
         setupBasicContainer();
-        setUserFlagToCurrentlyRunningUser();
-        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
-        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        FolderMounting.setUserFlagToCurrentlyRunningUser(container);
+        Path dataMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "data-", "/data" );
+        Path logsMount = FolderMounting.createHostFolderAndMountAsVolume(container,  "logs-", "/logs" );
         container.start();
 
         verifyDataFolderContentsArePresentOnHost( dataMount, true );
