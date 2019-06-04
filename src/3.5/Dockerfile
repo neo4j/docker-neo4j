@@ -1,22 +1,24 @@
-FROM adoptopenjdk/openjdk8:alpine-jre
+FROM openjdk:8-jre-slim
 
 ENV NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
-    NEO4J_HOME="/var/lib/neo4j"
+    NEO4J_HOME="/var/lib/neo4j" \
+    TINI_VERSION="v0.18.0" \
+    TINI_SHA256="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
-RUN addgroup -S neo4j && adduser -S -H -h "${NEO4J_HOME}" -G neo4j neo4j
+RUN addgroup --system neo4j && adduser --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
 COPY ./local-package/* /tmp/
 
-RUN apk add --no-cache --quiet \
-    bash \
-    curl \
-    tini \
-    su-exec \
+RUN apt update \
+    && apt install -y curl gosu \
+    && curl -L --fail --silent --show-error "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini" > /sbin/tini \
+    && echo "${TINI_SHA256}  /sbin/tini" | sha256sum -c --strict --quiet \
+    && chmod +x /sbin/tini \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
-    && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -csw - \
+    && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
     && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
     && rm ${NEO4J_TARBALL} \
@@ -29,8 +31,7 @@ RUN apk add --no-cache --quiet \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
-    && ln -s /logs "${NEO4J_HOME}"/logs \
-    && apk del curl
+    && ln -s /logs "${NEO4J_HOME}"/logs
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
