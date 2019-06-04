@@ -1,7 +1,7 @@
 package com.neo4j.docker;
 
-import org.junit.Assert;
-import org.junit.Assume;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +16,6 @@ import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
 
 import java.util.concurrent.TimeUnit;
-
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 
 public class TestBasic
 {
@@ -43,7 +40,7 @@ public class TestBasic
     {
         createBasicContainer();
         container.start();
-        assertTrue( container.isRunning() );
+        Assertions.assertTrue( container.isRunning() );
     }
 
     @Test
@@ -51,7 +48,7 @@ public class TestBasic
     {
         createBasicContainer();
         container.start();
-        assertTrue( container.isRunning() );
+        Assertions.assertTrue( container.isRunning() );
 
         ToStringConsumer toStringConsumer = new ToStringConsumer();
         WaitingConsumer waitingConsumer = new WaitingConsumer();
@@ -62,7 +59,7 @@ public class TestBasic
         waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( "Remote interface available at http://localhost:7474/" ),
                                    10, TimeUnit.SECONDS);
 
-        assertEquals( "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String(),
+        Assertions.assertEquals( "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String(),
                       "", toStringConsumer.toUtf8String() );
     }
 
@@ -72,7 +69,7 @@ public class TestBasic
         createBasicContainer();
         container.withEnv( "NEO4J_1a", "1" );
         container.start();
-        assertTrue( container.isRunning() );
+        Assertions.assertTrue( container.isRunning() );
 
         WaitingConsumer waitingConsumer = new WaitingConsumer();
         container.followOutput(waitingConsumer);
@@ -85,17 +82,17 @@ public class TestBasic
         }
         catch(Exception e)
         {
-            Assert.fail("Neo4j did not warn about invalid numeric config variable `Neo4j_1a`");
+            Assertions.fail("Neo4j did not warn about invalid numeric config variable `Neo4j_1a`");
         }
     }
 
     @Test
     void testLicenseAcceptanceRequired()
     {
-        Assume.assumeTrue( "No license checks for community edition",
-                           TestSettings.EDITION == TestSettings.Edition.ENTERPRISE );
-        Assume.assumeTrue( "No license checks before version 3.3.0",
-                           TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ));
+        Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+                                "No license checks for community edition");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
+                                "No license checks before version 3.3.0");
 
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
@@ -113,7 +110,7 @@ public class TestBasic
         }
         catch(Exception e)
         {
-            Assert.fail("Neo4j did not notify about accepting the license agreement");
+            Assertions.fail("Neo4j did not notify about accepting the license agreement");
         }
     }
 
@@ -127,8 +124,8 @@ public class TestBasic
 
         Container.ExecResult whichResult = container.execInContainer("which", "cypher-shell");
 
-        Assert.assertTrue( "cypher-shell not on path",
-                           whichResult.getStdout().contains( "/var/lib/neo4j/bin/cypher-shell" ) );
+        Assertions.assertTrue( whichResult.getStdout().contains( "/var/lib/neo4j/bin/cypher-shell" ),
+                               "cypher-shell not on path" );
     }
 
     @Test
@@ -142,7 +139,7 @@ public class TestBasic
 
         Container.ExecResult whichResult = container.execInContainer("pwd");
 
-        Assert.assertTrue( "Could not start neo4j from outside NEO4J_HOME",
-                           whichResult.getStdout().contains( "/tmp" ) );
+        Assertions.assertTrue( whichResult.getStdout().contains( "/tmp" ),
+                               "Could not start neo4j from outside NEO4J_HOME" );
     }
 }
