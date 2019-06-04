@@ -1,7 +1,7 @@
 package com.neo4j.docker;
 
-import org.junit.Assert;
-import org.junit.Assume;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +28,9 @@ public class TestMounting
     {
         container = new Neo4jContainer( TestSettings.IMAGE_ID );
         container.withExposedPorts( 7474 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_AUTH", "none" );
+                .withLogConsumer( new Slf4jLogConsumer( log ) )
+                .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                .withEnv( "NEO4J_AUTH", "none" );
     }
 
     private Path createHostFolderAndMountAsVolume( String hostFolderNamePrefix, String containerMountPoint ) throws IOException
@@ -58,11 +58,11 @@ public class TestMounting
     {
         String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
 
-        Assert.assertTrue( "did not create "+folderForDiagnostics+" folder on host", folderToCheck.toFile().exists());
+        Assertions.assertTrue( folderToCheck.toFile().exists(), "did not create " + folderForDiagnostics + " folder on host" );
         if(shouldBeWritable)
         {
-            Assert.assertTrue( "cannot read host "+folderForDiagnostics+" folder", folderToCheck.toFile().canRead());
-            Assert.assertTrue( "cannot write to host "+folderForDiagnostics+" folder", folderToCheck.toFile().canWrite());
+            Assertions.assertTrue( folderToCheck.toFile().canRead(), "cannot read host "+folderForDiagnostics+" folder" );
+            Assertions.assertTrue(folderToCheck.toFile().canWrite(),  "cannot write to host "+folderForDiagnostics+" folder" );
         }
     }
 
@@ -80,12 +80,11 @@ public class TestMounting
     private void verifyLogsFolderContentsArePresentOnHost( Path logsMount, boolean shouldBeWritable )
     {
         verifySingleFolder( logsMount, shouldBeWritable );
-        Assert.assertTrue( "Neo4j did not write a debug.log file to "+logsMount.toString(),
-                           logsMount.resolve( "debug.log" ).toFile().exists() );
-
-        Assert.assertEquals( String.format( "The debug.log file should %sbe writable", shouldBeWritable?"":"not "),
-                             shouldBeWritable,
-                             logsMount.resolve( "debug.log" ).toFile().canWrite() );
+        Assertions.assertTrue( logsMount.resolve( "debug.log" ).toFile().exists(),
+                               "Neo4j did not write a debug.log file to "+logsMount.toString() );
+        Assertions.assertEquals( shouldBeWritable,
+                                 logsMount.resolve( "debug.log" ).toFile().canWrite(),
+                                 String.format( "The debug.log file should %sbe writable", shouldBeWritable?"":"not ") );
     }
 
 
@@ -100,7 +99,7 @@ public class TestMounting
         container.start();
 
         Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
-        Assert.assertTrue( "dump-config did not dump the config file to disk", expectedConfDumpFile.toFile().exists() );
+        Assertions.assertTrue( expectedConfDumpFile.toFile().exists(), "dump-config did not dump the config file to disk" );
     }
 
     // ==== just mounting /data volume
@@ -108,8 +107,8 @@ public class TestMounting
     @Test
     void testCanMountDataVolumeWithDefaultUser( ) throws IOException
     {
-        Assume.assumeTrue("User checks not valid before 3.1",
-                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
         setupBasicContainer();
         Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
         container.start();
@@ -122,8 +121,8 @@ public class TestMounting
     @Test
     void testCanMountDataVolumeWithSpecifiedUser( ) throws IOException
     {
-        Assume.assumeTrue("User checks not valid before 3.1",
-                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
         setupBasicContainer();
         SetContainerUser.currentlyRunningUser( container );
         Path dataMount = createHostFolderAndMountAsVolume(  "data-", "/data" );
@@ -138,8 +137,8 @@ public class TestMounting
     @Test
     void testCanMountLogsVolumeWithDefaultUser( ) throws IOException
     {
-        Assume.assumeTrue("User checks not valid before 3.1",
-                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
         setupBasicContainer();
         Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
         container.start();
@@ -150,8 +149,8 @@ public class TestMounting
     @Test
     void testCanMountLogsVolumeWithSpecifiedUser( ) throws IOException
     {
-        Assume.assumeTrue("User checks not valid before 3.1",
-                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
         setupBasicContainer();
         SetContainerUser.currentlyRunningUser( container );
         Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
@@ -165,8 +164,8 @@ public class TestMounting
     @Test
     void testCanMountDataAndLogsVolumesWithDefaultUser( ) throws IOException
     {
-        Assume.assumeTrue("User checks not valid before 3.1",
-                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
         setupBasicContainer();
         Path dataMount = createHostFolderAndMountAsVolume(  "data-", "/data" );
         Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
@@ -181,8 +180,8 @@ public class TestMounting
     @Test
     void testCanMountDataAndLogsVolumesWithSpecifiedUser( ) throws IOException
     {
-        Assume.assumeTrue("User checks not valid before 3.1",
-                          TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ) );
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
         setupBasicContainer();
         SetContainerUser.currentlyRunningUser( container );
         Path dataMount = createHostFolderAndMountAsVolume(  "data-", "/data" );
