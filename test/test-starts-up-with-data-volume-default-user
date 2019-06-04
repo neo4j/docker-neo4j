@@ -24,7 +24,7 @@ if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
 fi
 
 # just check top level folder, since the rest is chowned to neo4j user so test cannot read it
-expected_UID="100"
+expected_UID="101"
 expected_GID="101"
 if [[ ${expected_UID} != "$(uid_of "${datadir}")" ]]; then
     echo >&2 "Unexpected UID of "${datadir}" after running with mounted data volume: "$(uid_of "${datadir}")" != ${expected_UID}"
