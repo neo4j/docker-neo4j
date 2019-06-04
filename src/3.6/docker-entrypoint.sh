@@ -7,6 +7,11 @@ function running_as_root
     test "$(id -u)" = "0"
 }
 
+function secure_mode_enabled
+{
+    test "${SECURE_FILE_PERMISSIONS:=no}" = "yes"
+}
+
 function is_not_writable
 {
     _file=${1}
@@ -68,7 +73,7 @@ function check_mounted_folder_with_chown
     mountFolder=${1}
     if running_as_root; then
         if is_not_writable "${mountFolder}"; then
-            # warn that we're about to chown the /data folder and then chown it
+            # warn that we're about to chown the folder and then chown it
             echo >&2 "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         fi
@@ -87,7 +92,7 @@ if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   groups=($(id -G neo4j))
-  exec_cmd="exec su-exec neo4j"
+  exec_cmd="exec gosu neo4j:neo4j"
 else
   userid="$(id -u)"
   groupid="$(id -g)"
