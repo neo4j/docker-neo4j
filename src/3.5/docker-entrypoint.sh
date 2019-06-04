@@ -12,11 +12,20 @@ function secure_mode_enabled
     test "${SECURE_FILE_PERMISSIONS:=no}" = "yes"
 }
 
+containsElement () {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
+
 function is_not_writable
 {
     _file=${1}
-#    echo "File ${_file} owner stats: $(stat -c %U ${_file}):$(stat -c %G ${_file}) and $(stat -c %u ${_file}):$(stat -c %g ${_file})"
-#    echo "comparing to ${userid}:${groupid}"
+    # Not using "test -w ${_file}" here because we need to check if the neo4j user or supplied user
+    # has write access to the file, and this script might not be running as that user.
+
+    # echo "comparing to ${userid}:${groupid}"
     test "$(stat -c %U ${_file})" != "${userid}"  &&  \
     test "$(stat -c %u ${_file})" != "${userid}" && \
     ! containsElement "$(stat -c %g ${_file})" "${groups[@]}" && \
@@ -76,6 +85,10 @@ function check_mounted_folder_with_chown
             # warn that we're about to chown the folder and then chown it
             echo >&2 "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
+
+#            if ! secure_mode_enabled; then
+#                chmod -R 755 "${mountFolder}"
+#            fi
         fi
     else
         if [ ! -w "${mountFolder}" ]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
@@ -104,12 +117,6 @@ readonly groupid
 readonly groups
 readonly exec_cmd
 
-containsElement () {
-  local e match="$1"
-  shift
-  for e; do [[ "$e" == "$match" ]] && return 0; done
-  return 1
-}
 
 # Need to chown the home directory - but a user might have mounted a
 # volume here (notably a conf volume). So take care not to chown
@@ -119,7 +126,7 @@ if running_as_root; then
     chown "${userid}":"${groupid}" "${NEO4J_HOME}"
     chmod 700 "${NEO4J_HOME}"
     find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chown -R ${userid}:${groupid} {} \;
-    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chmod 700 {} \;
+    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chmod -R 700 {} \;
 fi
 
 if [ "${cmd}" == "dump-config" ]; then
@@ -218,27 +225,37 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 
 if [ -d /conf ]; then
-    check_mounted_folder "/conf"
+    if secure_mode_enabled; then
+	    check_mounted_folder "/conf"
+    fi
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
-    check_mounted_folder "/ssl"
+    if secure_mode_enabled; then
+    	check_mounted_folder "/ssl"
+    fi
     NEO4J_dbms_directories_certificates="/ssl"
 fi
 
 if [ -d /plugins ]; then
-    check_mounted_folder "/plugins"
+    if secure_mode_enabled; then
+        check_mounted_folder "/plugins"
+    fi
     NEO4J_dbms_directories_plugins="/plugins"
 fi
 
 if [ -d /import ]; then
-    check_mounted_folder "/import"
+    if secure_mode_enabled; then
+        check_mounted_folder "/import"
+    fi
     NEO4J_dbms_directories_import="/import"
 fi
 
 if [ -d /metrics ]; then
-    check_mounted_folder "/metrics"
+    if secure_mode_enabled; then
+        check_mounted_folder "/metrics"
+    fi
     NEO4J_dbms_directories_metrics="/metrics"
 fi
 
