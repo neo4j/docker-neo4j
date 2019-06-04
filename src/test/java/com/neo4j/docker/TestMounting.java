@@ -80,7 +80,7 @@ public class TestMounting
     private void verifyLogsFolderContentsArePresentOnHost( Path logsMount, boolean shouldBeWritable )
     {
         verifySingleFolder( logsMount, shouldBeWritable );
-        Assert.assertTrue( "Neo4j did not write a debug.log file to logs",
+        Assert.assertTrue( "Neo4j did not write a debug.log file to "+logsMount.toString(),
                            logsMount.resolve( "debug.log" ).toFile().exists() );
 
         Assert.assertEquals( String.format( "The debug.log file should %sbe writable", shouldBeWritable?"":"not "),
