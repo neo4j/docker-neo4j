@@ -3,6 +3,9 @@ package com.neo4j.docker;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -11,11 +14,14 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Random;
+import java.util.stream.Stream;
 
 
 public class TestMounting
@@ -24,13 +30,33 @@ public class TestMounting
     private Neo4jContainer container;
     private static Random rng = new Random(  );
 
-    private void setupBasicContainer()
+
+    static Stream<Arguments> defaultUseFlagrSecurePermissionsFlag()
+    {
+        // it would be nice if JUnit5 had some way of providing all combinations of some collections as test parameters
+        return Stream.of(
+                Arguments.arguments( false, false ),
+                Arguments.arguments( false, true  ),
+                Arguments.arguments(  true, false ),
+                Arguments.arguments(  true, true  ));
+    }
+
+    private void setupBasicContainer( boolean asCurrentUser, boolean setSecurityPermissionsFlag )
     {
         container = new Neo4jContainer( TestSettings.IMAGE_ID );
         container.withExposedPorts( 7474 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                 .withEnv( "NEO4J_AUTH", "none" );
+
+        if(asCurrentUser)
+        {
+            SetContainerUser.currentlyRunningUser( container );
+        }
+        if(setSecurityPermissionsFlag)
+        {
+            container.withEnv( "SECURE_FILE_PERMISSIONS", "yes" );
+        }
     }
 
     private Path createHostFolderAndMountAsVolume( String hostFolderNamePrefix, String containerMountPoint ) throws IOException
@@ -91,104 +117,62 @@ public class TestMounting
     @Test
     void testDumpConfig( ) throws Exception
     {
-        setupBasicContainer();
+        setupBasicContainer( true, false );
         Path confMount = createHostFolderAndMountAsVolume( "conf-", "/conf" );
-        SetContainerUser.currentlyRunningUser( container );
-        container.setWaitStrategy( null ); //otherwise will hang waiting for Neo4j to start
+        container.setWaitStrategy( null );
         container.withCommand( "dump-config" );
         container.start();
+        container.stop();
 
         Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
-        Assertions.assertTrue( expectedConfDumpFile.toFile().exists(), "dump-config did not dump the config file to disk" );
+        Assertions.assertTrue( expectedConfDumpFile.toFile().exists(), "dump-config did not dump the config file to "+confMount.toString() );
     }
 
-    // ==== just mounting /data volume
 
-    @Test
-    void testCanMountDataVolumeWithDefaultUser( ) throws IOException
+    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
+    @MethodSource("defaultUseFlagrSecurePermissionsFlag")
+    void testCanMountJustDataFolder(boolean asCurrentUser, boolean setSecurityPermissionsFlag) throws IOException
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
-        setupBasicContainer();
+
+        setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
         Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
         // we need to check that stuff is readable and owned by the correct user
-        verifyDataFolderContentsArePresentOnHost( dataMount, false );
+        verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
     }
 
-    @Test
-    void testCanMountDataVolumeWithSpecifiedUser( ) throws IOException
+    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
+    @MethodSource("defaultUseFlagrSecurePermissionsFlag")
+    void testCanMountJustLogsFolder(boolean asCurrentUser, boolean setSecurityPermissionsFlag) throws IOException
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
-        setupBasicContainer();
-        SetContainerUser.currentlyRunningUser( container );
-        Path dataMount = createHostFolderAndMountAsVolume(  "data-", "/data" );
+
+        setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
+        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
         container.start();
 
-        verifyDataFolderContentsArePresentOnHost( dataMount, true );
+        verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
     }
 
-    // ==== just mounting /logs volume
-
-
-    @Test
-    void testCanMountLogsVolumeWithDefaultUser( ) throws IOException
+    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
+    @MethodSource("defaultUseFlagrSecurePermissionsFlag")
+    void testCanMountDataAndLogsFolder(boolean asCurrentUser, boolean setSecurityPermissionsFlag) throws IOException
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
-        setupBasicContainer();
-        Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
+
+        setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
+        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
         container.start();
 
-        verifyLogsFolderContentsArePresentOnHost( logsMount, false );
+        verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
+        verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
     }
 
-    @Test
-    void testCanMountLogsVolumeWithSpecifiedUser( ) throws IOException
-    {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
-                               "User checks not valid before 3.1" );
-        setupBasicContainer();
-        SetContainerUser.currentlyRunningUser( container );
-        Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
-        container.start();
-
-        verifyLogsFolderContentsArePresentOnHost( logsMount, true );
-    }
-
-    // ==== mounting /data and /logs volumes
-
-    @Test
-    void testCanMountDataAndLogsVolumesWithDefaultUser( ) throws IOException
-    {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
-                               "User checks not valid before 3.1" );
-        setupBasicContainer();
-        Path dataMount = createHostFolderAndMountAsVolume(  "data-", "/data" );
-        Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
-        container.start();
-
-        // neo4j should now have started, so there'll be stuff in the data folder
-        // we need to check that stuff is readable and owned by the correct user
-        verifyDataFolderContentsArePresentOnHost( dataMount, false );
-        verifyLogsFolderContentsArePresentOnHost( logsMount, false );
-    }
-
-    @Test
-    void testCanMountDataAndLogsVolumesWithSpecifiedUser( ) throws IOException
-    {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
-                               "User checks not valid before 3.1" );
-        setupBasicContainer();
-        SetContainerUser.currentlyRunningUser( container );
-        Path dataMount = createHostFolderAndMountAsVolume(  "data-", "/data" );
-        Path logsMount = createHostFolderAndMountAsVolume(  "logs-", "/logs" );
-        container.start();
-
-        verifyDataFolderContentsArePresentOnHost( dataMount, true );
-        verifyLogsFolderContentsArePresentOnHost( logsMount, true );
-    }
 }
