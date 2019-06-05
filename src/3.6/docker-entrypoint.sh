@@ -85,10 +85,6 @@ function check_mounted_folder_with_chown
             # warn that we're about to chown the folder and then chown it
             echo >&2 "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
-
-#            if ! secure_mode_enabled; then
-#                chmod -R 755 "${mountFolder}"
-#            fi
         fi
     else
         if [ ! -w "${mountFolder}" ]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
