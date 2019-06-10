@@ -83,11 +83,11 @@ function check_mounted_folder_with_chown
     if running_as_root; then
         if is_not_writable "${mountFolder}"; then
             # warn that we're about to chown the folder and then chown it
-            echo >&2 "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
+            echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         fi
     else
-        if [ ! -w "${mountFolder}" ]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
+        if [[ ! -w "${mountFolder}" ]]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
             print_permissions_advice_and_fail "${mountFolder}"
         fi
     fi
