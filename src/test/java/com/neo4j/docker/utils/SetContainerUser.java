@@ -23,4 +23,9 @@ public class SetContainerUser
         String uidgid = fs.getUid() + ":" + fs.getGid() ;
         container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( uidgid ) );
     }
+    public static String getCurrentlyRunningUserString()
+    {
+        UnixSystem fs = new UnixSystem();
+        return fs.getUid() + ":" + fs.getGid();
+    }
 }
