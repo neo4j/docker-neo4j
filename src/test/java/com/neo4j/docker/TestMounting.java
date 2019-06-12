@@ -1,5 +1,6 @@
 package com.neo4j.docker;
 
+import com.neo4j.docker.utils.HostFileSystemOperations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -8,19 +9,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Random;
 import java.util.stream.Stream;
 
 
@@ -28,7 +24,6 @@ public class TestMounting
 {
     private static Logger log = LoggerFactory.getLogger( TestMounting.class );
     private Neo4jContainer container;
-    private static Random rng = new Random(  );
 
 
     static Stream<Arguments> defaultUseFlagrSecurePermissionsFlag()
@@ -57,27 +52,6 @@ public class TestMounting
         {
             container.withEnv( "SECURE_FILE_PERMISSIONS", "yes" );
         }
-    }
-
-    private Path createHostFolderAndMountAsVolume( String hostFolderNamePrefix, String containerMountPoint ) throws IOException
-    {
-        String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
-        Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( hostFolderNamePrefix + randomStr);
-        try
-        {
-            Files.createDirectories( hostFolder );
-        }
-        catch ( IOException e )
-        {
-            log.error( "could not create directory: " + hostFolder.toAbsolutePath().toString() );
-            e.printStackTrace();
-            throw e;
-        }
-        container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
-                                      containerMountPoint,
-                                      BindMode.READ_WRITE );
-
-        return hostFolder;
     }
 
     private void verifySingleFolder(Path folderToCheck, boolean shouldBeWritable)
@@ -118,7 +92,7 @@ public class TestMounting
     void testDumpConfig( ) throws Exception
     {
         setupBasicContainer( true, false );
-        Path confMount = createHostFolderAndMountAsVolume( "conf-", "/conf" );
+        Path confMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "conf-", "/conf" );
         container.setWaitStrategy( null );
         container.withCommand( "dump-config" );
         container.start();
@@ -137,7 +111,7 @@ public class TestMounting
                                "User checks not valid before 3.1" );
 
         setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
-        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
+        Path dataMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "data-", "/data" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
@@ -153,7 +127,7 @@ public class TestMounting
                                "User checks not valid before 3.1" );
 
         setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
-        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        Path logsMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
@@ -167,8 +141,8 @@ public class TestMounting
                                "User checks not valid before 3.1" );
 
         setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
-        Path dataMount = createHostFolderAndMountAsVolume( "data-", "/data" );
-        Path logsMount = createHostFolderAndMountAsVolume( "logs-", "/logs" );
+        Path dataMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "data-", "/data" );
+        Path logsMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
         verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );

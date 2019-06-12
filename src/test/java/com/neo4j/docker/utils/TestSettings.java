@@ -12,7 +12,7 @@ public class TestSettings
 {
     public static final Neo4jVersion NEO4J_VERSION = Neo4jVersion.fromVersionString( getVersionFromPropertyOrEnv() );
     public static final String IMAGE_ID = getImageFromPropertyOrEnv();
-    public static final Path TEST_TMP_FOLDER = Paths.get("tmp", "local-mounts");
+    public static final Path TEST_TMP_FOLDER = Paths.get("local-mounts" );
     public static final Edition EDITION = getEditionFromPropertyOrEnv();
 
     public enum Edition
