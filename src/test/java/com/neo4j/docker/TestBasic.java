@@ -63,28 +63,6 @@ public class TestBasic
                       "", toStringConsumer.toUtf8String() );
     }
 
-    @Test
-    void testIgnoreNumericVars()
-    {
-        createBasicContainer();
-        container.withEnv( "NEO4J_1a", "1" );
-        container.start();
-        Assertions.assertTrue( container.isRunning() );
-
-        WaitingConsumer waitingConsumer = new WaitingConsumer();
-        container.followOutput(waitingConsumer);
-
-        try
-        {
-            waitingConsumer.waitUntil( frame -> frame.getUtf8String()
-                                                     .contains( "WARNING: 1a not written to conf file because settings that " +
-                                                                "start with a number are not permitted" ), 30, TimeUnit.SECONDS );
-        }
-        catch(Exception e)
-        {
-            Assertions.fail("Neo4j did not warn about invalid numeric config variable `Neo4j_1a`");
-        }
-    }
 
     @Test
     void testLicenseAcceptanceRequired()
@@ -132,8 +110,6 @@ public class TestBasic
     void testCanChangeWorkDir() throws Exception
     {
         createBasicContainer();
-//        container.withCommand( "echo hail satan!" ); // don't start Neo4j in the container because we don't need it
-//        container.setWaitStrategy( null );
         container.setWorkingDirectory( "/tmp" );
         container.start();
 
