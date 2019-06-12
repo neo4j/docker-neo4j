@@ -29,6 +29,7 @@ public class HostFileSystemOperations
             e.printStackTrace();
             throw e;
         }
+        log.info( "Created folder "+hostFolder.toString() );
         container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
                                       containerMountPoint,
                                       BindMode.READ_WRITE );
