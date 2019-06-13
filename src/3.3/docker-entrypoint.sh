@@ -81,7 +81,7 @@ function check_mounted_folder_with_chown
 
     mountFolder=${1}
     if running_as_root; then
-        if is_not_writable "${mountFolder}"; then
+        if is_not_writable "${mountFolder}" && ! secure_mode_enabled; then
             # warn that we're about to chown the folder and then chown it
             echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
@@ -121,8 +121,8 @@ if running_as_root; then
     # Non-recursive chown for the base directory
     chown "${userid}":"${groupid}" "${NEO4J_HOME}"
     chmod 700 "${NEO4J_HOME}"
-    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chown -R ${userid}:${groupid} {} \;
-    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chmod -R 700 {} \;
+    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -user root -type d -exec chown -R ${userid}:${groupid} {} \;
+    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -user root -type d -exec chmod -R 700 {} \;
 fi
 
 if [ "${cmd}" == "dump-config" ]; then
