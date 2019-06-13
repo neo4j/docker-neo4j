@@ -59,8 +59,7 @@ public class TestBasic
         waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( "Remote interface available at http://localhost:7474/" ),
                                    10, TimeUnit.SECONDS);
 
-        Assertions.assertEquals( "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String(),
-                      "", toStringConsumer.toUtf8String() );
+        Assertions.assertEquals( "", toStringConsumer.toUtf8String(), "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String() );
     }
 
 
