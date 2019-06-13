@@ -6,8 +6,6 @@ import org.junit.runners.Parameterized;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-// TODO find way to pass these as test settings on command line or as environment (or both?)
-// TODO fail test immediately and error if these values aren't set.
 public class TestSettings
 {
     public static final Neo4jVersion NEO4J_VERSION = Neo4jVersion.fromVersionString( getVersionFromPropertyOrEnv() );
