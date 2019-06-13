@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.PwGen;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Assume;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.*;
@@ -13,17 +14,17 @@ import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.time.Duration;
 import java.util.UUID;
 
 public class TestCausalCluster
@@ -35,10 +36,6 @@ public class TestCausalCluster
     {
         Assume.assumeTrue( "No causal clustering for community edition",
                 TestSettings.EDITION == TestSettings.Edition.ENTERPRISE );
-
-        String cname="core-" + UUID.randomUUID().toString();
-        String rname="read-" + UUID.randomUUID().toString();
-        String backupName = "backup-" + UUID.randomUUID().toString();
 
         Path tmpDir = Files.createDirectories(Paths.get("tmp/out/"));
 
@@ -64,9 +61,6 @@ public class TestCausalCluster
 
         for (String line : contentLines) {
             editedLines[i] = line.replaceAll("image: .*", "image: " + TestSettings.IMAGE_ID);
-            //editedLines[i] = editedLines[i].replaceAll("lan:", "lan: " + network.getId());
-            //editedLines[i] = editedLines[i].replaceAll("container_name: core.*", "container_name: " + cname);
-            //editedLines[i] = editedLines[i].replaceAll("container_name: read.*", "container_name: " + rname);
             editedLines[i] = editedLines[i].replaceAll("container_name: core.*", "");
             editedLines[i] = editedLines[i].replaceAll("container_name: read.*", "");
             editedLines[i] = editedLines[i].replaceAll("LOGS_DIR", "./" + logsDir);
@@ -82,20 +76,43 @@ public class TestCausalCluster
 
         System.out.println("logs: " + compose_file.getName() + ".log and " + logsDir);
 
-        WaitStrategy waitForHttp = (new HttpWaitStrategy()).forPort(DEFAULT_BOLT_PORT).forStatusCodeMatching((response) -> {
-            return response == 200;
-        });
+        WaitStrategy waitForStartup = new WaitAllStrategy().withStartupTimeout(Duration.ofSeconds(60L));
 
         DockerComposeContainer clusteringContainer =
                 new DockerComposeContainer("neo4jcomposetest", new File(compose_file.getPath()))
-                        .withLocalCompose(true);
-                        //.withExposedService(cname, 7474, waitForHttp);
-                        //.withExposedService(rname, 7474, waitForHttp);
-                /*.withExposedService("core1", DEFAULT_BOLT_PORT,
-                Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(30)));*/
+                        .withLocalCompose(true)
+                        .withExposedService("core1", DEFAULT_BOLT_PORT, waitForStartup)
+                        .withExposedService("readreplica1", DEFAULT_BOLT_PORT, waitForStartup);
 
         clusteringContainer.start();
-       
+        Thread.sleep(60000);
+        String core1Uri = "bolt://" + clusteringContainer.getServiceHost("core1", DEFAULT_BOLT_PORT)
+                + ":" +
+                clusteringContainer.getServicePort("core1", DEFAULT_BOLT_PORT);
+        String rrUri = "bolt://" + clusteringContainer.getServiceHost("readreplica1", DEFAULT_BOLT_PORT)
+                + ":" +
+                clusteringContainer.getServicePort("readreplica1", DEFAULT_BOLT_PORT);
+
+        try ( Driver coreDriver = GraphDatabase.driver( core1Uri, AuthTokens.basic( "neo4j", "neo")))
+        {
+            Session session = coreDriver.session();
+            StatementResult rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
+            Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher CREATE query" );
+        }
+        catch (Exception e)
+        {
+            clusteringContainer.stop();
+        }
+
+        try ( Driver rrDriver = GraphDatabase.driver(rrUri, AuthTokens.basic("neo4j", "neo")))
+        {
+            Session session = rrDriver.session();
+            StatementResult rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
+            Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher MATCH query" );
+        }
+
+        clusteringContainer.stop();
+
     }
 
     private InputStream getResource(String path) {
