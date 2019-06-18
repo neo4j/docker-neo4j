@@ -12,10 +12,7 @@ import org.neo4j.junit.jupiter.causal_cluster.NeedsCausalCluster;
 import org.neo4j.junit.jupiter.causal_cluster.Neo4jUri;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
-import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
-import org.testcontainers.containers.wait.strategy.WaitStrategy;
+import org.testcontainers.containers.wait.strategy.*;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -76,16 +73,18 @@ public class TestCausalCluster
 
         System.out.println("logs: " + compose_file.getName() + ".log and " + logsDir);
 
-        WaitStrategy waitForStartup = new WaitAllStrategy().withStartupTimeout(Duration.ofSeconds(60L));
+        WaitStrategy waitForport = Wait.forListeningPort()
+                .withStartupTimeout(Duration.ofSeconds(90));
 
         DockerComposeContainer clusteringContainer =
                 new DockerComposeContainer("neo4jcomposetest", new File(compose_file.getPath()))
                         .withLocalCompose(true)
-                        .withExposedService("core1", DEFAULT_BOLT_PORT, waitForStartup)
-                        .withExposedService("readreplica1", DEFAULT_BOLT_PORT, waitForStartup);
+                        .withExposedService("core1", DEFAULT_BOLT_PORT)
+                        .withExposedService("readreplica1", DEFAULT_BOLT_PORT)
+                        .waitingFor("core1", waitForport);
 
         clusteringContainer.start();
-        Thread.sleep(60000);
+
         String core1Uri = "bolt://" + clusteringContainer.getServiceHost("core1", DEFAULT_BOLT_PORT)
                 + ":" +
                 clusteringContainer.getServicePort("core1", DEFAULT_BOLT_PORT);
@@ -102,6 +101,7 @@ public class TestCausalCluster
         catch (Exception e)
         {
             clusteringContainer.stop();
+            return;
         }
 
         try ( Driver rrDriver = GraphDatabase.driver(rrUri, AuthTokens.basic("neo4j", "neo")))
@@ -109,6 +109,11 @@ public class TestCausalCluster
             Session session = rrDriver.session();
             StatementResult rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
             Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher MATCH query" );
+        }
+        catch (Exception e)
+        {
+            clusteringContainer.stop();
+            return;
         }
 
         clusteringContainer.stop();
