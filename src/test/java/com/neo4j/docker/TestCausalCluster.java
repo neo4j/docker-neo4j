@@ -1,5 +1,6 @@
 package com.neo4j.docker;
 
+import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.PwGen;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
@@ -34,7 +35,7 @@ public class TestCausalCluster
         Assume.assumeTrue( "No causal clustering for community edition",
                 TestSettings.EDITION == TestSettings.Edition.ENTERPRISE );
 
-        Path tmpDir = Files.createDirectories(Paths.get("tmp/out/"));
+        Path tmpDir = HostFileSystemOperations.createTempFolder( "CC_cluster_" );
 
         String logs_id = PwGen.getPass(8);
         File compose_file =  new File(tmpDir.toString(), logs_id + ".yml");
@@ -77,7 +78,7 @@ public class TestCausalCluster
                 .withStartupTimeout(Duration.ofSeconds(90));
 
         DockerComposeContainer clusteringContainer =
-                new DockerComposeContainer("neo4jcomposetest", new File(compose_file.getPath()))
+                new DockerComposeContainer("neo4jcomposetest", compose_file)
                         .withLocalCompose(true)
                         .withExposedService("core1", DEFAULT_BOLT_PORT)
                         .withExposedService("readreplica1", DEFAULT_BOLT_PORT)

@@ -15,7 +15,7 @@ public class HostFileSystemOperations
     private static Logger log = LoggerFactory.getLogger( HostFileSystemOperations.class);
     private static Random rng = new Random(  );
 
-    public static Path createHostFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix, String containerMountPoint ) throws IOException
+    public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix, String containerMountPoint ) throws IOException
     {
         String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
         Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( hostFolderNamePrefix + randomStr);
@@ -33,6 +33,24 @@ public class HostFileSystemOperations
         container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
                                       containerMountPoint,
                                       BindMode.READ_WRITE );
+
+        return hostFolder;
+    }
+
+    public static Path createTempFolder( String folderNamePrefix ) throws IOException
+    {
+        String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
+        Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( folderNamePrefix + randomStr);
+        try
+        {
+            Files.createDirectories( hostFolder );
+        }
+        catch ( IOException e )
+        {
+            log.error( "could not create directory: " + hostFolder.toAbsolutePath().toString() );
+            e.printStackTrace();
+            throw e;
+        }
 
         return hostFolder;
     }
