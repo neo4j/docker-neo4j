@@ -92,7 +92,7 @@ public class TestMounting
     void testDumpConfig( ) throws Exception
     {
         setupBasicContainer( true, false );
-        Path confMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "conf-", "/conf" );
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
         container.setWaitStrategy( null );
         container.withCommand( "dump-config" );
         container.start();
@@ -111,7 +111,7 @@ public class TestMounting
                                "User checks not valid before 3.1" );
 
         setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
-        Path dataMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "data-", "/data" );
+        Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
@@ -127,7 +127,7 @@ public class TestMounting
                                "User checks not valid before 3.1" );
 
         setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
-        Path logsMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "logs-", "/logs" );
+        Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
@@ -141,8 +141,8 @@ public class TestMounting
                                "User checks not valid before 3.1" );
 
         setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
-        Path dataMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "data-", "/data" );
-        Path logsMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "logs-", "/logs" );
+        Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
+        Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
         verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );

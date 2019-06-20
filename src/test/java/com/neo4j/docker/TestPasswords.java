@@ -112,7 +112,7 @@ public class TestPasswords
         String password = "some_valid_password";
         GenericContainer firstContainer = createContainer( asCurrentUser );
         setNeo4jPassword( firstContainer, "neo4j/"+password );
-        Path dataMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( firstContainer,
+        Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
                                                                                     "password-defaultuser-data-",
                                                                                     "/data" );
         // create a database with stuff in
@@ -134,7 +134,7 @@ public class TestPasswords
         String password = "some_valid_password";
         GenericContainer firstContainer = createContainer( asCurrentUser );
         setNeo4jPassword( firstContainer, "neo4j/"+password );
-        Path dataMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( firstContainer,
+        Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
                                                                                     "password-envoverride-data-",
                                                                                     "/data" );
 

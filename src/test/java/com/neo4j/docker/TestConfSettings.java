@@ -77,7 +77,7 @@ public class TestConfSettings
                 .withCommand( "echo running" );
         container.setWaitStrategy( null );
         SetContainerUser.currentlyRunningUser( container );
-        Path confMount = HostFileSystemOperations.createHostFolderAndMountAsVolume( container, "conf-", "/var/lib/neo4j/conf" );
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/var/lib/neo4j/conf" );
 
         container.start();
         container.execInContainer("neo4j-admin", "help", ">/dev/null");
