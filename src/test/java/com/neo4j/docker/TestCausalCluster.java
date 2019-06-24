@@ -9,10 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.*;
-import org.neo4j.junit.jupiter.causal_cluster.NeedsCausalCluster;
-import org.neo4j.junit.jupiter.causal_cluster.Neo4jUri;
 import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.*;
 
 import java.io.DataOutputStream;
