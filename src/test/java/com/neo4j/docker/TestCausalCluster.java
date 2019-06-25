@@ -34,20 +34,13 @@ public class TestCausalCluster
 
         Path tmpDir = HostFileSystemOperations.createTempFolder( "CC_cluster_" );
 
-        String logs_id = PwGen.getPass(8);
-        File compose_file =  new File(tmpDir.toString(), logs_id + ".yml");
+        File compose_file =  new File(tmpDir.toString(), "causal-cluster-compose.yml");
         Files.copy(getResource("causal-cluster-compose.yml"), Paths.get(compose_file.getPath()));
 
-        String logsDir = tmpDir + "/" + logs_id;
-
-        File core1 = new File(logsDir + "/core1");
-        core1.mkdirs();
-        File core2 = new File(logsDir + "/core2");
-        core2.mkdirs();
-        File core3 = new File(logsDir + "/core3");
-        core3.mkdirs();
-        File rr1 = new File(logsDir + "/readreplica1");
-        rr1.mkdirs();
+        Files.createDirectories( tmpDir.resolve( "core1" ) );
+        Files.createDirectories( tmpDir.resolve( "core2" ) );
+        Files.createDirectories( tmpDir.resolve( "core3" ) );
+        Files.createDirectories( tmpDir.resolve( "readreplica1" ) );
 
         String content = new String(Files.readAllBytes(Paths.get(compose_file.getPath())));
         String[] contentLines = content.split(System.getProperty("line.separator"));
@@ -55,11 +48,9 @@ public class TestCausalCluster
         int i = 0;
 
         for (String line : contentLines) {
-            editedLines[i] = line.replaceAll("image: .*", "image: " + TestSettings.IMAGE_ID);
-            editedLines[i] = editedLines[i].replaceAll("container_name: core.*", "");
-            editedLines[i] = editedLines[i].replaceAll("container_name: read.*", "");
-            editedLines[i] = editedLines[i].replaceAll("LOGS_DIR", "./" + logsDir);
-            editedLines[i] = editedLines[i].replaceAll("USER_INFO", SetContainerUser.getCurrentlyRunningUserString());
+            editedLines[i] = line.replaceAll("%%IMAGE%%", TestSettings.IMAGE_ID);
+            editedLines[i] = editedLines[i].replaceAll("%%LOGS_DIR%%", tmpDir.toAbsolutePath().toString());
+            editedLines[i] = editedLines[i].replaceAll("%%USERIDGROUPID%%", SetContainerUser.getCurrentlyRunningUserString());
             i++;
         }
 
@@ -69,13 +60,12 @@ public class TestCausalCluster
         outstream.write(editedContent.getBytes());
         outstream.close();
 
-        System.out.println("logs: " + compose_file.getName() + ".log and " + logsDir);
+        System.out.println("logs: " + compose_file.getName() + ".log and " + tmpDir.toString());
 
         WaitStrategy waitForport = Wait.forListeningPort()
-                .withStartupTimeout(Duration.ofSeconds(90));
+                .withStartupTimeout(Duration.ofSeconds(120));
 
-        DockerComposeContainer clusteringContainer =
-                new DockerComposeContainer("neo4jcomposetest", compose_file)
+        DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
                         .withLocalCompose(true)
                         .withExposedService("core1", DEFAULT_BOLT_PORT)
                         .withExposedService("readreplica1", DEFAULT_BOLT_PORT)

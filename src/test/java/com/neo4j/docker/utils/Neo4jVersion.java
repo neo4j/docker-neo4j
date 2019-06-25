@@ -45,56 +45,6 @@ public class Neo4jVersion
         this.label = label;
     }
 
-    public String toAptReleaseVersion()
-    {
-        // every release after about February 2018 has the prefix "1:" in apt
-
-        switch(major)
-        {
-        case 0: case 1: case 2:
-                return toString();
-        case 3:
-            switch ( minor )
-            {
-            case 0:
-                return toString();
-            case 1:
-                if(patch < 8) return toString();
-                break;
-            case 2:
-                if(patch < 10) return toString();
-                break;
-            case 3:
-                if(patch < 3) return toString();
-                break;
-            }
-            break;
-        }
-        return "1:"+toString();
-    }
-
-    public String toYumReleaseVersion()
-    {
-        return toString();
-    }
-
-    public boolean isOlderThan( Neo4jVersion that )
-    {
-        if(this.major != that.major)
-        {
-            return (this.major < that.major);
-        }
-        else
-        {
-            if(this.minor != that.minor)
-            {
-                return (this.minor < that.minor);
-            }
-            else return (this.patch < that.patch);
-        }
-        // Not comparing the alpha/beta label because it's still the *same* major minor patch version and a very unlikely upgrade path
-    }
-
     public boolean isNewerThan( Neo4jVersion that )
     {
         if(this.major != that.major)

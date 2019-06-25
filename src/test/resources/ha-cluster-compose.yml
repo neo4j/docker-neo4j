@@ -8,7 +8,6 @@ services:
   master:
     user: "%%USERIDGROUPID%%"
     image: "%%IMAGE%%"
-    # container_name: %%MASTER_CONTAINER%%
     volumes:
       - "%%LOGS_DIR%%/master:/logs"
     networks:
@@ -48,7 +47,6 @@ services:
   slave2:
     user: "%%USERIDGROUPID%%"
     image: "%%IMAGE%%"
-    # container_name: %%SLAVE_CONTAINER%%
     volumes:
       - "%%LOGS_DIR%%/slave2:/logs"
     networks:
