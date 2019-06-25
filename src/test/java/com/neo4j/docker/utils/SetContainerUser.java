@@ -19,9 +19,7 @@ public class SetContainerUser
 
     public static void currentlyRunningUser( GenericContainer container )
     {
-        UnixSystem fs = new UnixSystem();
-        String uidgid = fs.getUid() + ":" + fs.getGid() ;
-        container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( uidgid ) );
+        container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( getCurrentlyRunningUserString() ) );
     }
     public static String getCurrentlyRunningUserString()
     {
