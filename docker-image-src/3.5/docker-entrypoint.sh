@@ -19,9 +19,35 @@ containsElement () {
   return 1
 }
 
+function is_readable
+{
+    # this code is fairly ugly but works no matter who this script is running as.
+    # It would be nice if the writability tests could use this logic somehow.
+    local _file=${1}
+    perm=$(stat -c %a "${_file}")
+
+    # everyone permission
+    if [[ ${perm:2:1} -ge 4 ]]; then
+        return 0
+    fi
+    # owner permissions
+    if [[ ${perm:0:1} -ge 4 ]]; then
+        if [[ "$(stat -c %U ${_file})" = "${userid}" ]] || [[ "$(stat -c %u ${_file})" = "${userid}" ]]; then
+            return 0
+        fi
+    fi
+    # group permissions
+    if [[ ${perm:1:1} -ge 4 ]]; then
+        if containsElement "$(stat -c %g ${_file})" "${groups[@]}" || containsElement "$(stat -c %G ${_file})" "${groups[@]}" ; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
 function is_not_writable
 {
-    _file=${1}
+    local _file=${1}
     # Not using "test -w ${_file}" here because we need to check if the neo4j user or supplied user
     # has write access to the file, and this script might not be running as that user.
 
@@ -36,7 +62,7 @@ function print_permissions_advice_and_fail ()
 {
     _directory=${1}
     echo >&2 "
-Folder ${_directory} is not writable for user: ${userid} or group ${groupid} or groups ${groups[@]}, this is commonly a file permissions issue on the mounted folder.
+Folder ${_directory} is not accessible for user: ${userid} or group ${groupid} or groups ${groups[@]}, this is commonly a file permissions issue on the mounted folder.
 
 Hints to solve the issue:
 1) Make sure the folder exists before mounting it. Docker will create the folder using root permissions before starting the Neo4j container. The root permissions disallow Neo4j from writing to the mounted folder.
@@ -47,10 +73,10 @@ If the folder is owned by the current user, this can be done by adding this flag
     exit 1
 }
 
-function check_mounted_folder
+function check_mounted_folder_readable
 {
-    _directory=${1}
-    if is_not_writable "${_directory}"; then
+    local _directory=${1}
+    if ! is_readable "${_directory}"; then
         print_permissions_advice_and_fail "${_directory}"
     fi
 }
@@ -79,9 +105,9 @@ function check_mounted_folder_with_chown
 #      The /data and /log folder are owned by neo4j by default, and these are already writable by the user.
 #      (This is a very unlikely use case).
 
-    mountFolder=${1}
+    local mountFolder=${1}
     if running_as_root; then
-        if is_not_writable "${mountFolder}"; then
+        if is_not_writable "${mountFolder}" && ! secure_mode_enabled; then
             # warn that we're about to chown the folder and then chown it
             echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
@@ -121,14 +147,16 @@ if running_as_root; then
     # Non-recursive chown for the base directory
     chown "${userid}":"${groupid}" "${NEO4J_HOME}"
     chmod 700 "${NEO4J_HOME}"
-    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chown -R ${userid}:${groupid} {} \;
-    find "${NEO4J_HOME}" -type d -mindepth 1 -maxdepth 1 -user root -exec chmod -R 700 {} \;
+    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -user root -type d -exec chown -R ${userid}:${groupid} {} \;
+    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -user root -type d -exec chmod -R 700 {} \;
 fi
 
 if [ "${cmd}" == "dump-config" ]; then
-  check_mounted_folder "/conf"
-  ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
-  exit 0
+    if is_not_writable "/conf"; then
+        print_permissions_advice_and_fail "/conf"
+    fi
+    ${exec_cmd} cp --recursive "${NEO4J_HOME}"/conf/* /conf
+    exit 0
 fi
 
 # Only prompt for license agreement if command contains "neo4j" in it
@@ -222,35 +250,35 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 
 if [ -d /conf ]; then
     if secure_mode_enabled; then
-	    check_mounted_folder "/conf"
+	    check_mounted_folder_readable "/conf"
     fi
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
     if secure_mode_enabled; then
-    	check_mounted_folder "/ssl"
+    	check_mounted_folder_readable "/ssl"
     fi
     NEO4J_dbms_directories_certificates="/ssl"
 fi
 
 if [ -d /plugins ]; then
     if secure_mode_enabled; then
-        check_mounted_folder "/plugins"
+        check_mounted_folder_readable "/plugins"
     fi
     NEO4J_dbms_directories_plugins="/plugins"
 fi
 
 if [ -d /import ]; then
     if secure_mode_enabled; then
-        check_mounted_folder "/import"
+        check_mounted_folder_readable "/import"
     fi
     NEO4J_dbms_directories_import="/import"
 fi
 
 if [ -d /metrics ]; then
     if secure_mode_enabled; then
-        check_mounted_folder "/metrics"
+        check_mounted_folder_readable "/metrics"
     fi
     NEO4J_dbms_directories_metrics="/metrics"
 fi
