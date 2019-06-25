@@ -75,7 +75,7 @@ public class TestCausalCluster
                 .withStartupTimeout(Duration.ofSeconds(90));
 
         DockerComposeContainer clusteringContainer =
-                new DockerComposeContainer("neo4jcomposetest", compose_file)
+                new DockerComposeContainer(compose_file)
                         .withLocalCompose(true)
                         .withExposedService("core1", DEFAULT_BOLT_PORT)
                         .withExposedService("readreplica1", DEFAULT_BOLT_PORT)
