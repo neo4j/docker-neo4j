@@ -34,17 +34,12 @@ build: tmp/.image-id-community tmp/.image-id-enterprise
 package: package-community package-enterprise
 .PHONY: package
 
-package-community: tmp/.image-id-community
+package-%: tmp/.image-id-%
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)
-> docker save neo4j:$(NEO4J_VERSION) > out/neo4j-community-$(NEO4J_VERSION)-docker-complete.tar
+> docker save neo4j:$(NEO4J_VERSION) > out/neo4j-$*-$(NEO4J_VERSION)-docker-loadable.tar
 
-package-enterprise: tmp/.image-id-enterprise
-> mkdir -p out
-> docker tag $$(cat $<) neo4j-enterprise:$(NEO4J_VERSION)
-> docker save neo4j-enterprise:$(NEO4J_VERSION) > out/neo4j-enterprise-$(NEO4J_VERSION)-docker-complete.tar
-
-
+# building the image
 
 tmp/.image-id-%: tmp/local-context-%/.sentinel
 > mkdir -p $(@D)
