@@ -14,32 +14,34 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.stream.Stream;
 
 
 public class TestMounting
 {
     private static Logger log = LoggerFactory.getLogger( TestMounting.class );
-    private Neo4jContainer container;
 
-
-    static Stream<Arguments> defaultUseFlagrSecurePermissionsFlag()
+    static Stream<Arguments> defaultUserFlagSecurePermissionsFlag()
     {
-        // it would be nice if JUnit5 had some way of providing all combinations of some collections as test parameters
+        // "asUser={0}, secureFlag={1}"
+        // expected behaviour is that if you set --user flag, your data should be read/writable
+        // if you don't set --user flag then read/writability should be controlled by the secure file permissions flag
+        // the asUser=true, secureflag=false combination is tested separately because the container should fail to start.
         return Stream.of(
                 Arguments.arguments( false, false ),
-                Arguments.arguments( false, true  ),
                 Arguments.arguments(  true, false ),
                 Arguments.arguments(  true, true  ));
     }
 
-    private void setupBasicContainer( boolean asCurrentUser, boolean setSecurityPermissionsFlag )
+    private Neo4jContainer setupBasicContainer( boolean asCurrentUser, boolean isSecurityFlagSet )
     {
-        container = new Neo4jContainer( TestSettings.IMAGE_ID );
-        container.withExposedPorts( 7474 )
+        Neo4jContainer container = new Neo4jContainer( TestSettings.IMAGE_ID );
+        container.withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                 .withEnv( "NEO4J_AUTH", "none" );
@@ -48,18 +50,19 @@ public class TestMounting
         {
             SetContainerUser.currentlyRunningUser( container );
         }
-        if(setSecurityPermissionsFlag)
+        if(isSecurityFlagSet)
         {
             container.withEnv( "SECURE_FILE_PERMISSIONS", "yes" );
         }
+        return container;
     }
 
-    private void verifySingleFolder(Path folderToCheck, boolean shouldBeWritable)
+    private void verifySingleFolder( Path folderToCheck, boolean shouldBeWritable )
     {
         String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
 
         Assertions.assertTrue( folderToCheck.toFile().exists(), "did not create " + folderForDiagnostics + " folder on host" );
-        if(shouldBeWritable)
+        if( shouldBeWritable )
         {
             Assertions.assertTrue( folderToCheck.toFile().canRead(), "cannot read host "+folderForDiagnostics+" folder" );
             Assertions.assertTrue(folderToCheck.toFile().canWrite(),  "cannot write to host "+folderForDiagnostics+" folder" );
@@ -84,14 +87,14 @@ public class TestMounting
                                "Neo4j did not write a debug.log file to "+logsMount.toString() );
         Assertions.assertEquals( shouldBeWritable,
                                  logsMount.resolve( "debug.log" ).toFile().canWrite(),
-                                 String.format( "The debug.log file should %sbe writable", shouldBeWritable?"":"not ") );
+                                 String.format( "The debug.log file should %sbe writable", shouldBeWritable ? "" : "not ") );
     }
 
 
     @Test
     void testDumpConfig( ) throws Exception
     {
-        setupBasicContainer( true, false );
+        Neo4jContainer container = setupBasicContainer( true, false );
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
         container.setWaitStrategy( null );
         container.withCommand( "dump-config" );
@@ -104,13 +107,13 @@ public class TestMounting
 
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
-    @MethodSource("defaultUseFlagrSecurePermissionsFlag")
-    void testCanMountJustDataFolder(boolean asCurrentUser, boolean setSecurityPermissionsFlag) throws IOException
+    @MethodSource( "defaultUserFlagSecurePermissionsFlag" )
+    void testCanMountJustDataFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
+        Neo4jContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
         Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
         container.start();
 
@@ -120,13 +123,13 @@ public class TestMounting
     }
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
-    @MethodSource("defaultUseFlagrSecurePermissionsFlag")
-    void testCanMountJustLogsFolder(boolean asCurrentUser, boolean setSecurityPermissionsFlag) throws IOException
+    @MethodSource( "defaultUserFlagSecurePermissionsFlag" )
+    void testCanMountJustLogsFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
+        Neo4jContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
         Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
@@ -134,13 +137,13 @@ public class TestMounting
     }
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
-    @MethodSource("defaultUseFlagrSecurePermissionsFlag")
-    void testCanMountDataAndLogsFolder(boolean asCurrentUser, boolean setSecurityPermissionsFlag) throws IOException
+    @MethodSource( "defaultUserFlagSecurePermissionsFlag" )
+    void testCanMountDataAndLogsFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        setupBasicContainer( asCurrentUser, setSecurityPermissionsFlag );
+        Neo4jContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
         Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
         Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
@@ -149,4 +152,39 @@ public class TestMounting
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
     }
 
+    @Test
+    void testCantWriteIfSecureEnabledAndNoPermissions_data() throws IOException
+    {
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
+
+        Neo4jContainer container = setupBasicContainer( false, true );
+        HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
+
+        // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
+        // container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
+        container.setWaitStrategy( Wait.forListeningPort().withStartupTimeout( Duration.ofSeconds( 10 )) );
+        Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
+                                 () -> container.start(),
+                                 "Neo4j should not start in secure mode if data folder is unwritable");
+
+    }
+
+    @Test
+    void testCantWriteIfSecureEnabledAndNoPermissions_logs() throws IOException
+    {
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
+                               "User checks not valid before 3.1" );
+
+        Neo4jContainer container = setupBasicContainer( false, true );
+        HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
+
+        // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
+        // container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
+        container.setWaitStrategy( Wait.forListeningPort().withStartupTimeout( Duration.ofSeconds( 10 )) );
+        Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
+                                 () -> container.start(),
+                                 "Neo4j should not start in secure mode if logs folder is unwritable");
+
+    }
 }
