@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.ToStringConsumer;
@@ -88,7 +87,7 @@ public class TestBasic
     }
 
     @Test
-    void testCypherShellOnPath() throws Exception
+    void testCypherShellOnPath1() throws Exception
     {
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
 
@@ -104,9 +103,38 @@ public class TestBasic
         waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( expectedCypherShellPath ),
                                    10, TimeUnit.SECONDS);
         Assertions.assertTrue( toStringConsumer.toUtf8String().contains( expectedCypherShellPath ),
-                               "cypher-shell was not on the path" );
+                               "cypher-shell was not on the path. Received:\n"+toStringConsumer.toUtf8String() );
 
         container.stop();
+    }
+
+    @Test
+    void testCypherShellOnPath2() throws Exception
+    {
+        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
+
+        createBasicContainer();
+        container.withCommand( "which cypher-shell" );
+        container.setWaitStrategy( Wait.forLogMessage( expectedCypherShellPath+"[\\s]*", 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+
+        Assertions.assertDoesNotThrow( () -> container.start(),
+                                       "cypher-shell was not on the path. Received:\n"+container.getLogs() );
+        container.stop();
+    }
+
+    @Test
+    void testCypherShellOnPath3() throws Exception
+    {
+        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
+        createBasicContainer();
+        container.withCommand( "echo hail satan!" ); // don't start Neo4j in the container because we don't need it
+        container.setWaitStrategy( null );
+        container.start();
+
+        Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell");
+
+        Assertions.assertTrue( whichResult.getStdout().contains( expectedCypherShellPath ),
+                               "cypher-shell not on path" );
     }
 
     @Test
