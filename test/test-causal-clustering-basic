@@ -119,7 +119,6 @@ else
                     "${image}" neo4j-admin backup \
                     --from="core3:6362" \
                     --backup-dir=/backup \
-                    --database="graph.db" \
                     --check-consistency=true \
                     --name="${backup_name}")"
 fi
