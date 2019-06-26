@@ -122,20 +122,20 @@ public class TestBasic
         container.stop();
     }
 
-    @Test
-    void testCypherShellOnPath3() throws Exception
-    {
-        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
-        createBasicContainer();
-        container.withCommand( "echo hail satan!" ); // don't start Neo4j in the container because we don't need it
-        container.setWaitStrategy( null );
-        container.start();
-
-        Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell");
-
-        Assertions.assertTrue( whichResult.getStdout().contains( expectedCypherShellPath ),
-                               "cypher-shell not on path" );
-    }
+//    @Test
+//    void testCypherShellOnPath3() throws Exception
+//    {
+//        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
+//        createBasicContainer();
+//        container.withCommand( "echo hail satan!" ); // don't start Neo4j in the container because we don't need it
+//        container.setWaitStrategy( null );
+//        container.start();
+//
+//        Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell");
+//
+//        Assertions.assertTrue( whichResult.getStdout().contains( expectedCypherShellPath ),
+//                               "cypher-shell not on path" );
+//    }
 
     @Test
     void testCanChangeWorkDir() throws Exception
