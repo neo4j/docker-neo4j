@@ -6,10 +6,10 @@ setting() {
     file="${3}"
 
     if [ -n "${value}" ]; then
-        if grep --quiet --fixed-strings "${setting}=" conf/"${file}"; then
-            sed --in-place "s|.*${setting}=.*|${setting}=${value}|" conf/"${file}"
+        if grep --quiet --fixed-strings "${setting}=" "${NEO4J_HOME}/conf/${file}"; then
+            sed --in-place "s|.*${setting}=.*|${setting}=${value}|" "${NEO4J_HOME}/conf/${file}"
         else
-            echo "${setting}=${value}" >>conf/"${file}"
+            echo "${setting}=${value}" >>"${NEO4J_HOME}/conf/${file}"
         fi
     fi
 }
@@ -52,7 +52,7 @@ if [ "$1" == "neo4j" ]; then
     [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
     if [ -d /conf ]; then
-        find /conf -type f -exec cp {} conf \;
+        find /conf -type f -exec cp {} "${NEO4J_HOME}/conf" \;
     fi
 
     if [ -d /ssl ]; then
@@ -75,8 +75,8 @@ if [ "$1" == "neo4j" ]; then
 
     exec bin/neo4j console
 elif [ "$1" == "dump-config" ]; then
-    if [ -d /conf ]; then
-        cp --recursive conf/* /conf
+    if [ -d "${NEO4J_HOME}/conf" ]; then
+        cp --recursive "${NEO4J_HOME}"/conf/* /conf
     else
         echo >&2 "You must provide a /conf volume"
         exit 1
