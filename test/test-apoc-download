@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset
+[[ -n "${TRACE:-}" ]] && set -o xtrace
+
+. "$(dirname "$0")/helpers.sh"
+
+readonly image="$1"
+readonly series="$2"
+readonly cname="neo4j-$(uuidgen)"
+
+# there is no apoc for 2.3
+if [[ "${series}" == "2.3" ]] || [[ "${series}" == "3.0" ]]; then
+   echo "No jq in ${series}: skipping apoc-download test"
+   exit 0;
+fi
+
+# Testing the simple dumb docker run command
+readonly result="$(docker run --rm --name "${cname}" --env NEO4JLABS_PLUGINS='["apoc"]' "${image}" ls plugins)"
+
+if [[ "${result}" == *"apoc.jar"* ]]; then
+  echo "apoc jar in plugins."
+else
+  echo >&2 "Test 1 Failed: missing apoc jar. Found ${result}"
+  exit 1
+fi
+
+# Testing with a custom user and mounted plugins directory
+readonly cname2="neo4j-$(uuidgen)"
+readonly plugins="$(mktemp -d)"
+readonly result2="$(docker run --user "$(id -u):$(id -g)" --rm --name "${cname2}" --env SECURE_FILE_PERMISSIONS=yes --env NEO4JLABS_PLUGINS='["apoc"]' -v "${plugins}:/plugins" "${image}" ls /plugins)"
+
+echo "${result2}"
+if [[ "${result2}" == *"apoc.jar"* ]]; then
+  echo "apoc jar in plugins."
+else
+  echo >&2 "Test 2 Failed: missing apoc jar. Found ${result2}"
+  exit 1
+fi
+
+if [[ ! -f "${plugins}/apoc.jar" ]]; then
+  echo >&2 "Test 3 Failed: missing apoc jar."
+  exit 1
+fi
