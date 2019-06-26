@@ -49,6 +49,7 @@ public class TestConfSettings
                                                .contains( "WARNING: 1a not written to conf file because settings that " +
                                                           "start with a number are not permitted" ), 15, TimeUnit.SECONDS ),
                                        "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`" );
+        container.stop();
     }
 
     private Map<String, String> parseConfFile( File conf) throws FileNotFoundException
