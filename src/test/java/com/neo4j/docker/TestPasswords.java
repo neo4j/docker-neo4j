@@ -65,6 +65,7 @@ public class TestPasswords
         Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil( frame -> frame.getUtf8String()
                                                .contains( "Invalid value for password" ),10, TimeUnit.SECONDS ),
                                "did not error due to invalid password");
+        failContainer.stop();
     }
 
     private String getBoltURIFromContainer(GenericContainer container)
@@ -125,6 +126,7 @@ public class TestPasswords
         secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
         secondContainer.start();
         verifyDataIntoContainer( secondContainer, password );
+        secondContainer.stop();
     }
 
     @ParameterizedTest(name = "as current user={0}")
@@ -150,5 +152,6 @@ public class TestPasswords
         secondContainer.start();
         verifyDataIntoContainer( secondContainer, password );
         verifyPasswordIsIncorrect( secondContainer,"not_the_password"  );
+        secondContainer.stop();
     }
 }

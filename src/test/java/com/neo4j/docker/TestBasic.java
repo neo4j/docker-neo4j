@@ -43,6 +43,7 @@ public class TestBasic
         createBasicContainer();
         container.start();
         Assertions.assertTrue( container.isRunning() );
+        container.stop();
     }
 
     @Test
@@ -62,6 +63,7 @@ public class TestBasic
                                    10, TimeUnit.SECONDS);
 
         Assertions.assertEquals( "", toStringConsumer.toUtf8String(), "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String() );
+        container.stop();
     }
 
 
@@ -94,6 +96,7 @@ public class TestBasic
 
         Assertions.assertTrue( whichResult.getStdout().contains( "/var/lib/neo4j/bin/cypher-shell" ),
                                "cypher-shell not on path" );
+        container.stop();
     }
 
     @Test
@@ -107,5 +110,7 @@ public class TestBasic
 
         Assertions.assertTrue( whichResult.getStdout().contains( "/tmp" ),
                                "Could not start neo4j from outside NEO4J_HOME" );
+
+        container.stop();
     }
 }

@@ -120,6 +120,7 @@ public class TestMounting
         // neo4j should now have started, so there'll be stuff in the data folder
         // we need to check that stuff is readable and owned by the correct user
         verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
+        container.stop();
     }
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
@@ -134,6 +135,7 @@ public class TestMounting
         container.start();
 
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
+        container.stop();
     }
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
@@ -150,6 +152,7 @@ public class TestMounting
 
         verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
+        container.stop();
     }
 
     @Test

@@ -108,5 +108,8 @@ public class TestHACluster
         // read some data
         log.info( "Reading data from slave" );
         verifyDataInContainer( getBoltUriForService( clusteringContainer, "slave1" ) );
+
+        // teardown resources
+        clusteringContainer.stop();
     }
 }
