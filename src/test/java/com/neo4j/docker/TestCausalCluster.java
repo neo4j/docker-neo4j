@@ -61,14 +61,10 @@ public class TestCausalCluster
         outstream.close();
         System.out.println("logs: " + compose_file.getName() + " and " + tmpDir.toString());
 
-        WaitStrategy waiter = Wait.forHttp( "/" )
-                .forPort( 7474 )
-                .forStatusCode( 200 )
-                .withStartupTimeout( Duration.ofSeconds( 120 ) );
         DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
                 .withLocalCompose(true)
                 .withExposedService("core1", DEFAULT_BOLT_PORT)
-                .withExposedService("core1", 7474, Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ).withStartupTimeout( Duration.ofSeconds( 120 ) ))
+                .withExposedService("core1", 7474, Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ).withStartupTimeout( Duration.ofSeconds( 180 ) ))
                 .withExposedService("readreplica1", DEFAULT_BOLT_PORT);
 
         clusteringContainer.start();
