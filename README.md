@@ -29,6 +29,12 @@ docker run \
     neo4j:3.0
 ```
 
+# Neo4j Labs Plugins
+
+## Installation on container startup
+
+Neo4j Labs plugins can be installed from github during container startup. Set the `NEO4JLABS_PLUGINS` environment variable to a json list of plugins to install. e.g. `["graph-algorithms", "graphql"]`. 
+
 # Getting support and contributing
 
 Please create issues and pull requests in the Github repository.
