@@ -86,27 +86,27 @@ public class TestBasic
                                  "Neo4j did not notify about accepting the license agreement" );
     }
 
-    @Test
-    void testCypherShellOnPath() throws Exception
-    {
-        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
-
-        createBasicContainer();
-        container.withCommand( "which cypher-shell" );
-        container.setWaitStrategy( null );
-        container.start();
-
-        ToStringConsumer toStringConsumer = new ToStringConsumer();
-        WaitingConsumer waitingConsumer = new WaitingConsumer();
-        container.followOutput( waitingConsumer, OutputFrame.OutputType.STDOUT);
-        container.followOutput( toStringConsumer , OutputFrame.OutputType.STDOUT);
-        waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( expectedCypherShellPath ),
-                                   10, TimeUnit.SECONDS);
-        Assertions.assertTrue( toStringConsumer.toUtf8String().contains( expectedCypherShellPath ),
-                               "cypher-shell was not on the path. Received:\n"+toStringConsumer.toUtf8String() );
-
-        container.stop();
-    }
+//    @Test
+//    void testCypherShellOnPath() throws Exception
+//    {
+//        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
+//
+//        createBasicContainer();
+//        container.withCommand( "which cypher-shell" );
+//        container.setWaitStrategy( null );
+//        container.start();
+//
+//        ToStringConsumer toStringConsumer = new ToStringConsumer();
+//        WaitingConsumer waitingConsumer = new WaitingConsumer();
+//        container.followOutput( waitingConsumer, OutputFrame.OutputType.STDOUT);
+//        container.followOutput( toStringConsumer , OutputFrame.OutputType.STDOUT);
+//        waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( expectedCypherShellPath ),
+//                                   10, TimeUnit.SECONDS);
+//        Assertions.assertTrue( toStringConsumer.toUtf8String().contains( expectedCypherShellPath ),
+//                               "cypher-shell was not on the path. Received:\n"+toStringConsumer.toUtf8String() );
+//
+//        container.stop();
+//    }
 //
 //    @Test
 //    void testCypherShellOnPath2() throws Exception
@@ -122,20 +122,19 @@ public class TestBasic
 //        container.stop();
 //    }
 
-//    @Test
-//    void testCypherShellOnPath3() throws Exception
-//    {
-//        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
-//        createBasicContainer();
-//        container.withCommand( "echo hail satan!" ); // don't start Neo4j in the container because we don't need it
-//        container.setWaitStrategy( null );
-//        container.start();
-//
-//        Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell");
-//
-//        Assertions.assertTrue( whichResult.getStdout().contains( expectedCypherShellPath ),
-//                               "cypher-shell not on path" );
-//    }
+    @Test
+    void testCypherShellOnPath3() throws Exception
+    {
+        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
+        createBasicContainer();
+        container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+        container.start();
+
+        Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell");
+
+        Assertions.assertTrue( whichResult.getStdout().contains( expectedCypherShellPath ),
+                               "cypher-shell not on path" );
+    }
 
     @Test
     void testCanChangeWorkDir() throws Exception
