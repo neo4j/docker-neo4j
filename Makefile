@@ -78,16 +78,11 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
     $(<D)
 > echo -n $$image >$@
 
-tmp/neo4jlabs-plugins.json: ./neo4jlabs-plugins.json
-> mkdir -p $(@D)
-> cp $< $@
-
-tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J_VERSION)) tmp/neo4jlabs-plugins.json
+tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J_VERSION))
 > rm -rf $(@D)
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
-> cp $(filter %.json,$^) $(@D)/local-package
 > touch $@
 
 tmp/image-%/.sentinel: src/$(series)/Dockerfile src/$(series)/docker-entrypoint.sh \
