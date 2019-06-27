@@ -116,6 +116,7 @@ public class TestPasswords
         Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
                                                                                     "password-defaultuser-data-",
                                                                                     "/data" );
+        log.info(String.format( "Starting first container as %s user and setting password", asCurrentUser.toLowerCase().equals( "true" )?"current":"default" ));
         // create a database with stuff in
         firstContainer.start();
         putInitialDataIntoContainer( firstContainer, password );
@@ -124,6 +125,7 @@ public class TestPasswords
         // with a new container, check the database data.
         GenericContainer secondContainer = createContainer( asCurrentUser );
         secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
+        log.info( "starting new container with same /data mount as same user without setting password" );
         secondContainer.start();
         verifyDataIntoContainer( secondContainer, password );
         secondContainer.stop();
@@ -141,6 +143,7 @@ public class TestPasswords
                                                                                     "/data" );
 
         // create a database with stuff in
+        log.info(String.format( "Starting first container as %s user and setting password", asCurrentUser.toLowerCase().equals( "true" )?"current":"default" ));
         firstContainer.start();
         putInitialDataIntoContainer( firstContainer, password );
         firstContainer.stop();
@@ -149,6 +152,7 @@ public class TestPasswords
         GenericContainer secondContainer = createContainer( asCurrentUser );
         setNeo4jPassword( secondContainer, "neo4j/not_the_password" );
         secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
+        log.info( "starting new container with same /data mount as same user without setting password" );
         secondContainer.start();
         verifyDataIntoContainer( secondContainer, password );
         verifyPasswordIsIncorrect( secondContainer,"not_the_password"  );

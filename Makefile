@@ -88,7 +88,6 @@ in/neo4j-enterprise-$(NEO4J_VERSION)-unix.tar.gz:
 > $(call fetch_tarball,enterprise)
 
 clean:
-> mvn clean
 > rm -rf tmp
 > rm -rf out
 .PHONY: clean
