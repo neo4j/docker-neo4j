@@ -60,10 +60,10 @@ public class TestCausalCluster
         outstream.write(editedContent.getBytes());
         outstream.close();
 
-        System.out.println("logs: " + compose_file.getName() + ".log and " + tmpDir.toString());
+        System.out.println("logs: " + compose_file.getName() + " and " + tmpDir.toString());
 
         WaitStrategy waitForport = Wait.forListeningPort()
-                .withStartupTimeout(Duration.ofSeconds(120));
+                .withStartupTimeout(Duration.ofSeconds(240));
 
         DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
                         .withLocalCompose(true)
