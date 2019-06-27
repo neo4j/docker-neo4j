@@ -56,14 +56,14 @@ public class TestCausalCluster
 
         String editedContent = String.join("\n", editedLines);
 
-        DataOutputStream outstream= new DataOutputStream(new FileOutputStream(compose_file,false));
+        DataOutputStream outstream = new DataOutputStream(new FileOutputStream(compose_file,false));
         outstream.write(editedContent.getBytes());
         outstream.close();
         System.out.println("logs: " + compose_file.getName() + " and " + tmpDir.toString());
 
         DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
                 .withLocalCompose(true)
-                .withExposedService("core1", DEFAULT_BOLT_PORT)
+                .withExposedService("core1", DEFAULT_BOLT_PORT )
                 .withExposedService("core1", 7474, Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ).withStartupTimeout( Duration.ofSeconds( 180 ) ))
                 .withExposedService("readreplica1", DEFAULT_BOLT_PORT);
 
