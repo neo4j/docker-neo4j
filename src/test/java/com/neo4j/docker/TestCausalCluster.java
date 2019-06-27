@@ -66,8 +66,7 @@ public class TestCausalCluster
                         .withLocalCompose(true)
                         .withExposedService("core1", DEFAULT_BOLT_PORT)
                         .withExposedService("readreplica1", DEFAULT_BOLT_PORT)
-                        .waitingFor("core1", Wait.forHttp( "/" ).forPort( DEFAULT_BOLT_PORT ).forStatusCode( 200 ))
-                        .waitingFor("readreplica1", Wait.forHttp( "/" ).forPort( DEFAULT_BOLT_PORT ).forStatusCode( 200 ));
+                        .waitingFor("core1", Wait.forHttp( "/" ).forPort( DEFAULT_BOLT_PORT ).forStatusCode( 200 ));
 
         clusteringContainer.start();
 

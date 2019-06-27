@@ -10,7 +10,6 @@ services:
     image: "%%IMAGE%%"
     volumes:
       - "%%LOGS_DIR%%/core1:/logs"
-    #container_name: core-placeholder
     networks:
       - lan
     environment:
@@ -71,7 +70,6 @@ services:
   readreplica1:
     user: "%%USERIDGROUPID%%"
     image: "%%IMAGE%%"
-    #container_name: read-placeholder
     volumes:
       - "%%LOGS_DIR%%/readreplica1:/logs"
     networks:
