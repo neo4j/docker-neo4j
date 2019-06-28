@@ -28,6 +28,7 @@ public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
 
+    @Ignore
     @Test
     void testCausalClusteringBasic() throws Exception
     {

@@ -60,6 +60,7 @@ public class TestHACluster
                ":" + container.getServicePort( service, 7687 );
     }
 
+    @Ignore
     @Test
     void testHAStartsOK() throws Exception
     {
