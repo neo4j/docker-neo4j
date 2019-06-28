@@ -5,6 +5,7 @@ import com.neo4j.docker.utils.PwGen;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.UUID;
 
+@Ignore
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
