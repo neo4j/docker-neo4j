@@ -3,9 +3,9 @@ package com.neo4j.docker;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 
-@Ignore
+@Disabled
 public class TestHACluster
 {
     private Random rng = new Random(  );
@@ -60,7 +60,6 @@ public class TestHACluster
                ":" + container.getServicePort( service, 7687 );
     }
 
-    @Ignore
     @Test
     void testHAStartsOK() throws Exception
     {
