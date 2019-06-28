@@ -18,7 +18,7 @@ tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := http://dist.neo4j.org
 series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
-all: out/community/.sentinel out/enterprise/.sentinel
+all: test
 .PHONY: all
 
 test: tmp/.image-id-community tmp/.image-id-enterprise
@@ -30,14 +30,19 @@ test: tmp/.image-id-community tmp/.image-id-enterprise
 build: tmp/.image-id-community tmp/.image-id-enterprise
 .PHONY: build
 
-# do docker save on the images
+# create release images and loadable images
 package: package-community package-enterprise
 .PHONY: package
 
-package-%: tmp/.image-id-%
+package-%: tmp/.image-id-% out/%/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)
 > docker save neo4j:$(NEO4J_VERSION) > out/neo4j-$*-$(NEO4J_VERSION)-docker-loadable.tar
+
+out/%/.sentinel: tmp/image-%/.sentinel
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> touch $@
 
 # building the image
 
