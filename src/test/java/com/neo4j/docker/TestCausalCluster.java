@@ -1,13 +1,11 @@
 package com.neo4j.docker;
 
 import com.neo4j.docker.utils.HostFileSystemOperations;
-import com.neo4j.docker.utils.PwGen;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.*;
 import org.testcontainers.containers.DockerComposeContainer;
@@ -21,19 +19,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.UUID;
 
-@Ignore
+@Disabled
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
 
-    @Ignore
+    @Disabled
     @Test
     void testCausalClusteringBasic() throws Exception
     {
-        Assume.assumeTrue( "No causal clustering for community edition",
-                TestSettings.EDITION == TestSettings.Edition.ENTERPRISE );
+        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+                               "No causal clustering for community edition");
 
         Path tmpDir = HostFileSystemOperations.createTempFolder( "CC_cluster_" );
 
