@@ -31,7 +31,9 @@ RUN apt update \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
-    && ln -s /logs "${NEO4J_HOME}"/logs
+    && ln -s /logs "${NEO4J_HOME}"/logs \
+    && rm -rf /tmp/* \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
