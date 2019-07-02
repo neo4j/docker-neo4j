@@ -12,14 +12,20 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 public class TestConfSettings
 {
@@ -104,5 +110,29 @@ public class TestConfSettings
         Assertions.assertEquals( "3000m",
                                  configurations.get( "dbms.memory.heap.max_size" ),
                                  "maximum heap size not overridden" );
+    }
+
+    @Test
+    void testReadTheConfFile() throws Exception
+    {
+        //Create container
+        GenericContainer container = createContainer();
+        //Mount /conf
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
+        Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
+        SetContainerUser.currentlyRunningUser( container );
+        //Create neo4j.conf file with the custom env variables
+        Path confFile = Paths.get( "src", "test", "resources", "neo4j.conf" );
+        Files.copy(confFile, confMount.resolve("neo4j.conf"));
+        //Start the container
+        container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+        container.start();
+        //Check if the container reads the conf file
+        Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
+        Optional<String> heapSizeMatch = lines.filter(s -> s.contains("dbms.memory.heap.max_size=200m")).findFirst();
+        lines.close();
+        Assertions.assertTrue(heapSizeMatch.isPresent(),"dbms.memory.heap.max_size was not set correctly");
+        //Kill the container
+        container.stop();
     }
 }
