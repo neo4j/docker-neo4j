@@ -1,7 +1,0 @@
-{
-  "apoc": "https://github.com/neo4j-contrib/neo4j-apoc-procedures/raw/master/versions.json",
-  "streams": "https://github.com/neo4j-contrib/neo4j-streams/raw/master/versions.json",
-  "graphql": "https://github.com/neo4j-contrib/neo4j-graphql/raw/master/versions.json",
-  "graph-algorithms": "https://github.com/neo4j-contrib/neo4j-graph-algorithms/raw/master/versions.json",
-  "_testing": "http://host.testcontainers.internal:3000/versions.json"
-}

@@ -9,10 +9,6 @@
 	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<properties>
-		<neo4j.version>${env.NEO4JVERSION}</neo4j.version>
-	</properties>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -32,16 +28,6 @@
 	</build>
 
 	<dependencies>
-		<dependency>
-			<!-- This gives us the Procedure API our runtime code uses.
-                 We have a `provided` scope on it, because when this is
-                 deployed in a Neo4j Instance, the API will be provided
-                 by Neo4j. -->
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j</artifactId>
-			<version>${neo4j.version}</version>
-			<scope>provided</scope>
-		</dependency>
 		<dependency>
 			<!-- logging library -->
 			<groupId>org.slf4j</groupId>
@@ -68,12 +54,6 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-params</artifactId>
-			<version>5.4.2</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-migrationsupport</artifactId>
 			<version>5.4.2</version>
 			<scope>test</scope>
 		</dependency>
