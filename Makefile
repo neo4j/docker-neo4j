@@ -34,10 +34,15 @@ build: tmp/.image-id-community tmp/.image-id-enterprise
 package: package-community package-enterprise
 .PHONY: package
 
-package-%: tmp/.image-id-% out/%/.sentinel
+package-community: tmp/.image-id-community out/community/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)
-> docker save neo4j:$(NEO4J_VERSION) > out/neo4j-$*-$(NEO4J_VERSION)-docker-loadable.tar
+> docker save neo4j:$(NEO4J_VERSION) > out/neo4j-community-$(NEO4J_VERSION)-docker-loadable.tar
+
+package-enterprise: tmp/.image-id-enterprise out/enterprise/.sentinel
+> mkdir -p out
+> docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)
+> docker save neo4j:$(NEO4J_VERSION)-enterprise > out/neo4j-enterprise-$(NEO4J_VERSION)-docker-loadable.tar
 
 out/%/.sentinel: tmp/image-%/.sentinel
 > mkdir -p $(@D)
@@ -54,16 +59,11 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
     $(<D)
 > echo -n $$image >$@
 
-tmp/neo4jlabs-plugins.json: ./neo4jlabs-plugins.json
-> mkdir -p $(@D)
-> cp $< $@
-
-tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J_VERSION)) tmp/neo4jlabs-plugins.json
+tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J_VERSION))
 > rm -rf $(@D)
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
-> cp $(filter %.json,$^) $(@D)/local-package
 > touch $@
 
 tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(series)/docker-entrypoint.sh \
