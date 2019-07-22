@@ -41,7 +41,7 @@ package-community: tmp/.image-id-community out/community/.sentinel
 
 package-enterprise: tmp/.image-id-enterprise out/enterprise/.sentinel
 > mkdir -p out
-> docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)
+> docker tag $$(cat $<) neo4j:$(NEO4J_VERSION)-enterprise
 > docker save neo4j:$(NEO4J_VERSION)-enterprise > out/neo4j-enterprise-$(NEO4J_VERSION)-docker-loadable.tar
 
 out/%/.sentinel: tmp/image-%/.sentinel
