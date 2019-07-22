@@ -122,7 +122,7 @@ fi
 if [ -d /import ]; then
     NEO4J_dbms_directories_import="/import"
 fi
-
+git log --branches --not --remotes
 if [ -d /metrics ]; then
     NEO4J_dbms_directories_metrics="/metrics"
 fi
