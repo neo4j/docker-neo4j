@@ -13,6 +13,7 @@ import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
@@ -78,12 +79,12 @@ public class TestBasic
                                 "No license checks before version 3.3.0");
 
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        container.setWaitStrategy( Wait.forLogMessage(  "must accept the license", 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+                .withLogConsumer( new Slf4jLogConsumer( log ) );
+        container.waitingFor( Wait.forLogMessage(  ".*must accept the license.*", 1 )
+                                      .withStartupTimeout( Duration.ofSeconds( 10 ) ) );
 
-        Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
-                                 ()-> container.start(),
-                                 "Neo4j did not notify about accepting the license agreement" );
+        Assertions.assertDoesNotThrow ( ()-> container.start(),
+                                        "Neo4j did not notify about accepting the license agreement" );
     }
 
     @Test
