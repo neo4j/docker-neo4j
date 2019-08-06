@@ -85,6 +85,12 @@ public class TestBasic
 
         Assertions.assertDoesNotThrow ( ()-> container.start(),
                                         "Neo4j did not notify about accepting the license agreement" );
+//        Assertions.assertFalse( container.isRunning(), "Neo4j started without accepting the license" );
+        String logs = container.getLogs();
+        // double check the container didn't warn and start neo4j anyway
+        Assertions.assertTrue( logs.contains( "must accept the license" ), "Neo4j did not notify about accepting the license agreement" );
+        Assertions.assertFalse( logs.contains( "Remote interface available" ), "Neo4j was started even though the license was not accepted" );
+        container.stop();
     }
 
     @Test
