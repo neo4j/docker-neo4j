@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -135,4 +136,53 @@ public class TestConfSettings
         //Kill the container
         container.stop();
     }
+
+    @Test
+    void testCommentedConfigsAreReplacedByDefaultOnes() throws Exception
+    {
+        //Create container
+        GenericContainer container = createContainer();
+        //Mount /conf
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
+        SetContainerUser.currentlyRunningUser( container );
+        //Create neo4j.conf file
+        Path confFile = Paths.get( "src", "test", "resources", "neo4j.conf" );
+        Files.copy(confFile, confMount.resolve("neo4j.conf"));
+        //Start the container
+        container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped*." , 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+        container.setCommand("dump-config");
+        container.start();
+        //Read the config file to check if the config is appended correctly
+        Stream<String> lines = Files.lines(confMount.resolve("neo4j.conf"));
+        Optional<String> pagecacheSizeMatch = lines.filter(s -> s.contains("dbms.memory.pagecache.size=512M")).findFirst();
+        lines.close();
+        Assertions.assertTrue(pagecacheSizeMatch.isPresent(),"conf settings not appended correctly by docker-entrypoint");
+        //Kill the container
+        container.stop();
+    }
+
+
+    @Test
+    void testConfigsAreNotOverridenByDockerentrypoint() throws Exception
+    {
+        //Create container
+        GenericContainer container = createContainer();
+        //Mount /conf
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
+        SetContainerUser.currentlyRunningUser( container );
+        //Create neo4j.conf file
+        Path confFile = Paths.get( "src", "test", "resources", "neo4j.conf" );
+        Files.copy(confFile, confMount.resolve("neo4j.conf"));
+        //Start the container
+        container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+        container.start();
+        //Read the config file to check if the config is not overriden
+        Stream<String> lines = Files.lines(confMount.resolve("neo4j.conf"));
+        Optional<String> boltListenAdressMatch = lines.filter(s -> s.contains("dbms.connector.https.listen_address=:8483")).findFirst();
+        lines.close();
+        Assertions.assertTrue(boltListenAdressMatch.isPresent(),"docker-entrypoint has overriden custom setting set by user");
+        //Kill the container
+        container.stop();
+    }
+
 }
