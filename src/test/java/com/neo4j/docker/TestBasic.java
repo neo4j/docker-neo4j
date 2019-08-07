@@ -13,6 +13,7 @@ import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
@@ -65,7 +66,7 @@ public class TestBasic
                                    10, TimeUnit.SECONDS);
 
         Assertions.assertEquals( "", toStringConsumer.toUtf8String(), "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String() );
-        container.stop();
+            container.stop();
     }
 
 
@@ -78,52 +79,28 @@ public class TestBasic
                                 "No license checks before version 3.3.0");
 
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        container.setWaitStrategy( Wait.forLogMessage(  "must accept the license", 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+                .withLogConsumer( new Slf4jLogConsumer( log ) );
+        container.waitingFor( Wait.forLogMessage(  ".*must accept the license.*", 1 )
+                                      .withStartupTimeout( Duration.ofSeconds( 10 ) ) );
 
-        Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
-                                 ()-> container.start(),
-                                 "Neo4j did not notify about accepting the license agreement" );
+        Assertions.assertDoesNotThrow ( ()-> container.start(),
+                                        "Neo4j did not notify about accepting the license agreement" );
+//        Assertions.assertFalse( container.isRunning(), "Neo4j started without accepting the license" );
+        String logs = container.getLogs();
+
+        // kill the container. Do it before the assertions otherwise the container may not close (if it is running)
+        if(container.isRunning())
+        {
+            // possible race condition here if the container stops between checking isRunning and now. This might cause problems but we'll see.
+            container.stop();
+        }
+        // double check the container didn't warn and start neo4j anyway
+        Assertions.assertTrue( logs.contains( "must accept the license" ), "Neo4j did not notify about accepting the license agreement" );
+        Assertions.assertFalse( logs.contains( "Remote interface available" ), "Neo4j was started even though the license was not accepted" );
     }
 
-//    @Test
-//    void testCypherShellOnPath() throws Exception
-//    {
-//        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
-//
-//        createBasicContainer();
-//        container.withCommand( "which cypher-shell" );
-//        container.setWaitStrategy( null );
-//        container.start();
-//
-//        ToStringConsumer toStringConsumer = new ToStringConsumer();
-//        WaitingConsumer waitingConsumer = new WaitingConsumer();
-//        container.followOutput( waitingConsumer, OutputFrame.OutputType.STDOUT);
-//        container.followOutput( toStringConsumer , OutputFrame.OutputType.STDOUT);
-//        waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( expectedCypherShellPath ),
-//                                   10, TimeUnit.SECONDS);
-//        Assertions.assertTrue( toStringConsumer.toUtf8String().contains( expectedCypherShellPath ),
-//                               "cypher-shell was not on the path. Received:\n"+toStringConsumer.toUtf8String() );
-//
-//        container.stop();
-//    }
-//
-//    @Test
-//    void testCypherShellOnPath2() throws Exception
-//    {
-//        String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
-//
-//        createBasicContainer();
-//        container.withCommand( "which cypher-shell" );
-//        container.setWaitStrategy( Wait.forLogMessage( expectedCypherShellPath+"[\\s]*", 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
-//
-//        Assertions.assertDoesNotThrow( () -> container.start(),
-//                                       "cypher-shell was not on the path. Received:\n"+container.getLogs() );
-//        container.stop();
-//    }
-
     @Test
-    void testCypherShellOnPath3() throws Exception
+    void testCypherShellOnPath() throws Exception
     {
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
         createBasicContainer();
