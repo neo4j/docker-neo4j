@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
@@ -26,6 +27,7 @@ import org.neo4j.driver.StatementResult;
 public class TestPasswords
 {
     private static Logger log = LoggerFactory.getLogger( TestPasswords.class);
+    private static Config TEST_DRIVER_CONFIG = Config.builder().withoutEncryption().build();
 
     private GenericContainer createContainer( String asCurrentUser )
     {
@@ -76,7 +78,7 @@ public class TestPasswords
     private void putInitialDataIntoContainer( GenericContainer container, String password)
     {
         String boltUri = getBoltURIFromContainer(container);
-        Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password));
+        Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password ), TEST_DRIVER_CONFIG );
         try ( Session session = driver.session())
         {
             StatementResult rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
@@ -88,7 +90,7 @@ public class TestPasswords
     private void verifyDataIntoContainer( GenericContainer container, String password)
     {
         String boltUri = getBoltURIFromContainer(container);
-        Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password));
+        Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password ), TEST_DRIVER_CONFIG );
         try ( Session session = driver.session())
         {
             StatementResult rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
@@ -101,7 +103,7 @@ public class TestPasswords
     {
         String boltUri = getBoltURIFromContainer(container);
         Assertions.assertThrows( org.neo4j.driver.exceptions.AuthenticationException.class,
-                                 () ->  GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password)));
+                () -> GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password ), TEST_DRIVER_CONFIG ) );
     }
 
     // when junit 5.5.0 is released, @ValueSource should support booleans.
