@@ -66,7 +66,7 @@ public class TestBasic
                                    10, TimeUnit.SECONDS);
 
         Assertions.assertEquals( "", toStringConsumer.toUtf8String(), "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String() );
-        container.stop();
+            container.stop();
     }
 
 
@@ -87,10 +87,16 @@ public class TestBasic
                                         "Neo4j did not notify about accepting the license agreement" );
 //        Assertions.assertFalse( container.isRunning(), "Neo4j started without accepting the license" );
         String logs = container.getLogs();
+
+        // kill the container. Do it before the assertions otherwise the container may not close (if it is running)
+        if(container.isRunning())
+        {
+            // possible race condition here if the container stops between checking isRunning and now. This might cause problems but we'll see.
+            container.stop();
+        }
         // double check the container didn't warn and start neo4j anyway
         Assertions.assertTrue( logs.contains( "must accept the license" ), "Neo4j did not notify about accepting the license agreement" );
         Assertions.assertFalse( logs.contains( "Remote interface available" ), "Neo4j was started even though the license was not accepted" );
-        container.stop();
     }
 
     @Test
