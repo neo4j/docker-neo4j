@@ -65,7 +65,7 @@ public class TestPluginInstallation
                 .withExposedPorts( DEFAULT_BROWSER_PORT, DEFAULT_BOLT_PORT )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );
 
-        SetContainerUser.currentlyRunningUser( container );
+        SetContainerUser.nonRootUser( container );
     }
 
     @BeforeEach
