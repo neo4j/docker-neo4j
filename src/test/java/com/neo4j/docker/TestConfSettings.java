@@ -16,7 +16,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -83,7 +82,7 @@ public class TestConfSettings
                 .withEnv( "NEO4J_dbms_memory_heap_max__size", "3000m" )
                 .withCommand( "echo running" );
         container.setWaitStrategy( null );
-        SetContainerUser.currentlyRunningUser( container );
+        SetContainerUser.nonRootUser( container );
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/var/lib/neo4j/conf" );
 
         container.start();
@@ -120,7 +119,7 @@ public class TestConfSettings
         //Mount /conf
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
         Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
-        SetContainerUser.currentlyRunningUser( container );
+        SetContainerUser.nonRootUser( container );
         //Create neo4j.conf file with the custom env variables
         Path confFile = Paths.get( "src", "test", "resources", "neo4j.conf" );
         Files.copy(confFile, confMount.resolve("neo4j.conf"));

@@ -40,6 +40,10 @@ public class TestMounting
 
     private Neo4jContainer setupBasicContainer( boolean asCurrentUser, boolean isSecurityFlagSet )
     {
+        log.info( "Running as user {}, {}",
+                  asCurrentUser?"non-root":"root",
+                  isSecurityFlagSet?"with secure file permissions":"with unsecured file permissions" );
+
         Neo4jContainer container = new Neo4jContainer( TestSettings.IMAGE_ID );
         container.withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
@@ -48,7 +52,7 @@ public class TestMounting
 
         if(asCurrentUser)
         {
-            SetContainerUser.currentlyRunningUser( container );
+            SetContainerUser.nonRootUser( container );
         }
         if(isSecurityFlagSet)
         {

@@ -38,7 +38,7 @@ public class TestPasswords
 
         if(asCurrentUser.toLowerCase().equals( "true" ))
         {
-            SetContainerUser.currentlyRunningUser( container );
+            SetContainerUser.nonRootUser( container );
         }
 
         return container;
