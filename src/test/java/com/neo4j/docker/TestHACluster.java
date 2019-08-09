@@ -79,7 +79,7 @@ public class TestHACluster
         // read the HA compose file template and replace placeholders
         String composeContent = new String( Files.readAllBytes( composeTemplate ) );
         composeContent = composeContent
-                .replaceAll( "%%USERIDGROUPID%%", SetContainerUser.getCurrentlyRunningUserString() )
+                .replaceAll( "%%USERIDGROUPID%%", SetContainerUser.getNonRootUserString() )
                 .replaceAll( "%%IMAGE%%", TestSettings.IMAGE_ID )
                 .replaceAll( "%%LOGS_DIR%%", logDir.toAbsolutePath().toString() );
 

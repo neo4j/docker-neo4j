@@ -50,7 +50,7 @@ public class TestCausalCluster
         for (String line : contentLines) {
             editedLines[i] = line.replaceAll("%%IMAGE%%", TestSettings.IMAGE_ID);
             editedLines[i] = editedLines[i].replaceAll("%%LOGS_DIR%%", tmpDir.toAbsolutePath().toString());
-            editedLines[i] = editedLines[i].replaceAll("%%USERIDGROUPID%%", SetContainerUser.getCurrentlyRunningUserString());
+            editedLines[i] = editedLines[i].replaceAll("%%USERIDGROUPID%%", SetContainerUser.getNonRootUserString());
             i++;
         }
 

@@ -2,26 +2,34 @@ package com.neo4j.docker.utils;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.sun.security.auth.module.UnixSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Neo4jContainer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Random;
+import java.lang.reflect.Parameter;
 import java.util.function.Consumer;
 
 public class SetContainerUser
 {
 
-    public static void currentlyRunningUser( GenericContainer container )
+    public static void nonRootUser( GenericContainer container )
     {
-        container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( getCurrentlyRunningUserString() ) );
+        container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( getNonRootUserString() ) );
     }
-    public static String getCurrentlyRunningUserString()
+
+    public static String getNonRootUserString()
+    {
+        // check if the non root user environment variable is set, if so use that. Otherwise use current user.
+        String user = System.getenv( "NON_ROOT_USER_ID" );
+        if(user == null)
+        {
+            return getCurrentlyRunningUser();
+        }
+        else
+        {
+            return user;
+        }
+    }
+
+    private static String getCurrentlyRunningUser()
     {
         UnixSystem fs = new UnixSystem();
         return fs.getUid() + ":" + fs.getGid();
