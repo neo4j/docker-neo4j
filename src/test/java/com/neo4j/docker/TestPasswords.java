@@ -103,7 +103,7 @@ public class TestPasswords
     {
         String boltUri = getBoltURIFromContainer(container);
         Assertions.assertThrows( org.neo4j.driver.exceptions.AuthenticationException.class,
-                () -> GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password ), TEST_DRIVER_CONFIG ) );
+                () -> GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password ), TEST_DRIVER_CONFIG ).verifyConnectivity() );
     }
 
     // when junit 5.5.0 is released, @ValueSource should support booleans.
