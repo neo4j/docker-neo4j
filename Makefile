@@ -15,7 +15,7 @@ ifndef NEO4J_VERSION
 endif
 
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
-dist_site := http://dist.neo4j.org
+dist_site := https://dist.neo4j.org
 series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
 all: test
