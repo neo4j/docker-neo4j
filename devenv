@@ -71,6 +71,9 @@ fi
 
 if [[ -f devenv.local ]]; then
     source devenv.local
+    # to be consistent with the rest of neo4j we should use NEO4JVERSION exclusively but unfortunately both with and without underscore are used in this repo
+    export NEO4JVERSION
+    NEO4J_VERSION="${NEO4JVERSION}"
     export NEO4J_VERSION
 else
     echo >&2 "Error: cannot find devenv.local"
