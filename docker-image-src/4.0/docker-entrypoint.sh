@@ -119,6 +119,38 @@ function check_mounted_folder_with_chown
     fi
 }
 
+function load_plugin_from_github
+{
+  # Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
+  # correct format.
+  local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
+
+  local _plugins_dir="${NEO4J_HOME}/plugins"
+  if [ -d /plugins ]; then
+    local _plugins_dir="/plugins"
+  fi
+  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value" /neo4jlabs-plugins.json )"
+  # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
+  local _destination="${_plugins_dir}/${_plugin_name}.jar"
+  local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
+
+  # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
+  echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
+  local _versions_json="$(curl --silent --show-error --fail --retry 30 --retry-max-time 300 -L "${_versions_json_url}")"
+  local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output ".[] | select(.neo4j==\"${_neo4j_version}\") | .jar")"
+  if [[ -z "${_plugin_jar_url}" ]]; then
+    echo >&2 "No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
+    echo >&2 "${_versions_json}"
+  fi
+  echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
+  curl --silent --show-error --fail --retry 30 --retry-max-time 300 -L -o "${_destination}" "${_plugin_jar_url}"
+
+  if ! is_readable "${_destination}"; then
+    echo >&2 "Plugin at '${_destination}' is not readable"
+    exit 1
+  fi
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -255,6 +287,10 @@ fi
 
 if [ -d /plugins ]; then
     if secure_mode_enabled; then
+        if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
+            # We need write permissions
+            check_mounted_folder_with_chown "/plugins"
+        fi
         check_mounted_folder_readable "/plugins"
     fi
     NEO4J_dbms_directories_plugins="/plugins"
@@ -330,6 +366,12 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
+if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
+  # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc-procedures", "streams", "graphql"]'
+  for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
+    load_plugin_from_github "${plugin_name}"
+  done
+fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
