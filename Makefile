@@ -15,7 +15,7 @@ ifndef NEO4J_VERSION
 endif
 
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
-dist_site := http://dist.neo4j.org
+dist_site := https://dist.neo4j.org
 series := $(shell echo "$(NEO4J_VERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
 all: test
@@ -59,11 +59,16 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
     $(<D)
 > echo -n $$image >$@
 
-tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J_VERSION))
+tmp/neo4jlabs-plugins.json: ./neo4jlabs-plugins.json
+> mkdir -p $(@D)
+> cp $< $@
+
+tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J_VERSION)) tmp/neo4jlabs-plugins.json
 > rm -rf $(@D)
 > mkdir -p $(@D)
 > cp -r $(<D)/* $(@D)
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
+> cp $(filter %.json,$^) $(@D)/local-package
 > touch $@
 
 tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(series)/docker-entrypoint.sh \
