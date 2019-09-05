@@ -100,7 +100,7 @@ public class TestMounting
     {
         Neo4jContainer container = setupBasicContainer( true, false );
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
-        container.setWaitStrategy( null );
+        container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped.*" , 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
         container.withCommand( "dump-config" );
         container.start();
         container.stop();
