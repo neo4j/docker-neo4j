@@ -358,7 +358,7 @@ for conf in ${!CONFIG[@]} ; do
 
     if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
     then
-        echo $conf=${CONFIG[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
+        echo -e "\n"$conf=${CONFIG[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
     fi
 done
 

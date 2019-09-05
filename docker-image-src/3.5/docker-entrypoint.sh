@@ -391,6 +391,7 @@ if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
   done
 fi
 
+
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
 echo "${cmd}"
