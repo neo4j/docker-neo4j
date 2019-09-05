@@ -351,7 +351,7 @@ for conf in ${!CONFIG[@]} ; do
 
     if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
     then
-        echo $conf=${CONFIG[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
+        echo -e "\n"$conf=${CONFIG[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
     fi
 done
 
@@ -380,6 +380,17 @@ if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
     load_plugin_from_github "${plugin_name}"
   done
+fi
+
+[ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
+
+if [ "${cmd}" == "dump-config" ]; then
+    if is_not_writable "/conf"; then
+        print_permissions_advice_and_fail "/conf"
+    fi
+    cp --recursive "${NEO4J_HOME}"/conf/* /conf
+    echo "Config Dumped"
+    exit 0
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}

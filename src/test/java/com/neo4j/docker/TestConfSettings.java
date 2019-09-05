@@ -200,4 +200,3 @@ public class TestConfSettings {
         //Kill the container
         container.stop();
     }
-}
