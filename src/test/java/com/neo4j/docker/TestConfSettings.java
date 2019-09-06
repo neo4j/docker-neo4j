@@ -58,10 +58,15 @@ public class TestConfSettings {
     private Map<String, String> parseConfFile(File conf) throws FileNotFoundException {
         Map<String, String> configurations = new HashMap<>();
         Scanner scanner = new Scanner(conf);
-        while (scanner.hasNextLine()) {
-            String[] params = scanner.nextLine().split("=", 2);
-            log.debug(params[0] + "\t:\t" + params[1]);
-            configurations.put(params[0], params[1]);
+        while ( scanner.hasNextLine() )
+        {
+            String[] params = scanner.nextLine().split( "=", 2 );
+            if(params.length < 2)
+            {
+                continue;
+            }
+            log.debug( params[0] + "\t:\t" + params[1] );
+            configurations.put( params[0], params[1] );
         }
         return configurations;
     }
@@ -76,12 +81,12 @@ public class TestConfSettings {
                 .withEnv("NEO4J_dbms_memory_heap_initial__size", "2000m")
                 .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
                 .withCommand("echo running");
-        container.setWaitStrategy(null);
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
+        container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         SetContainerUser.nonRootUser(container);
-        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/var/lib/neo4j/conf");
 
+        container.setCommand("dump-config");
         container.start();
-        container.execInContainer("neo4j-admin", "help", ">/dev/null");
         container.stop();
 
         // now check the settings we set via env are in the new conf file
@@ -135,19 +140,21 @@ public class TestConfSettings {
         GenericContainer container = createContainer();
         //Mount /conf
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
+        File conf = confMount.resolve("neo4j.conf").toFile();
         SetContainerUser.nonRootUser(container);
         //Create ConfsReplaced.conf file
         Path confFile = Paths.get("src", "test", "resources", "confs", "ConfsReplaced.conf");
-        Files.copy(confFile, confMount.resolve("ConfsReplaced.conf"));
+        Files.copy(confFile, confMount.resolve("neo4j.conf"));
         //Start the container
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         container.setCommand("dump-config");
         container.start();
         //Read the config file to check if the config is appended correctly
-        Stream<String> lines = Files.lines(confMount.resolve("neo4j.conf"));
-        Optional<String> pagecacheSizeMatch = lines.filter(s -> s.contains("dbms.memory.pagecache.size=512M")).findFirst();
-        lines.close();
-        Assertions.assertTrue(pagecacheSizeMatch.isPresent(), "conf settings not appended correctly by docker-entrypoint");
+        Map<String, String> configurations = parseConfFile(conf);
+        Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "conf settings not appended correctly by docker-entrypoint");
+        Assertions.assertEquals("512M",
+                configurations.get("dbms.memory.pagecache.size"),
+                "conf settings not appended correctly by docker-entrypoint");
         //Kill the container
         container.stop();
     }
@@ -200,3 +207,4 @@ public class TestConfSettings {
         //Kill the container
         container.stop();
     }
+}
