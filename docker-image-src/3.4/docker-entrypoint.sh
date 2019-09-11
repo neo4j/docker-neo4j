@@ -236,7 +236,14 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_causal__clustering_discovery__advertised__address:=${NEO4J_causalClustering_discoveryAdvertisedAddress:-"$(hostname):5000"}}
    : ${NEO4J_causal__clustering_transaction__advertised__address:=${NEO4J_causalClustering_transactionAdvertisedAddress:-"$(hostname):6000"}}
    : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-"$(hostname):7000"}}
+   # Custom settings for dockerized neo4j
+   : ${NEO4J_ha_host_coordination:=$(hostname):5001}
+   : ${NEO4J_ha_host_data:=$(hostname):6001}
+   : ${NEO4J_causal__clustering_discovery__advertised__address:=$(hostname):5000}
+   : ${NEO4J_causal__clustering_transaction__advertised__address:=$(hostname):6000}
+   : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 fi
+   : ${NEO4J_wrapper_java_additional:=-Dneo4j.ext.udc.source=docker}
 
 # unset old hardcoded unsupported env variables
 unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
@@ -250,18 +257,6 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
     NEO4J_causalClustering_transactionAdvertisedAddress \
     NEO4J_causalClustering_raftListenAddress \
     NEO4J_causalClustering_raftAdvertisedAddress
-
-# Custom settings for dockerized neo4j
-: ${NEO4J_wrapper_java_additional:=-Dneo4j.ext.udc.source=docker}
-
-if [ "${NEO4J_EDITION}" == "enterprise" ];
-  then
-   : ${NEO4J_ha_host_coordination:=$(hostname):5001}
-   : ${NEO4J_ha_host_data:=$(hostname):6001}
-   : ${NEO4J_causal__clustering_discovery__advertised__address:=$(hostname):5000}
-   : ${NEO4J_causal__clustering_transaction__advertised__address:=$(hostname):6000}
-   : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
-fi
 
 if [ -d /conf ]; then
     if secure_mode_enabled; then
