@@ -233,13 +233,11 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
   then
    : ${NEO4J_causal__clustering_expected__core__cluster__size:=${NEO4J_causalClustering_expectedCoreClusterSize:-}}
    : ${NEO4J_causal__clustering_initial__discovery__members:=${NEO4J_causalClustering_initialDiscoveryMembers:-}}
-   : ${NEO4J_causal__clustering_discovery__listen__address:=${NEO4J_causalClustering_discoveryListenAddress:-"0.0.0.0:5000"}}
    : ${NEO4J_causal__clustering_discovery__advertised__address:=${NEO4J_causalClustering_discoveryAdvertisedAddress:-"$(hostname):5000"}}
-   : ${NEO4J_causal__clustering_transaction__listen__address:=${NEO4J_causalClustering_transactionListenAddress:-"0.0.0.0:6000"}}
    : ${NEO4J_causal__clustering_transaction__advertised__address:=${NEO4J_causalClustering_transactionAdvertisedAddress:-"$(hostname):6000"}}
-   : ${NEO4J_causal__clustering_raft__listen__address:=${NEO4J_causalClustering_raftListenAddress:-"0.0.0.0:7000"}}
    : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-"$(hostname):7000"}}
 fi
+
 
 # unset old hardcoded unsupported env variables
 unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
@@ -341,9 +339,10 @@ if [ "${cmd}" == "neo4j" ]; then
     fi
 fi
 
-declare -A CONFIG
+declare -A COMMUNITY
+declare -A ENTERPRISE
 
-CONFIG=(
+COMMUNITY=(
      [dbms.tx_log.rotation.retention_policy]="100M size"
      [dbms.memory.pagecache.size]="512M"
      [dbms.connectors.default_listen_address]="0.0.0.0"
@@ -352,30 +351,19 @@ CONFIG=(
      [dbms.connector.bolt.listen_address]="0.0.0.0:7687"
 )
 
-for conf in ${!CONFIG[@]} ; do
-
-    if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
-    then
-        echo -e "\n"$conf=${CONFIG[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
-    fi
-done
-
-declare -A ENTERPRISE
-
 ENTERPRISE=(
      [causal_clustering.transaction_listen_address]="0.0.0.0:6000"
      [causal_clustering.raft_listen_address]="0.0.0.0:7000"
      [causal_clustering.discovery_listen_address]="0.0.0.0:5000"
 )
 
-for conf in ${!ENTERPRISE[@]} ; do
+for conf in ${!COMMUNITY[@]} ; do
 
-    if [ "${NEO4J_EDITION}" == "enterprise" ];
+    if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
     then
-        echo -e "\n"$conf=${ENTERPRISE[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
+        echo -e "\n"$conf=${COMMUNITY[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
     fi
 done
-
 # list env variables with prefix NEO4J_ and create settings from them
 unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
