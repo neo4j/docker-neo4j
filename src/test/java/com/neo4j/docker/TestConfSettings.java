@@ -220,10 +220,11 @@ public class TestConfSettings {
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
         //Read debug.log to check that causal_clustering confs are set successfully
+        String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
-        Optional<String> ccPresent = lines.filter(s -> s.contains("causal_clustering.transaction_advertised_address")).findFirst();
+        Optional<String> ccPresent = lines.filter(s -> s.contains("causal_clustering.transaction_advertised_address="+expectedTxAddress)).findFirst();
         lines.close();
-        Assertions.assertTrue(ccPresent.isPresent(), "causal_clustering.transaction_advertised_address should be found on the Enterprise debug.log");
+        Assertions.assertTrue(ccPresent.isPresent(), "causal_clustering.transaction_advertised_address was not set correctly");
         //Kill the container
         container.stop();
     }
