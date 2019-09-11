@@ -208,31 +208,27 @@ public class TestConfSettings {
     }
 
     @Test
-    void testEnterpriseConfigsAreSetCorrectly() throws Exception {
+    void testEnterpriseOnlyDefaultsConfigsAreSet () throws Exception {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                 "This is testing only ENTERPRISE EDITION configs");
         //Create container
         GenericContainer container = createContainer();
-        //Mount /conf
-        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
+        //Mount /logs
         Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
         SetContainerUser.nonRootUser(container);
-        //Create EnterpriseCOnf.conf file
-        Path confFile = Paths.get("src", "test", "resources", "confs", "EnterpriseConf.conf");
-        Files.copy(confFile, confMount.resolve("neo4j.conf"));
         //Start the container
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
-        //Read debug.log file to check that the causal_clustering.transaction_listen_address was set correctly
+        //Read debug.log to check that causal_clustering confs are set successfully
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
-        Optional<String> heapSizeMatch = lines.filter(s -> s.contains("causal_clustering.transaction_listen_address=0.0.0.0:9000")).findFirst();
+        Optional<String> ccPresent = lines.filter(s -> s.contains("causal_clustering.transaction_advertised_address")).findFirst();
         lines.close();
-        Assertions.assertTrue(heapSizeMatch.isPresent(), "causal_clustering.transaction_listen_address was not set correctly");
+        Assertions.assertTrue(ccPresent.isPresent(), "causal_clustering.transaction_advertised_address should be found on the Enterprise debug.log");
         //Kill the container
         container.stop();
     }
     @Test
-    void testCommunityConfigsAreSetCorrectly() throws Exception {
+    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                 "This is testing only COMMUNITY EDITION configs");
         //Create container
