@@ -80,35 +80,44 @@ public class TestConfSettings {
                 .withEnv("NEO4J_dbms_memory_pagecache_size", "1000m")
                 .withEnv("NEO4J_dbms_memory_heap_initial__size", "2000m")
                 .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
+                .withEnv( "NEO4J_dbms_directories_logs", "/notdefaultlogs" )
+                .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" )
                 .withCommand("echo running");
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         SetContainerUser.nonRootUser(container);
-
-        container.setCommand("dump-config");
         container.start();
         container.stop();
 
         // now check the settings we set via env are in the new conf file
-        File conf = confMount.resolve("neo4j.conf").toFile();
-        Assertions.assertTrue(conf.exists(), "configuration file not written");
-        Assertions.assertTrue(conf.canRead(), "configuration file not readable for some reason?");
+        File conf = confMount.resolve( "neo4j.conf" ).toFile();
+        Assertions.assertTrue( conf.exists(), "configuration file not written" );
+        Assertions.assertTrue( conf.canRead(), "configuration file not readable for some reason?" );
 
-        Map<String, String> configurations = parseConfFile(conf);
-        Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "pagecache size not overridden");
-        Assertions.assertEquals("1000m",
-                configurations.get("dbms.memory.pagecache.size"),
-                "pagecache size not overridden");
+        Map<String,String> configurations = parseConfFile( conf );
+        Assertions.assertTrue( configurations.containsKey( "dbms.memory.pagecache.size" ), "pagecache size not overridden" );
+        Assertions.assertEquals( "1000m",
+                configurations.get( "dbms.memory.pagecache.size" ),
+                                "pagecache size not overridden" );
 
-        Assertions.assertTrue(configurations.containsKey("dbms.memory.heap.initial_size"), "initial heap size not overridden");
-        Assertions.assertEquals("2000m",
-                configurations.get("dbms.memory.heap.initial_size"),
-                "initial heap size not overridden");
+        Assertions.assertTrue( configurations.containsKey( "dbms.memory.heap.initial_size" ), "initial heap size not overridden" );
+        Assertions.assertEquals( "2000m",
+                                 configurations.get( "dbms.memory.heap.initial_size" ),
+                                 "initial heap size not overridden" );
 
-        Assertions.assertTrue(configurations.containsKey("dbms.memory.heap.max_size"), "maximum heap size not overridden");
-        Assertions.assertEquals("3000m",
-                configurations.get("dbms.memory.heap.max_size"),
-                "maximum heap size not overridden");
+        Assertions.assertTrue( configurations.containsKey( "dbms.memory.heap.max_size" ), "maximum heap size not overridden" );
+        Assertions.assertEquals( "3000m",
+                                 configurations.get( "dbms.memory.heap.max_size" ),
+                                 "maximum heap size not overridden" );
+
+        Assertions.assertTrue( configurations.containsKey( "dbms.directories.logs" ), "log folder not overridden" );
+        Assertions.assertEquals( "/notdefaultlogs",
+                                 configurations.get( "dbms.directories.logs" ),
+                                 "log directory not overridden" );
+        Assertions.assertTrue( configurations.containsKey( "dbms.directories.data" ), "data folder not overridden" );
+        Assertions.assertEquals( "/notdefaultdata",
+                                 configurations.get( "dbms.directories.data" ),
+                                 "data directory not overridden" );
     }
 
     @Test
