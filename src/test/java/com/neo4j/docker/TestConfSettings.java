@@ -149,9 +149,9 @@ public class TestConfSettings {
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         container.setCommand("dump-config");
         container.start();
-        //Read the config file to check if the config is appended correctly
+        //Read the config file to check if the config is set correctly
         Map<String, String> configurations = parseConfFile(conf);
-        Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "conf settings not appended correctly by docker-entrypoint");
+        Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "conf settings not set correctly by docker-entrypoint");
         Assertions.assertEquals("512M",
                 configurations.get("dbms.memory.pagecache.size"),
                 "conf settings not appended correctly by docker-entrypoint");
@@ -183,13 +183,12 @@ public class TestConfSettings {
         container.stop();
     }
 
-
     @Test
     void testEnvVarsOverride() throws Exception {
         //Create container
         GenericContainer container = createContainer()
                 .withEnv("NEO4J_dbms_memory_pagecache_size", "512m");
-        //Mount /conf
+        //Mount /conf /logs
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
         Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
         SetContainerUser.nonRootUser(container);
@@ -199,11 +198,53 @@ public class TestConfSettings {
         //Start the container
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
-        //Read the config file to check if the config is not overriden
+        //Read the debug.log to check that dbms.memory.pagecache.size was set correctly
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> heapSizeMatch = lines.filter(s -> s.contains("dbms.memory.pagecache.size=512m")).findFirst();
         lines.close();
         Assertions.assertTrue(heapSizeMatch.isPresent(), "dbms.memory.pagecache.size was not set correctly");
+        //Kill the container
+        container.stop();
+    }
+
+    @Test
+    void testEnterpriseOnlyDefaultsConfigsAreSet () throws Exception {
+        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+                "This is testing only ENTERPRISE EDITION configs");
+        //Create container
+        GenericContainer container = createContainer();
+        //Mount /logs
+        Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
+        SetContainerUser.nonRootUser(container);
+        //Start the container
+        container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
+        container.start();
+        //Read debug.log to check that causal_clustering confs are set successfully
+        String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
+        Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
+        Optional<String> ccPresent = lines.filter(s -> s.contains("causal_clustering.transaction_advertised_address="+expectedTxAddress)).findFirst();
+        lines.close();
+        Assertions.assertTrue(ccPresent.isPresent(), "causal_clustering.transaction_advertised_address was not set correctly");
+        //Kill the container
+        container.stop();
+    }
+    @Test
+    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception {
+        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
+                "This is testing only COMMUNITY EDITION configs");
+        //Create container
+        GenericContainer container = createContainer();
+        //Mount /logs
+        Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
+        SetContainerUser.nonRootUser(container);
+        //Start the container
+        container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
+        container.start();
+        //Read debug.log to check that causal_clustering confs are not present
+        Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
+        Optional<String> ccNotPresent = lines.filter(s -> s.contains("causal_clustering.transaction_listen_address")).findFirst();
+        lines.close();
+        Assertions.assertFalse(ccNotPresent.isPresent(), "causal_clustering.transaction_listen_address should not be on the Community debug.log");
         //Kill the container
         container.stop();
     }
