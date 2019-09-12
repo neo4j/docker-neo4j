@@ -270,7 +270,7 @@ if [ -d /ssl ]; then
     if secure_mode_enabled; then
     	check_mounted_folder_readable "/ssl"
     fi
-    NEO4J_dbms_directories_certificates="/ssl"
+    : ${NEO4J_dbms_directories_certificates:="/ssl"}
 fi
 
 if [ -d /plugins ]; then
@@ -281,26 +281,26 @@ if [ -d /plugins ]; then
         fi
         check_mounted_folder_readable "/plugins"
     fi
-    NEO4J_dbms_directories_plugins="/plugins"
+    : ${NEO4J_dbms_directories_plugins:="/plugins"}
 fi
 
 if [ -d /import ]; then
     if secure_mode_enabled; then
         check_mounted_folder_readable "/import"
     fi
-    NEO4J_dbms_directories_import="/import"
+    : ${NEO4J_dbms_directories_import:="/import"}
 fi
 
 if [ -d /metrics ]; then
     if secure_mode_enabled; then
         check_mounted_folder_readable "/metrics"
     fi
-    NEO4J_dbms_directories_metrics="/metrics"
+    : ${NEO4J_dbms_directories_metrics:="/metrics"}
 fi
 
 if [ -d /logs ]; then
     check_mounted_folder_with_chown "/logs"
-    NEO4J_dbms_directories_logs="/logs"
+    : ${NEO4J_dbms_directories_logs:="/logs"}
 fi
 
 if [ -d /data ]; then
