@@ -72,7 +72,7 @@ public class TestConfSettings {
     }
 
     @Test
-    void testAdminConfOverride() throws Exception {
+    void testEnvVarsOverrideDefaultConfigurations() throws Exception {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 0, 0)),
                 "No neo4j-admin in 2.3: skipping neo4j-admin-conf-override test");
 
@@ -82,7 +82,7 @@ public class TestConfSettings {
                 .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
                 .withEnv( "NEO4J_dbms_directories_logs", "/notdefaultlogs" )
                 .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" )
-                .withCommand("echo running");
+                .withCommand("dump-config");
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         SetContainerUser.nonRootUser(container);
