@@ -72,7 +72,7 @@ tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J
 > touch $@
 
 tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(series)/docker-entrypoint.sh \
-                       in/$(call tarball,%,$(NEO4J_VERSION))
+                       in/$(call tarball,%,$(NEO4J_VERSION)) tmp/neo4jlabs-plugins.json
 > mkdir -p $(@D)
 > cp $(filter %/docker-entrypoint.sh,$^) $(@D)/docker-entrypoint.sh
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
@@ -83,6 +83,7 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
     -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
+> cp $(filter %.json,$^) $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
 
