@@ -1,6 +1,6 @@
 [
   {
-    "neo4j": "$NEO4J_VERSION",
+    "neo4j": "$NEO4JVERSION",
     "_testing": "SNAPSHOT",
     "jar": "http://host.testcontainers.internal:3000/myPlugin.jar"
   }

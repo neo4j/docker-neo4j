@@ -24,9 +24,9 @@ public class TestSettings
         String verStr = System.getProperty( "version" );
         if(verStr == null)
         {
-            verStr = System.getenv( "NEO4J_VERSION" );
+            verStr = System.getenv( "NEO4JVERSION" );
         }
-        Assert.assertNotNull("Neo4j version has not been specified, either use mvn argument -Dversion or set env NEO4J_VERSION", verStr);
+        Assert.assertNotNull("Neo4j version has not been specified, either use mvn argument -Dversion or set env NEO4JVERSION", verStr);
         return verStr;
     }
 
