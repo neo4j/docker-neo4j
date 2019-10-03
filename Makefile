@@ -58,6 +58,9 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
     --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
     $(<D)
 > echo -n $$image >$@
+> echo "NEO4JVERSION=$(NEO4JVERSION)" > tmp/devenv-${*}.env
+> echo "NEO4J_IMAGE=$$image" >> tmp/devenv-${*}.env
+> echo "NEO4J_EDITION=${*}" >> tmp/devenv-${*}.env
 
 tmp/neo4jlabs-plugins.json: ./neo4jlabs-plugins.json
 > mkdir -p $(@D)
