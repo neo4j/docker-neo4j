@@ -84,7 +84,7 @@ public class TestPluginInstallation
     {
         File versionsJson = pluginsDir.resolve( versions ).toFile();
 
-        Files.write( getResource( "versions.json" ).replace( "$NEO4J_VERSION", NEO4J_VERSION.toString() ), versionsJson, StandardCharsets.UTF_8 );
+        Files.write( getResource( "versions.json" ).replace( "$NEO4JVERSION", NEO4J_VERSION.toString() ), versionsJson, StandardCharsets.UTF_8 );
 
         File myPluginJar = pluginsDir.resolve( myPlugin ).toFile();
 

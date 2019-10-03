@@ -32,7 +32,7 @@ For local development it's expected that `in` will contain symlinks to
 the tarballs to make it easy to rebuild Neo4j and test the results.
 
     ln -s $NEO4J_SRC/packaging/standalone/target/neo4j-*-3.4.0-SNAPSHOT-unix.tar.gz in
-    make NEO4J_VERSION=3.4.0-SNAPSHOT
+    make NEO4JVERSION=3.4.0-SNAPSHOT
 
 For building images of released versions, they can be downloaded into
 `in`.
@@ -42,7 +42,7 @@ For building images of released versions, they can be downloaded into
       curl --remote-name $DOWNLOAD_ROOT/neo4j-3.3.5-community-unix.tar.gz
       curl --remote-name $DOWNLOAD_ROOT/neo4j-3.3.5-enterprise-unix.tar.gz
     )
-    make NEO4J_VERSION=3.3.5
+    make NEO4JVERSION=3.3.5
 
 To avoid having to pass the version to make every time you can set it
 in the environment by copying `devenv.local` from
