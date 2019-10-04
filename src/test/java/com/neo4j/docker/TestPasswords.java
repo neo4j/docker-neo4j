@@ -53,21 +53,22 @@ public class TestPasswords
     @Test
     void testPasswordCantBeNeo4j() throws Exception
     {
-        GenericContainer failContainer = new GenericContainer( TestSettings.IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) );
-        if(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)
+        try(GenericContainer failContainer = new GenericContainer( TestSettings.IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) ))
         {
-            failContainer.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
+            if ( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE )
+            {
+                failContainer.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
+            }
+            setNeo4jPassword( failContainer, "neo4j/neo4j" );
+            failContainer.start();
+
+            WaitingConsumer waitingConsumer = new WaitingConsumer();
+            failContainer.followOutput( waitingConsumer );
+
+            Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil(
+                    frame -> frame.getUtf8String().contains("Invalid value for password" ), 10, TimeUnit.SECONDS ),
+                                           "did not error due to invalid password" );
         }
-        setNeo4jPassword( failContainer, "neo4j/neo4j" );
-        failContainer.start();
-
-        WaitingConsumer waitingConsumer = new WaitingConsumer();
-        failContainer.followOutput(waitingConsumer);
-
-        Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil( frame -> frame.getUtf8String()
-                                               .contains( "Invalid value for password" ),10, TimeUnit.SECONDS ),
-                               "did not error due to invalid password");
-        failContainer.stop();
     }
 
     private String getBoltURIFromContainer(GenericContainer container)
@@ -87,7 +88,7 @@ public class TestPasswords
         driver.close();
     }
 
-    private void verifyDataIntoContainer( GenericContainer container, String password)
+    private void verifyDataInContainer( GenericContainer container, String password)
     {
         String boltUri = getBoltURIFromContainer(container);
         Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( "neo4j", password ), TEST_DRIVER_CONFIG );
@@ -113,24 +114,28 @@ public class TestPasswords
     {
         // create container and mount /data folder so that data can persist between sessions
         String password = "some_valid_password";
-        GenericContainer firstContainer = createContainer( asCurrentUser );
-        setNeo4jPassword( firstContainer, "neo4j/"+password );
-        Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
-                                                                                    "password-defaultuser-data-",
-                                                                                    "/data" );
-        log.info(String.format( "Starting first container as %s user and setting password", asCurrentUser.toLowerCase().equals( "true" )?"current":"default" ));
-        // create a database with stuff in
-        firstContainer.start();
-        putInitialDataIntoContainer( firstContainer, password );
-        firstContainer.stop();
+        Path dataMount;
+        try(GenericContainer firstContainer = createContainer( asCurrentUser ))
+        {
+            setNeo4jPassword( firstContainer, "neo4j/" + password );
+            dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
+                                                                                        "password-defaultuser-data-",
+                                                                                        "/data" );
+            log.info( String.format( "Starting first container as %s user and setting password",
+                                     asCurrentUser.toLowerCase().equals( "true" ) ? "current" : "default" ) );
+            // create a database with stuff in
+            firstContainer.start();
+            putInitialDataIntoContainer( firstContainer, password );
+        }
 
         // with a new container, check the database data.
-        GenericContainer secondContainer = createContainer( asCurrentUser );
-        secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
-        log.info( "starting new container with same /data mount as same user without setting password" );
-        secondContainer.start();
-        verifyDataIntoContainer( secondContainer, password );
-        secondContainer.stop();
+        try(GenericContainer secondContainer = createContainer( asCurrentUser ))
+        {
+            secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
+            log.info( "starting new container with same /data mount as same user without setting password" );
+            secondContainer.start();
+            verifyDataInContainer( secondContainer, password );
+        }
     }
 
     @ParameterizedTest(name = "as current user={0}")
@@ -138,26 +143,31 @@ public class TestPasswords
     void testSettingNeo4jAuthDoesntOverrideExistingPassword( String asCurrentUser ) throws Exception
     {
         String password = "some_valid_password";
-        GenericContainer firstContainer = createContainer( asCurrentUser );
-        setNeo4jPassword( firstContainer, "neo4j/"+password );
-        Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
-                                                                                    "password-envoverride-data-",
-                                                                                    "/data" );
+        Path dataMount;
 
-        // create a database with stuff in
-        log.info(String.format( "Starting first container as %s user and setting password", asCurrentUser.toLowerCase().equals( "true" )?"current":"default" ));
-        firstContainer.start();
-        putInitialDataIntoContainer( firstContainer, password );
-        firstContainer.stop();
+        try(GenericContainer firstContainer = createContainer( asCurrentUser ))
+        {
+            setNeo4jPassword( firstContainer, "neo4j/" + password );
+            dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
+                                                                                   "password-envoverride-data-",
+                                                                                   "/data" );
+
+            // create a database with stuff in
+            log.info( String.format( "Starting first container as %s user and setting password",
+                                     asCurrentUser.toLowerCase().equals( "true" ) ? "current" : "default" ) );
+            firstContainer.start();
+            putInitialDataIntoContainer( firstContainer, password );
+        }
 
         // with a new container, check the database data.
-        GenericContainer secondContainer = createContainer( asCurrentUser );
-        setNeo4jPassword( secondContainer, "neo4j/not_the_password" );
-        secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
-        log.info( "starting new container with same /data mount as same user without setting password" );
-        secondContainer.start();
-        verifyDataIntoContainer( secondContainer, password );
-        verifyPasswordIsIncorrect( secondContainer,"not_the_password"  );
-        secondContainer.stop();
+        try(GenericContainer secondContainer = createContainer( asCurrentUser ))
+        {
+            setNeo4jPassword( secondContainer, "neo4j/not_the_password" );
+            secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
+            log.info( "starting new container with same /data mount as same user without setting password" );
+            secondContainer.start();
+            verifyDataInContainer( secondContainer, password );
+            verifyPasswordIsIncorrect( secondContainer, "not_the_password" );
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -29,8 +30,19 @@ import java.util.stream.Stream;
 
 public class TestConfSettings {
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
+    private GenericContainer container;
 
-    private GenericContainer createContainer() {
+    @AfterEach
+    void killContainer()
+    {
+        if(container != null)
+        {
+            container.stop();
+        }
+    }
+
+    private GenericContainer createContainer()
+    {
         return new GenericContainer(TestSettings.IMAGE_ID)
                 .withEnv("NEO4J_AUTH", "none")
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
@@ -39,23 +51,24 @@ public class TestConfSettings {
     }
 
     @Test
-    void testIgnoreNumericVars() {
-        GenericContainer container = createContainer();
-        container.withEnv("NEO4J_1a", "1");
+    void testIgnoreNumericVars()
+    {
+        container = createContainer();
+        container.withEnv( "NEO4J_1a", "1");
         container.start();
-        Assertions.assertTrue(container.isRunning());
+        Assertions.assertTrue( container.isRunning());
 
         WaitingConsumer waitingConsumer = new WaitingConsumer();
-        container.followOutput(waitingConsumer);
+        container.followOutput( waitingConsumer);
 
         Assertions.assertDoesNotThrow(() -> waitingConsumer.waitUntil(frame -> frame.getUtf8String()
-                        .contains("WARNING: 1a not written to conf file because settings that " +
-                                "start with a number are not permitted"), 15, TimeUnit.SECONDS),
-                "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`");
-        container.stop();
+                                                                                    .contains("WARNING: 1a not written to conf file because settings that " +
+                                                                                              "start with a number are not permitted"), 15, TimeUnit.SECONDS),
+                                      "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`");
     }
 
-    private Map<String, String> parseConfFile(File conf) throws FileNotFoundException {
+    private Map<String, String> parseConfFile(File conf) throws FileNotFoundException
+    {
         Map<String, String> configurations = new HashMap<>();
         Scanner scanner = new Scanner(conf);
         while ( scanner.hasNextLine() )
@@ -72,11 +85,12 @@ public class TestConfSettings {
     }
 
     @Test
-    void testEnvVarsOverrideDefaultConfigurations() throws Exception {
+    void testEnvVarsOverrideDefaultConfigurations() throws Exception
+    {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 0, 0)),
-                "No neo4j-admin in 2.3: skipping neo4j-admin-conf-override test");
+                               "No neo4j-admin in 2.3: skipping neo4j-admin-conf-override test");
 
-        GenericContainer container = createContainer()
+        container = createContainer()
                 .withEnv("NEO4J_dbms_memory_pagecache_size", "1000m")
                 .withEnv("NEO4J_dbms_memory_heap_initial__size", "2000m")
                 .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
@@ -87,7 +101,6 @@ public class TestConfSettings {
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         SetContainerUser.nonRootUser(container);
         container.start();
-        container.stop();
 
         // now check the settings we set via env are in the new conf file
         File conf = confMount.resolve( "neo4j.conf" ).toFile();
@@ -97,8 +110,8 @@ public class TestConfSettings {
         Map<String,String> configurations = parseConfFile( conf );
         Assertions.assertTrue( configurations.containsKey( "dbms.memory.pagecache.size" ), "pagecache size not overridden" );
         Assertions.assertEquals( "1000m",
-                configurations.get( "dbms.memory.pagecache.size" ),
-                                "pagecache size not overridden" );
+                                 configurations.get( "dbms.memory.pagecache.size" ),
+                                 "pagecache size not overridden" );
 
         Assertions.assertTrue( configurations.containsKey( "dbms.memory.heap.initial_size" ), "initial heap size not overridden" );
         Assertions.assertEquals( "2000m",
@@ -121,9 +134,9 @@ public class TestConfSettings {
     }
 
     @Test
-    void testReadTheConfFile() throws Exception {
-        //Create container
-        GenericContainer container = createContainer();
+    void testReadTheConfFile() throws Exception
+    {
+        container = createContainer();
         //Mount /conf
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
         Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
@@ -134,19 +147,19 @@ public class TestConfSettings {
         //Start the container
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
+
         //Check if the container reads the conf file
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> heapSizeMatch = lines.filter(s -> s.contains("dbms.memory.heap.max_size=512m")).findFirst();
         lines.close();
         Assertions.assertTrue(heapSizeMatch.isPresent(), "dbms.memory.heap.max_size was not set correctly");
-        //Kill the container
-        container.stop();
     }
 
     @Test
-    void testCommentedConfigsAreReplacedByDefaultOnes() throws Exception {
+    void testCommentedConfigsAreReplacedByDefaultOnes() throws Exception
+    {
         //Create container
-        GenericContainer container = createContainer();
+        container = createContainer();
         //Mount /conf
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
         File conf = confMount.resolve("neo4j.conf").toFile();
@@ -158,21 +171,20 @@ public class TestConfSettings {
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         container.setCommand("dump-config");
         container.start();
+
         //Read the config file to check if the config is set correctly
         Map<String, String> configurations = parseConfFile(conf);
         Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "conf settings not set correctly by docker-entrypoint");
         Assertions.assertEquals("512M",
-                configurations.get("dbms.memory.pagecache.size"),
-                "conf settings not appended correctly by docker-entrypoint");
-        //Kill the container
-        container.stop();
+                                configurations.get("dbms.memory.pagecache.size"),
+                                "conf settings not appended correctly by docker-entrypoint");
     }
 
-
     @Test
-    void testConfigsAreNotOverridenByDockerentrypoint() throws Exception {
+    void testConfigsAreNotOverridenByDockerentrypoint() throws Exception
+    {
         //Create container
-        GenericContainer container = createContainer();
+        container = createContainer();
         //Mount /conf
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
         SetContainerUser.nonRootUser(container);
@@ -183,19 +195,19 @@ public class TestConfSettings {
         container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
         container.setCommand("dump-config");
         container.start();
+
         //Read the config file to check if the config is not overriden
         Stream<String> lines = Files.lines(confMount.resolve("neo4j.conf"));
         Optional<String> httpsListenAdressMatch = lines.filter(s -> s.contains("dbms.connector.https.listen_address=:8483")).findFirst();
         lines.close();
         Assertions.assertTrue(httpsListenAdressMatch.isPresent(), "docker-entrypoint has overriden custom setting set by user");
-        //Kill the container
-        container.stop();
     }
 
     @Test
-    void testEnvVarsOverride() throws Exception {
+    void testEnvVarsOverride() throws Exception
+    {
         //Create container
-        GenericContainer container = createContainer()
+        container = createContainer()
                 .withEnv("NEO4J_dbms_memory_pagecache_size", "512m");
         //Mount /conf /logs
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
@@ -207,21 +219,21 @@ public class TestConfSettings {
         //Start the container
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
+
         //Read the debug.log to check that dbms.memory.pagecache.size was set correctly
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> heapSizeMatch = lines.filter(s -> s.contains("dbms.memory.pagecache.size=512m")).findFirst();
         lines.close();
         Assertions.assertTrue(heapSizeMatch.isPresent(), "dbms.memory.pagecache.size was not set correctly");
-        //Kill the container
-        container.stop();
     }
 
     @Test
-    void testEnterpriseOnlyDefaultsConfigsAreSet () throws Exception {
+    void testEnterpriseOnlyDefaultsConfigsAreSet () throws Exception
+    {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                "This is testing only ENTERPRISE EDITION configs");
+                               "This is testing only ENTERPRISE EDITION configs");
         //Create container
-        GenericContainer container = createContainer();
+        container = createContainer();
         //Mount /logs
         Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
         SetContainerUser.nonRootUser(container);
@@ -230,31 +242,31 @@ public class TestConfSettings {
         container.start();
         //Read debug.log to check that causal_clustering confs are set successfully
         String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
+
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> ccPresent = lines.filter(s -> s.contains("causal_clustering.transaction_advertised_address="+expectedTxAddress)).findFirst();
         lines.close();
         Assertions.assertTrue(ccPresent.isPresent(), "causal_clustering.transaction_advertised_address was not set correctly");
-        //Kill the container
-        container.stop();
     }
+
     @Test
-    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception {
+    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
+    {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
-                "This is testing only COMMUNITY EDITION configs");
+                               "This is testing only COMMUNITY EDITION configs");
         //Create container
-        GenericContainer container = createContainer();
+        container = createContainer();
         //Mount /logs
         Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
         SetContainerUser.nonRootUser(container);
         //Start the container
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
+
         //Read debug.log to check that causal_clustering confs are not present
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> ccNotPresent = lines.filter(s -> s.contains("causal_clustering.transaction_listen_address")).findFirst();
         lines.close();
         Assertions.assertFalse(ccNotPresent.isPresent(), "causal_clustering.transaction_listen_address should not be on the Community debug.log");
-        //Kill the container
-        container.stop();
     }
 }
