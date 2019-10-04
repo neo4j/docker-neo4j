@@ -1,6 +1,7 @@
 package com.neo4j.docker;
 
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
@@ -25,6 +27,16 @@ import java.util.stream.Stream;
 public class TestMounting
 {
     private static Logger log = LoggerFactory.getLogger( TestMounting.class );
+    private Neo4jContainer container;
+
+    @AfterEach
+    void killContainer()
+    {
+        if(container != null)
+        {
+            container.stop();
+        }
+    }
 
     static Stream<Arguments> defaultUserFlagSecurePermissionsFlag()
     {
@@ -98,12 +110,11 @@ public class TestMounting
     @Test
     void testDumpConfig( ) throws Exception
     {
-        Neo4jContainer container = setupBasicContainer( true, false );
+        container = setupBasicContainer( true, false );
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
         container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped.*" , 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
         container.withCommand( "dump-config" );
         container.start();
-        container.stop();
 
         Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
         Assertions.assertTrue( expectedConfDumpFile.toFile().exists(), "dump-config did not dump the config file to "+confMount.toString() );
@@ -117,14 +128,13 @@ public class TestMounting
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        Neo4jContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
+        container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
         Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
         container.start();
 
         // neo4j should now have started, so there'll be stuff in the data folder
         // we need to check that stuff is readable and owned by the correct user
         verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
-        container.stop();
     }
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
@@ -134,12 +144,11 @@ public class TestMounting
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        Neo4jContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
+        container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
         Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
-        container.stop();
     }
 
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
@@ -149,14 +158,13 @@ public class TestMounting
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        Neo4jContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
+        container = setupBasicContainer( asCurrentUser, isSecurityFlagSet );
         Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
         Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
         container.start();
 
         verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
         verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
-        container.stop();
     }
 
     @Test
@@ -165,7 +173,7 @@ public class TestMounting
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        Neo4jContainer container = setupBasicContainer( false, true );
+        container = setupBasicContainer( false, true );
         HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
 
         // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
@@ -174,7 +182,6 @@ public class TestMounting
         Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
                                  () -> container.start(),
                                  "Neo4j should not start in secure mode if data folder is unwritable");
-
     }
 
     @Test
@@ -183,7 +190,7 @@ public class TestMounting
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,1,0 ) ),
                                "User checks not valid before 3.1" );
 
-        Neo4jContainer container = setupBasicContainer( false, true );
+        container = setupBasicContainer( false, true );
         HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
 
         // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
@@ -192,6 +199,5 @@ public class TestMounting
         Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
                                  () -> container.start(),
                                  "Neo4j should not start in secure mode if logs folder is unwritable");
-
     }
 }

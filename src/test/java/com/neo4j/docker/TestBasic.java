@@ -1,5 +1,6 @@
 package com.neo4j.docker;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,14 @@ public class TestBasic
     private static Logger log = LoggerFactory.getLogger( TestBasic.class );
     private GenericContainer container;
 
+    @AfterEach
+    void killContainer()
+    {
+        if(container != null)
+        {
+            container.stop();
+        }
+    }
 
     private void createBasicContainer()
     {
@@ -42,7 +51,6 @@ public class TestBasic
         container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
         container.start();
         Assertions.assertTrue( container.isRunning() );
-        container.stop();
     }
 
     @Test
@@ -64,9 +72,7 @@ public class TestBasic
         // wait for neo4j to start
         waitingConsumer.waitUntil( frame -> frame.getUtf8String().contains( "Remote interface available at http://localhost:7474/" ),
                                    10, TimeUnit.SECONDS);
-
         Assertions.assertEquals( "", toStringConsumer.toUtf8String(), "Unexpected errors in stderr from container!\n"+toStringConsumer.toUtf8String() );
-            container.stop();
     }
 
 
@@ -78,7 +84,7 @@ public class TestBasic
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
                                 "No license checks before version 3.3.0");
 
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
+        container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );
         container.waitingFor( Wait.forLogMessage(  ".*must accept the license.*", 1 )
                                       .withStartupTimeout( Duration.ofSeconds( 10 ) ) );
@@ -88,12 +94,6 @@ public class TestBasic
 //        Assertions.assertFalse( container.isRunning(), "Neo4j started without accepting the license" );
         String logs = container.getLogs();
 
-        // kill the container. Do it before the assertions otherwise the container may not close (if it is running)
-        if(container.isRunning())
-        {
-            // possible race condition here if the container stops between checking isRunning and now. This might cause problems but we'll see.
-            container.stop();
-        }
         // double check the container didn't warn and start neo4j anyway
         Assertions.assertTrue( logs.contains( "must accept the license" ), "Neo4j did not notify about accepting the license agreement" );
         Assertions.assertFalse( logs.contains( "Remote interface available" ), "Neo4j was started even though the license was not accepted" );
@@ -108,7 +108,6 @@ public class TestBasic
         container.start();
 
         Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell");
-
         Assertions.assertTrue( whichResult.getStdout().contains( expectedCypherShellPath ),
                                "cypher-shell not on path" );
     }
@@ -122,9 +121,7 @@ public class TestBasic
                                            .forPort( 7474 )
                                            .forStatusCode( 200 )
                                            .withStartupTimeout( Duration.ofSeconds( 60 ) ));
-
         Assertions.assertDoesNotThrow( () -> container.start(),
                                   "Could not start neo4j from workdir NEO4J_HOME" );
-        container.stop();
     }
 }
