@@ -3,8 +3,6 @@ package com.neo4j.docker.utils;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.sun.security.auth.module.UnixSystem;
 import org.testcontainers.containers.GenericContainer;
-
-import java.lang.reflect.Parameter;
 import java.util.function.Consumer;
 
 public class SetContainerUser

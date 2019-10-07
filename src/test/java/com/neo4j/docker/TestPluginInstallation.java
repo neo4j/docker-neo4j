@@ -4,6 +4,7 @@ import com.neo4j.docker.plugins.ExampleNeo4jPlugin;
 import com.neo4j.docker.utils.HostFileHttpHandler;
 import com.neo4j.docker.utils.HttpServerRule;
 import com.neo4j.docker.plugins.JarBuilder;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Rule;
@@ -63,6 +64,9 @@ public class TestPluginInstallation
         // Ignoring this test for versions ending in SNAPSHOT until it's fixed properly.
         Assumptions.assumeFalse( NEO4J_VERSION.label.contains( "SNAPSHOT" ),
                                  "Plugins test does not work for SNAPSHOT variants of NEO4J");
+
+        Assumptions.assumeFalse( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ),
+                                 "Plugin test currently does not work with 4.0");
     }
 
     private void createContainerWithTestingPlugin()
