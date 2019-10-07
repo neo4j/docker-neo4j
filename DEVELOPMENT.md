@@ -10,13 +10,14 @@ other Linuxes. Pull requests welcomed for other platforms.
 1. install GNU Make (>=4.0)
 1. install the Docker Toolbox. See: https://docs.docker.com/install/
 
-## Debian
+## Linux
 
 1. install the Docker Toolbox. See https://docs.docker.com/install/
 
 # Building the Image
 
 The build will create two images (one for Enterprise and one for Community) for a single version of Neo4j. 
+
 The make script will automatically download the source files needed to build the images. 
 You just need to specify the **full** Neo4j version including major, minor and patch numbers For example:
 
@@ -30,7 +31,7 @@ If you want to build an alpha/beta release, this will still work:
 NEO4JVERSION=3.5.0-alpha01 make clean build
 ```
 
-When the make script is complete, the image name will be written to `tmp/.image-id-community` and `tmp/.image-id-enterprise`:
+When the make script is complete, the image name will be written to file in `tmp/.image-id-community` and `tmp/.image-id-enterprise`:
 
 ```bash
 $ cat tmp/.image-id-community
@@ -62,13 +63,13 @@ $ NEO4JVERSION=4.0.0-alpha05 make clean build
 
 # Running the Tests
 
-The tests are written in java and require maven plus jdk 11 for Neo4j version 4.0 onwards or jdk 8 for earlier Neo4j versions.
+The tests are written in java, and require Maven plus jdk 11 for Neo4j version 4.0 onwards or jdk 8 for earlier Neo4j versions.
 
 The tests require some information about the image before they can test it. 
 These can be passed as an environment variable or a command line parameter when invoking maven:
 
 
-| Env variable    | maven parameter | description                                                |
+| Env Variable    | Maven parameter | Description                                                |
 |-----------------|-----------------|------------------------------------------------------------|
 | `NEO4JVERSION`  | `-Dversion`     | the Neo4j version of the image                             |
 | `NEO4J_IMAGE`   | `-Dimage`       | the tag of the image to test                               |
@@ -89,14 +90,23 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
 
 1. Make sure the project SDK is java 11 or java 8 as necessary.
 1. Edit the [pom.xml file](../master/pom.xml) to replace  `${env.NEO4JVERSION}` with the `NEO4JVERSION` you used to build the image.
-(Yes this is terrible, and we need to think of an alternative to this).
+*(Yes this is terrible, and we need to think of an alternative to this)*. 
+
+    For example:
+    ```xml
+    <neo4j.version>${env.NEO4JVERSION}</neo4j.version>
+    ```
+    becomes
+    ```xml
+    <neo4j.version>4.0.0-alpha05</neo4j.version>
+    ```
 1. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
 2. Under Run Configurations edit the Template JUnit configuration:
-   2. Select the "EnvFile" tab
+   1. Select the "EnvFile" tab
    2. Make sure "Enable EnvFile" is checked.
-   2. Click the `+` then click to add a `.env` file.
-   2. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test.
-   2. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
+   3. Click the `+` then click to add a `.env` file.
+   4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test.
+   5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
 
 
 ### If the Neo4j Version is not Publicly Available
@@ -104,4 +114,5 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
 1. Clone the Neo4j github repository and checkout the branch you want. 
 2. Make sure `java --version` returns java 11 if you're building Neo4j 4.0+, or java 8 if building an earlier branch.
 1. Run `mvn install` plus whatever maven build flags you like. This should install the latest neo4j jars into the maven cache.
-1. Follow instructions for [Intellij](#in-intellij), use `NEO4JVERSION` that is in the pom file of your Neo4j repository clone.
+1. Follow instructions for [running tests in Intellij](#in-intellij), 
+use the `NEO4JVERSION` that is in the pom file of your Neo4j repository clone.
