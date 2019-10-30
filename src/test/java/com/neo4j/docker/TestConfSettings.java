@@ -37,7 +37,14 @@ public class TestConfSettings {
     {
         if(container != null)
         {
-            container.stop();
+            try
+            {
+                container.stop();
+            }
+            catch ( Exception e )
+            {
+                log.warn( "Exception trying to kill container, it was probably already closed." );
+            }
         }
     }
 
@@ -197,10 +204,11 @@ public class TestConfSettings {
         container.start();
 
         //Read the config file to check if the config is not overriden
-        Stream<String> lines = Files.lines(confMount.resolve("neo4j.conf"));
-        Optional<String> httpsListenAdressMatch = lines.filter(s -> s.contains("dbms.connector.https.listen_address=:8483")).findFirst();
-        lines.close();
-        Assertions.assertTrue(httpsListenAdressMatch.isPresent(), "docker-entrypoint has overriden custom setting set by user");
+        Map<String, String> configurations = parseConfFile(confMount.resolve("neo4j.conf").toFile());
+        Assertions.assertTrue(configurations.containsKey("dbms.connector.https.listen_address"), "conf settings not set correctly by docker-entrypoint");
+        Assertions.assertEquals(":8483",
+                                configurations.get("dbms.connector.https.listen_address"),
+                                "docker-entrypoint has overriden custom setting set from user's conf");
     }
 
     @Test
