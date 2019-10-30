@@ -13,7 +13,7 @@ RUN addgroup --system neo4j && adduser --system --no-create-home --home "${NEO4J
 COPY ./local-package/* /tmp/
 
 RUN apt update \
-    && apt install -y curl gosu \
+    && apt install -y curl gosu jq \
     && curl -L --fail --silent --show-error "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini" > /sbin/tini \
     && echo "${TINI_SHA256}  /sbin/tini" | sha256sum -c --strict --quiet \
     && chmod +x /sbin/tini \
@@ -31,7 +31,10 @@ RUN apt update \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
-    && ln -s /logs "${NEO4J_HOME}"/logs
+    && ln -s /logs "${NEO4J_HOME}"/logs \
+    && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
+    && rm -rf /tmp/* \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
