@@ -30,11 +30,15 @@ public class HostFileSystemOperations
             throw e;
         }
         log.info( "Created folder "+hostFolder.toString() );
+        mountHostFolderAsVolume( container, hostFolder, containerMountPoint );
+        return hostFolder;
+    }
+
+    public static void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint)
+    {
         container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
                                       containerMountPoint,
                                       BindMode.READ_WRITE );
-
-        return hostFolder;
     }
 
     public static Path createTempFolder( String folderNamePrefix ) throws IOException
