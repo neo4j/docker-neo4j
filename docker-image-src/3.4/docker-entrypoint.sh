@@ -409,19 +409,6 @@ if [ "${cmd}" == "dump-config" ]; then
     exit 0
 fi
 
-[ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
-if [ "${cmd}" == "dump-config" ]; then
-    if is_not_writable "/conf"; then
-        print_permissions_advice_and_fail "/conf"
-    fi
-    cp --recursive "${NEO4J_HOME}"/conf/* /conf
-    echo "Config Dumped"
-    exit 0
-fi
-
-[ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
-
 # Use su-exec to drop privileges to neo4j user
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
