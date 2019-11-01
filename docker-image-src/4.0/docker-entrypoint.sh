@@ -388,15 +388,6 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
-if [ "${cmd}" == "dump-config" ]; then
-    if is_not_writable "/conf"; then
-        print_permissions_advice_and_fail "/conf"
-    fi
-    cp --recursive "${NEO4J_HOME}"/conf/* /conf
-    echo "Config Dumped"
-    exit 0
-fi
-
 if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
   # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc-procedures", "streams", "graphql"]'
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
@@ -405,6 +396,15 @@ if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
+
+if [ "${cmd}" == "dump-config" ]; then
+    if is_not_writable "/conf"; then
+        print_permissions_advice_and_fail "/conf"
+    fi
+    cp --recursive "${NEO4J_HOME}"/conf/* /conf
+    echo "Config Dumped"
+    exit 0
+fi
 
 # Use su-exec to drop privileges to neo4j user
 # Note that su-exec, despite its name, does not replicate the
