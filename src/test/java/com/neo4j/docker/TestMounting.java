@@ -92,7 +92,7 @@ public class TestMounting
 
         if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
         {
-            verifySingleFolder( dataMount.resolve( "tx-logs" ), shouldBeWritable );
+            verifySingleFolder( dataMount.resolve( "transactions" ), shouldBeWritable );
         }
     }
 
