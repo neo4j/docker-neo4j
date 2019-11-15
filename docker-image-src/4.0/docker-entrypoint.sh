@@ -240,8 +240,6 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 fi
    : ${NEO4J_wrapper_java_additional:=-Dneo4j.ext.udc.source=docker}
-   : ${NEO4J_dbms_jvm_additional:=-Dunsupported.dbms.udc.source=docker}
-
 
 # unset old hardcoded unsupported env variables
 unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
