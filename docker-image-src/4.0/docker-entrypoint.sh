@@ -341,12 +341,14 @@ COMMUNITY=(
      [dbms.connector.https.listen_address]="0.0.0.0:7473"
      [dbms.connector.http.listen_address]="0.0.0.0:7474"
      [dbms.connector.bolt.listen_address]="0.0.0.0:7687"
+     [dbms.jvm.additional]="-Dunsupported.dbms.udc.source=docker"
 )
 
 ENTERPRISE=(
      [causal_clustering.transaction_listen_address]="0.0.0.0:6000"
      [causal_clustering.raft_listen_address]="0.0.0.0:7000"
      [causal_clustering.discovery_listen_address]="0.0.0.0:5000"
+     [dbms.jvm.additional]="-Dunsupported.dbms.udc.source=docker"
 )
 
 for conf in ${!COMMUNITY[@]} ; do
