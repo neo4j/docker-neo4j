@@ -280,7 +280,7 @@ public class TestConfSettings {
         SetContainerUser.nonRootUser(container);
         //Create JvmAdditionalNotOverriden.conf file
         Path confFile = Paths.get("src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf");
-        Files.copy(confFile, confMount.resolve("JvmAdditionalNotOverriden.conf"));
+        Files.copy(confFile, confMount.resolve("neo4j.conf"));
         //Start the container
         container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
         container.start();
