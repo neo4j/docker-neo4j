@@ -116,3 +116,11 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
 1. Run `mvn install` plus whatever maven build flags you like. This should install the latest neo4j jars into the maven cache.
 1. Follow instructions for [running tests in Intellij](#in-intellij), 
 use the `NEO4JVERSION` that is in the pom file of your Neo4j repository clone.
+
+### cannot find symbol `com.sun.security.auth.module.UnixSystem`
+
+This can happen if you switch from java 8 to java 11 and then try to rebuild the tests in Intellij.
+
+Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 11 instead of 1.8.
+DO NOT commit this set to 11 (yes this is a terrible solution).
+
