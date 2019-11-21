@@ -8,6 +8,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.StatementResult;
 
 public class DatabaseIO
@@ -49,6 +50,23 @@ public class DatabaseIO
 			Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher CREATE query" );
 		}
 		driver.close();
+	}
+
+	public void changePassword(String user, String oldPassword, String newPassword)
+	{
+		if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
+		{
+			Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, oldPassword ), TEST_DRIVER_CONFIG );
+			try ( Session session = driver.session( SessionConfig.forDatabase( "system" )))
+			{
+				StatementResult rs = session.run( "ALTER CURRENT USER SET PASSWORD FROM '"+oldPassword+"' TO '"+newPassword+"'" );
+			}
+			driver.close();
+		}
+		else
+		{
+			runCypherProcedure( user, oldPassword, "CALL dbms.changePassword('"+newPassword+"')" );
+		}
 	}
 
 	public void runCypherProcedure( String user, String password, String cypher )

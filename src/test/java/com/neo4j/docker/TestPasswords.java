@@ -169,7 +169,8 @@ public class TestPasswords
             Assertions.assertThrows( org.neo4j.driver.exceptions.ClientException.class,
                                      () -> db.putInitialDataIntoContainer( user, intialPass ),
                                      "Neo4j did not error because of password reset requirement");
-            db.runCypherProcedure( user, intialPass, "CALL dbms.changePassword('"+resetPass+"')" );
+
+            db.changePassword( user, intialPass, resetPass );
             db.putInitialDataIntoContainer( user, resetPass );
             db.verifyDataInContainer( user, resetPass );
         }
