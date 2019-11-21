@@ -26,7 +26,7 @@ public class TestPasswords
 {
     private static Logger log = LoggerFactory.getLogger( TestPasswords.class);
 
-    private GenericContainer createContainer( String asCurrentUser )
+    private GenericContainer createContainer( boolean asCurrentUser )
     {
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
@@ -36,7 +36,7 @@ public class TestPasswords
                                   .forPort( 7474 )
                                   .forStatusCode( 200 )
                                   .withStartupTimeout( Duration.ofSeconds( 90 ) ) );
-        if(asCurrentUser.toLowerCase().equals( "true" ))
+        if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
         }
@@ -67,10 +67,9 @@ public class TestPasswords
 
 
 
-    // TODO when junit 5.5.0 is released, @ValueSource should support booleans.
     @ParameterizedTest(name = "as current user={0}")
-    @ValueSource(strings = {"true", "false"})
-    void testCanSetPassword( String asCurrentUser ) throws Exception
+    @ValueSource(booleans = {true, false})
+    void testCanSetPassword( boolean asCurrentUser ) throws Exception
     {
         // create container and mount /data folder so that data can persist between sessions
         String password = "some_valid_password";
@@ -83,7 +82,7 @@ public class TestPasswords
                                                                                         "password-defaultuser-data-",
                                                                                         "/data" );
             log.info( String.format( "Starting first container as %s user and setting password",
-                                     asCurrentUser.toLowerCase().equals( "true" ) ? "current" : "default" ) );
+                                     asCurrentUser? "current" : "default" ) );
             // create a database with stuff in
             firstContainer.start();
             DatabaseIO db = new DatabaseIO(firstContainer);
@@ -118,8 +117,8 @@ public class TestPasswords
 //    }
 
     @ParameterizedTest(name = "as current user={0}")
-    @ValueSource(strings = {"true", "false"})
-    void testSettingNeo4jAuthDoesntOverrideExistingPassword( String asCurrentUser ) throws Exception
+    @ValueSource(booleans = {true, false})
+    void testSettingNeo4jAuthDoesntOverrideExistingPassword( boolean asCurrentUser ) throws Exception
     {
         String password = "some_valid_password";
         Path dataMount;
@@ -133,7 +132,7 @@ public class TestPasswords
 
             // create a database with stuff in
             log.info( String.format( "Starting first container as %s user and setting password",
-                                     asCurrentUser.toLowerCase().equals( "true" ) ? "current" : "default" ) );
+                                     asCurrentUser? "current" : "default" ) );
             firstContainer.start();
             DatabaseIO db = new DatabaseIO(firstContainer);
             db.putInitialDataIntoContainer( "neo4j", password );
@@ -159,7 +158,7 @@ public class TestPasswords
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,6,0 ) ),
                                 "Require password reset is only a feature in 3.6 onwards");
-        try(GenericContainer container = createContainer( "false" ))
+        try(GenericContainer container = createContainer( false ))
         {
             String user = "neo4j";
             String intialPass = "apassword";

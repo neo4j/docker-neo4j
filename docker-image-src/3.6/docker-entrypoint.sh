@@ -310,7 +310,7 @@ if [ "${cmd}" == "neo4j" ]; then
         NEO4J_dbms_security_auth__enabled=false
     else
         if [[ "${NEO4J_AUTH}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
-            adminuser="${BASH_REMATCH[1]}"
+            admin_user="${BASH_REMATCH[1]}"
             password="${BASH_REMATCH[2]}"
             do_reset="${BASH_REMATCH[3]}"
             : ${do_reset:="false"}
@@ -318,6 +318,15 @@ if [ "${cmd}" == "neo4j" ]; then
             if [ "${password}" == "neo4j" ]; then
                 echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
                 exit 1
+            fi
+            if [ "${admin_user}" != "neo4j" ]; then
+                echo >&2 "Invalid username, it must be neo4j"
+                exit 1
+            fi
+            if [ "${do_reset}" == "true" ]; then
+                do_reset="--require-password-change"
+            else
+                do_reset=""
             fi
             if running_as_root; then
                 # running set-initial-password as root will create subfolders to /data as root, causing startup fail when neo4j can't read or write the /data/dbms folder
@@ -327,7 +336,7 @@ if [ "${cmd}" == "neo4j" ]; then
             fi
             # Will exit with error if users already exist (and print a message explaining that)
             # we probably don't want the message though, since it throws an error message on restarting the container.
-            neo4j-admin set-initial-password "${password}" --require-password-change="${do_reset}" 2>/dev/null || true
+            neo4j-admin set-initial-password "${password}" "${do_reset}" 2>/dev/null || true
         else
             echo "$NEO4J_AUTH is invalid"
             echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
