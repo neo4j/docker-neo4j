@@ -105,7 +105,7 @@ public class TestConfSettings {
                 .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" )
                 .withCommand("dump-config");
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
-        container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
+        container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(30)));
         SetContainerUser.nonRootUser(container);
         container.start();
 
@@ -199,7 +199,7 @@ public class TestConfSettings {
         Path confFile = Paths.get("src", "test", "resources", "confs", "ConfsNotOverriden.conf");
         Files.copy(confFile, confMount.resolve("neo4j.conf"));
         //Start the container
-        container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(10)));
+        container.setWaitStrategy(Wait.forLogMessage(".*Config Dumped.*", 1).withStartupTimeout(Duration.ofSeconds(30)));
         container.setCommand("dump-config");
         container.start();
 

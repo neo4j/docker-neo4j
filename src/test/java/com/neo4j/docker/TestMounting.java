@@ -112,7 +112,7 @@ public class TestMounting
     {
         container = setupBasicContainer( true, false );
         Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
-        container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped.*" , 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+        container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped.*" , 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
         container.withCommand( "dump-config" );
         container.start();
 
