@@ -4,7 +4,6 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +40,33 @@ public class TestConfSettings {
                 .withLogConsumer(new Slf4jLogConsumer(log));
     }
 
+    private Map<String, String> parseConfFile(File conf) throws FileNotFoundException
+    {
+        Map<String, String> configurations = new HashMap<>();
+        Scanner scanner = new Scanner(conf);
+        while ( scanner.hasNextLine() )
+        {
+            String[] params = scanner.nextLine().split( "=", 2 );
+            if(params.length < 2)
+            {
+                continue;
+            }
+            log.debug( params[0] + "\t:\t" + params[1] );
+            configurations.put( params[0], params[1] );
+        }
+        return configurations;
+    }
+
+    private boolean isStringPresentInDebugLog( Path debugLog, String matchThis) throws IOException
+    {
+        // searches the debug log for the given string, returns true if present
+        Stream<String> lines = Files.lines(debugLog);
+        Optional<String> isMatch = lines.filter(s -> s.contains(matchThis)).findFirst();
+        lines.close();
+        return isMatch.isPresent();
+
+    }
+
     @Test
     void testIgnoreNumericVars()
     {
@@ -59,23 +86,6 @@ public class TestConfSettings {
                                                                             15, TimeUnit.SECONDS ),
                                            "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`" );
         }
-    }
-
-    private Map<String, String> parseConfFile(File conf) throws FileNotFoundException
-    {
-        Map<String, String> configurations = new HashMap<>();
-        Scanner scanner = new Scanner(conf);
-        while ( scanner.hasNextLine() )
-        {
-            String[] params = scanner.nextLine().split( "=", 2 );
-            if(params.length < 2)
-            {
-                continue;
-            }
-            log.debug( params[0] + "\t:\t" + params[1] );
-            configurations.put( params[0], params[1] );
-        }
-        return configurations;
     }
 
     @Test
@@ -132,7 +142,7 @@ public class TestConfSettings {
     }
 
     @Test
-    void testReadTheConfFile() throws Exception
+    void testReadsTheConfFile() throws Exception
     {
         Path debugLog;
         try(GenericContainer container = createContainer())
@@ -151,10 +161,8 @@ public class TestConfSettings {
         }
 
         //Check if the container reads the conf file
-        Stream<String> lines = Files.lines(debugLog);
-        Optional<String> heapSizeMatch = lines.filter(s -> s.contains("dbms.memory.heap.max_size=512m")).findFirst();
-        lines.close();
-        Assertions.assertTrue(heapSizeMatch.isPresent(), "dbms.memory.heap.max_size was not set correctly");
+        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.heap.max_size=512m" ),
+                               "dbms.memory.heap.max_size was not set correctly");
     }
 
     @Test
@@ -231,11 +239,8 @@ public class TestConfSettings {
             container.start();
         }
 
-        //Read the debug.log to check that dbms.memory.pagecache.size was set correctly
-        Stream<String> lines = Files.lines(debugLog);
-        Optional<String> heapSizeMatch = lines.filter(s -> s.contains("dbms.memory.pagecache.size=512m")).findFirst();
-        lines.close();
-        Assertions.assertTrue(heapSizeMatch.isPresent(), "dbms.memory.pagecache.size was not set correctly");
+        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.pagecache.size=512m" ),
+                              "dbms.memory.pagecache.size was not set correctly");
     }
 
     @Test
@@ -255,12 +260,8 @@ public class TestConfSettings {
             //Read debug.log to check that causal_clustering confs are set successfully
             String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
 
-            Stream<String> lines = Files.lines( logMount.resolve( "debug.log" ) );
-            Optional<String> ccPresent = lines.filter(
-                    s -> s.contains( "causal_clustering.transaction_advertised_address=" + expectedTxAddress ) )
-                                              .findFirst();
-            lines.close();
-            Assertions.assertTrue( ccPresent.isPresent(),
+            Assertions.assertTrue( isStringPresentInDebugLog(logMount.resolve( "debug.log" ),
+                                                             "causal_clustering.transaction_advertised_address=" + expectedTxAddress ),
                                    "causal_clustering.transaction_advertised_address was not set correctly" );
         }
     }
@@ -283,31 +284,34 @@ public class TestConfSettings {
         }
 
         //Read debug.log to check that causal_clustering confs are not present
-        Stream<String> lines = Files.lines(debugLog);
-        Optional<String> ccNotPresent = lines.filter(s -> s.contains("causal_clustering.transaction_listen_address")).findFirst();
-        lines.close();
-        Assertions.assertFalse(ccNotPresent.isPresent(), "causal_clustering.transaction_listen_address should not be on the Community debug.log");
+        Assertions.assertFalse(isStringPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address" ),
+                               "causal_clustering.transaction_listen_address should not be on the Community debug.log");
     }
     @Test
-    void testJvmAdditionalNotOverriden() throws Exception
+    void testJvmAdditionalNotOverridden() throws Exception
     {
-        //Create container
-        container = createContainer();
-        //Mount /conf
-        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
-        Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
-        SetContainerUser.nonRootUser(container);
-        //Create JvmAdditionalNotOverriden.conf file
-        Path confFile = Paths.get("src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf");
-        Files.copy(confFile, confMount.resolve("neo4j.conf"));
-        //Start the container
-        container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
-        container.start();
+        Path logMount;
+
+        try(GenericContainer container = createContainer())
+        {
+            //Mount /conf
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
+            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
+            SetContainerUser.nonRootUser( container );
+            //Create JvmAdditionalNotOverriden.conf file
+            Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf" );
+            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            //Start the container
+            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            container.start();
+        }
 
         //Read the debug.log to check that dbms.jvm.additional was set correctly
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
         lines.close();
-        Assertions.assertTrue(jvmAdditionalMatch.isPresent(), "dbms.jvm.additional was is overriden by docker-entrypoint");
+        Assertions.assertTrue(isStringPresentInDebugLog( logMount.resolve("debug.log"),
+                "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"),
+            "dbms.jvm.additional was is overriden by docker-entrypoint");
     }
 }
