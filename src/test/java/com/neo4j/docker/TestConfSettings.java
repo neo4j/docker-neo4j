@@ -277,4 +277,26 @@ public class TestConfSettings {
         lines.close();
         Assertions.assertFalse(ccNotPresent.isPresent(), "causal_clustering.transaction_listen_address should not be on the Community debug.log");
     }
+    @Test
+    void testJvmAdditionalNotOverriden() throws Exception
+    {
+        //Create container
+        container = createContainer();
+        //Mount /conf
+        Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "conf-", "/conf");
+        Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "logs-", "/logs");
+        SetContainerUser.nonRootUser(container);
+        //Create JvmAdditionalNotOverriden.conf file
+        Path confFile = Paths.get("src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf");
+        Files.copy(confFile, confMount.resolve("neo4j.conf"));
+        //Start the container
+        container.setWaitStrategy(Wait.forHttp("/").forPort(7474).forStatusCode(200));
+        container.start();
+
+        //Read the debug.log to check that dbms.jvm.additional was set correctly
+        Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
+        Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
+        lines.close();
+        Assertions.assertTrue(jvmAdditionalMatch.isPresent(), "dbms.jvm.additional was is overriden by docker-entrypoint");
+    }
 }
