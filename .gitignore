@@ -6,3 +6,8 @@
 /devenv.local
 /local-mounts/
 /target/
+
+# simlinks to dev scripts in https://github.com/neo-technology/teamcity-witchcraft
+DownloadTool.py
+docker_tests_get_installers.py
+__pycache__/
