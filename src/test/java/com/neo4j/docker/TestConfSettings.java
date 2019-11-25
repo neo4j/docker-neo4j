@@ -287,7 +287,7 @@ public class TestConfSettings {
 
         //Read the debug.log to check that dbms.jvm.additional was set correctly
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
-        Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
+        Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
         lines.close();
         Assertions.assertTrue(jvmAdditionalMatch.isPresent(), "dbms.jvm.additional was is overriden by docker-entrypoint");
     }

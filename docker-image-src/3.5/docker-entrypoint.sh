@@ -239,7 +239,6 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_causal__clustering_transaction__advertised__address:=$(hostname):6000}
    : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 fi
-   : ${NEO4J_wrapper_java_additional:=-Dneo4j.ext.udc.source=docker}
 
 # unset old hardcoded unsupported env variables
 unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
@@ -339,14 +338,12 @@ COMMUNITY=(
      [dbms.connector.https.listen_address]="0.0.0.0:7473"
      [dbms.connector.http.listen_address]="0.0.0.0:7474"
      [dbms.connector.bolt.listen_address]="0.0.0.0:7687"
-     [dbms.jvm.additional]="-Dunsupported.dbms.udc.source=docker"
 )
 
 ENTERPRISE=(
      [causal_clustering.transaction_listen_address]="0.0.0.0:6000"
      [causal_clustering.raft_listen_address]="0.0.0.0:7000"
      [causal_clustering.discovery_listen_address]="0.0.0.0:5000"
-     [dbms.jvm.additional]="-Dunsupported.dbms.udc.source=docker"
 )
 
 for conf in ${!COMMUNITY[@]} ; do
@@ -367,6 +364,16 @@ for conf in ${!ENTERPRISE[@]} ; do
        fi
     fi
 done
+
+    if grep -q "udc.source=tarball" "${NEO4J_HOME}"/conf/neo4j.conf
+     then
+      sed -i -e 's/udc.source=tarball/udc.source=docker/g' "${NEO4J_HOME}"/conf/neo4j.conf
+    fi
+
+    if ! grep -q "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker" "${NEO4J_HOME}"/conf/neo4j.conf
+     then
+      sed -i -e 's/dbms.jvm.additional=/dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,/g' "${NEO4J_HOME}"/conf/neo4j.conf
+    fi
 
 # list env variables with prefix NEO4J_ and create settings from them
 unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
