@@ -8,6 +8,6 @@
 /target/
 
 # simlinks to dev scripts in https://github.com/neo-technology/teamcity-witchcraft
-DownloadTool.py
+download_tool.py
 docker_tests_get_installers.py
 __pycache__/
