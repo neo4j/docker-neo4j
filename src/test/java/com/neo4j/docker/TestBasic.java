@@ -1,6 +1,5 @@
 package com.neo4j.docker;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,6 @@ import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
@@ -74,7 +72,6 @@ public class TestBasic
         }
     }
 
-
     @Test
     void testLicenseAcceptanceRequired()
     {
@@ -83,6 +80,7 @@ public class TestBasic
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
                                 "No license checks before version 3.3.0");
 
+        String logsOut;
         try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
@@ -91,14 +89,13 @@ public class TestBasic
 
             Assertions.assertDoesNotThrow( () -> container.start(),
                                            "Neo4j did not notify about accepting the license agreement" );
-            String logs = container.getLogs();
-
-            // double check the container didn't warn and start neo4j anyway
-            Assertions.assertTrue( logs.contains( "must accept the license" ),
-                                   "Neo4j did not notify about accepting the license agreement" );
-            Assertions.assertFalse( logs.contains( "Remote interface available" ),
-                                    "Neo4j was started even though the license was not accepted" );
+            logsOut = container.getLogs();
         }
+        // double check the container didn't warn and start neo4j anyway
+        Assertions.assertTrue( logsOut.contains( "must accept the license" ),
+                               "Neo4j did not notify about accepting the license agreement" );
+        Assertions.assertFalse( logsOut.contains( "Remote interface available" ),
+                                "Neo4j was started even though the license was not accepted" );
     }
 
     @Test

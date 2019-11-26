@@ -180,7 +180,7 @@ public class TestConfSettings {
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
             container.setCommand( "dump-config" );
             container.start();
         }
