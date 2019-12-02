@@ -64,7 +64,8 @@ public class TestMounting
 
     private void verifySingleFolder( Path folderToCheck, boolean shouldBeWritable )
     {
-        String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
+        //String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
+        String folderForDiagnostics = folderToCheck.toAbsolutePath().toString();
 
         Assertions.assertTrue( folderToCheck.toFile().exists(), "did not create " + folderForDiagnostics + " folder on host" );
         if( shouldBeWritable )
@@ -101,7 +102,7 @@ public class TestMounting
     {
         try(GenericContainer container = setupBasicContainer( true, false ))
         {
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-", "/conf" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-dumpconfig-", "/conf" );
             container.setWaitStrategy(
                     Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
             container.withCommand( "dump-config" );
@@ -123,7 +124,7 @@ public class TestMounting
 
         try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
         {
-            Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
+            Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-canmountjustdata-", "/data" );
             container.start();
 
             // neo4j should now have started, so there'll be stuff in the data folder
@@ -141,7 +142,7 @@ public class TestMounting
 
         try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
         {
-            Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
+            Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-canmountjustlogs-", "/logs" );
             container.start();
 
             verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
@@ -157,8 +158,8 @@ public class TestMounting
 
         try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
         {
-            Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
-            Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
+            Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-canmountdataandlogs-", "/data" );
+            Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-canmountdataandlogs-", "/logs" );
             container.start();
 
             verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
@@ -174,7 +175,7 @@ public class TestMounting
 
         try(GenericContainer container = setupBasicContainer( false, true ))
         {
-            HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data" );
+            HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-nopermissioninsecuremode-", "/data" );
 
             // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
             // container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
@@ -193,7 +194,7 @@ public class TestMounting
 
         try(GenericContainer container = setupBasicContainer( false, true ))
         {
-            HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs" );
+            HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-nopermissioninsecuremode-", "/logs" );
 
             // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
             // container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
