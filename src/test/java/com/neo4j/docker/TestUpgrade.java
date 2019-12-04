@@ -31,13 +31,13 @@ public class TestUpgrade
 	}
 
 	@Test
-	void canUpgradeFromBeforeFilePermissionFix() throws Exception
+	void canUpgradeFromBeforeFilePermissionFix35() throws Exception
 	{
 		Neo4jVersion beforeFix = new Neo4jVersion( 3,5,3 );
 		String beforeFixImage = (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)?  "neo4j:3.5.3-enterprise":"neo4j:3.5.3";
-		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( beforeFix ), "test only applicable to latest 3.5 and 4.0 versions" );
-		Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,1,0 )),
-								"test only applicable to latest 3.5 and 4.0 versions" );
+		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( beforeFix ), "test only applicable to latest 3.5 docker" );
+		Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ),
+								"test only applicable to latest 3.5 docker" );
 
 		Path dataMount = HostFileSystemOperations.createTempFolder( "data-upgrade-" );
 		log.info( "created folder " + dataMount.toString() + " to test upgrade" );
@@ -58,4 +58,6 @@ public class TestUpgrade
 			db.verifyDataInContainer( user, password );
 		}
 	}
+
+	// todo add test for 4.0 when I can figure out how to close a container cleanly
 }
