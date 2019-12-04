@@ -49,26 +49,17 @@ public class TestBasic
     void testNoUnexpectedErrors() throws Exception
     {
         // version 4.0 still has some annoying warnings that haven't been cleaned up, skip this test for now
-        Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,0,0 ) ),
-                                 "skipping unexpected error test for version 4.0");
 
         try(GenericContainer container = createBasicContainer())
         {
+			container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
-            ToStringConsumer toStringConsumer = new ToStringConsumer();
-            WaitingConsumer waitingConsumer = new WaitingConsumer();
-            container.followOutput( waitingConsumer, OutputFrame.OutputType.STDOUT );
-            container.followOutput( toStringConsumer, OutputFrame.OutputType.STDERR );
-
-            // wait for neo4j to start
-            waitingConsumer.waitUntil(
-                    frame -> frame.getUtf8String().contains( "Remote interface available at http://localhost:7474/" ),
-                    10, TimeUnit.SECONDS );
-            Assertions.assertEquals( "", toStringConsumer.toUtf8String(),
+			String stderr = container.getLogs(OutputFrame.OutputType.STDERR);
+            Assertions.assertEquals( "", stderr,
                                      "Unexpected errors in stderr from container!\n" +
-                                     toStringConsumer.toUtf8String() );
+                                     stderr );
         }
     }
 
