@@ -236,7 +236,6 @@ fi
 # Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
 # Set some to default values if unset
 : ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-"100M size"}}
-: ${NEO4J_wrapper_java_additional:=${NEO4J_UDC_SOURCE:-"-Dneo4j.ext.udc.source=docker"}}
 : ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
 : ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
 : ${NEO4J_dbms_connectors_default__advertised__address:=${NEO4J_dbms_connectors_defaultAdvertisedAddress:-}}
@@ -370,10 +369,10 @@ declare -A ENTERPRISE
 COMMUNITY=(
      [dbms.tx_log.rotation.retention_policy]="100M size"
      [dbms.memory.pagecache.size]="512M"
-     [dbms.connectors.default_listen_address]="0.0.0.0"
-     [dbms.connector.https.listen_address]="0.0.0.0:7473"
-     [dbms.connector.http.listen_address]="0.0.0.0:7474"
-     [dbms.connector.bolt.listen_address]="0.0.0.0:7687"
+     [dbms.default_listen_address]="0.0.0.0"
+     [dbms.connector.https.advertised_address]="0.0.0.0:7473"
+     [dbms.connector.http.advertised_address]="0.0.0.0:7474"
+     [dbms.connector.bolt.advertised_address]="0.0.0.0:7687"
 )
 
 ENTERPRISE=(
@@ -412,25 +411,29 @@ if ! grep -q "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker" "${NEO4J
   sed -i -e 's/dbms.jvm.additional=/dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,/g' "${NEO4J_HOME}"/conf/neo4j.conf
 fi
 
+# save NEO4J_HOME to a temp variable that doesn't begin with NEO4J_ so it doesn't get added to the conf
+temp_neo4j_home="${NEO4J_HOME}"
 # list env variables with prefix NEO4J_ and create settings from them
-unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
+unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL NEO4J_EDITION NEO4J_ACCEPT_LICENSE_AGREEMENT NEO4J_HOME
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
     value=$(echo ${!i})
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            if grep -q -F "${setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
+            if grep -q -F "${setting}=" "${temp_neo4j_home}"/conf/neo4j.conf; then
                 # Remove any lines containing the setting already
-                sed --in-place "/^${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
+                sed --in-place "/^${setting}=.*/d" "${temp_neo4j_home}"/conf/neo4j.conf
             fi
             # Then always append setting to file
-            echo "${setting}=${value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
+            echo "${setting}=${value}" >> "${temp_neo4j_home}"/conf/neo4j.conf
         else
             echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
     fi
 done
+export NEO4J_HOME="${temp_neo4j_home}"
+unset temp_neo4j_home
 
 if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
   # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc-procedures", "streams", "graphql"]'
