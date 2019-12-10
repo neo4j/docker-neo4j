@@ -136,14 +136,14 @@ function load_plugin_from_github
 
   # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
   echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
-  local _versions_json="$(curl --silent --show-error --fail --retry 30 --retry-max-time 300 -L "${_versions_json_url}")"
+  local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
   local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output ".[] | select(.neo4j==\"${_neo4j_version}\") | .jar")"
   if [[ -z "${_plugin_jar_url}" ]]; then
     echo >&2 "No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
     echo >&2 "${_versions_json}"
   fi
   echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
-  curl --silent --show-error --fail --retry 30 --retry-max-time 300 -L -o "${_destination}" "${_plugin_jar_url}"
+  wget -q -P --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
 
   if ! is_readable "${_destination}"; then
     echo >&2 "Plugin at '${_destination}' is not readable"
