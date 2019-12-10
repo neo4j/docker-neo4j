@@ -157,7 +157,7 @@ function load_plugin_from_github
     echo >&2 "${_versions_json}"
   fi
   echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
-  wget -q -P --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
+  wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
 
   if ! is_readable "${_destination}"; then
     echo >&2 "Plugin at '${_destination}' is not readable"
