@@ -21,10 +21,16 @@ series := $(shell echo "$(NEO4JVERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 all: test
 .PHONY: all
 
-test: tmp/.image-id-community tmp/.image-id-enterprise
-> mvn test -Dimage=$$(cat tmp/.image-id-community) -Dedition=community -Dversion=$(NEO4JVERSION)
-> mvn test -Dimage=$$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION)
+test: test-enterprise test-community
 .PHONY: test
+
+test-enterprise: tmp/.image-id-enterprise
+> mvn test -Dimage=$$(cat $<) -Dedition=enterprise -Dversion=$(NEO4JVERSION)
+.PHONY: test-enterprise
+
+test-community: tmp/.image-id-community
+> mvn test -Dimage=$$(cat $<) -Dedition=community -Dversion=$(NEO4JVERSION)
+.PHONY: test-community
 
 # just build the images, don't test or package
 build: tmp/.image-id-community tmp/.image-id-enterprise
