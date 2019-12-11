@@ -13,28 +13,29 @@ RUN addgroup --system neo4j && adduser --system --no-create-home --home "${NEO4J
 COPY ./local-package/* /tmp/
 
 RUN apt update \
-    && apt install -y curl gosu jq \
-    && curl -L --fail --silent --show-error "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini" > /sbin/tini \
-    && echo "${TINI_SHA256}  /sbin/tini" | sha256sum -c --strict --quiet \
-    && chmod +x /sbin/tini \
-    && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
-    && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
-    && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
-    && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
-    && rm ${NEO4J_TARBALL} \
-    && mv "${NEO4J_HOME}"/data /data \
-    && mv "${NEO4J_HOME}"/logs /logs \
-    && chown -R neo4j:neo4j /data \
-    && chmod -R 777 /data \
-    && chown -R neo4j:neo4j /logs \
-    && chmod -R 777 /logs \
-    && chown -R neo4j:neo4j "${NEO4J_HOME}" \
-    && chmod -R 777 "${NEO4J_HOME}" \
-    && ln -s /data "${NEO4J_HOME}"/data \
-    && ln -s /logs "${NEO4J_HOME}"/logs \
-    && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
-    && rm -rf /tmp/* \
-    && rm -rf /var/lib/apt/lists/*
+     && apt install -y curl wget gosu jq \
+     && curl -L --fail --silent --show-error "https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini" > /sbin/tini \
+     && echo "${TINI_SHA256}  /sbin/tini" | sha256sum -c --strict --quiet \
+     && chmod +x /sbin/tini \
+     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
+     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
+     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
+     && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
+     && rm ${NEO4J_TARBALL} \
+     && mv "${NEO4J_HOME}"/data /data \
+     && mv "${NEO4J_HOME}"/logs /logs \
+     && chown -R neo4j:neo4j /data \
+     && chmod -R 777 /data \
+     && chown -R neo4j:neo4j /logs \
+     && chmod -R 777 /logs \
+     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
+     && chmod -R 777 "${NEO4J_HOME}" \
+     && ln -s /data "${NEO4J_HOME}"/data \
+     && ln -s /logs "${NEO4J_HOME}"/logs \
+     && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
+     && rm -rf /tmp/* \
+     && rm -rf /var/lib/apt/lists/* \
+     && apt-get -y purge --auto-remove curl
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
