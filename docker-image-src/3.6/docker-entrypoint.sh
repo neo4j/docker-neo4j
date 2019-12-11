@@ -12,7 +12,8 @@ function secure_mode_enabled
     test "${SECURE_FILE_PERMISSIONS:=no}" = "yes"
 }
 
-containsElement () {
+function containsElement
+{
   local e match="$1"
   shift
   for e; do [[ "$e" == "$match" ]] && return 0; done
@@ -45,20 +46,33 @@ function is_readable
     return 1
 }
 
-function is_not_writable
+function is_writable
 {
+    # It would be nice if this and the is_readable function could combine somehow
     local _file=${1}
-    # Not using "test -w ${_file}" here because we need to check if the neo4j user or supplied user
-    # has write access to the file, and this script might not be running as that user.
+    perm=$(stat -c %a "${_file}")
 
-    # echo "comparing to ${userid}:${groupid}"
-    test "$(stat -c %U ${_file})" != "${userid}"  &&  \
-    test "$(stat -c %u ${_file})" != "${userid}" && \
-    ! containsElement "$(stat -c %g ${_file})" "${groups[@]}" && \
-    ! containsElement "$(stat -c %G ${_file})" "${groups[@]}"
+    # everyone permission
+    if containsElement ${perm:2:1} 2 3 6 7; then
+        return 0
+    fi
+    # owner permissions
+    if containsElement ${perm:0:1} 2 3 6 7; then
+        if [[ "$(stat -c %U ${_file})" = "${userid}" ]] || [[ "$(stat -c %u ${_file})" = "${userid}" ]]; then
+            return 0
+        fi
+    fi
+    # group permissions
+    if containsElement ${perm:1:1} 2 3 6 7; then
+        if containsElement "$(stat -c %g ${_file})" "${groups[@]}" || containsElement "$(stat -c %G ${_file})" "${groups[@]}" ; then
+            return 0
+        fi
+    fi
+    return 1
 }
 
-function print_permissions_advice_and_fail ()
+
+function print_permissions_advice_and_fail
 {
     _directory=${1}
     echo >&2 "
@@ -107,7 +121,7 @@ function check_mounted_folder_with_chown
 
     local mountFolder=${1}
     if running_as_root; then
-        if is_not_writable "${mountFolder}" && ! secure_mode_enabled; then
+        if ! is_writable "${mountFolder}" && ! secure_mode_enabled; then
             # warn that we're about to chown the folder and then chown it
             echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
@@ -136,14 +150,14 @@ function load_plugin_from_github
 
   # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
   echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
-  local _versions_json="$(curl --silent --show-error --fail --retry 30 --retry-max-time 300 -L "${_versions_json_url}")"
+  local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
   local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output ".[] | select(.neo4j==\"${_neo4j_version}\") | .jar")"
   if [[ -z "${_plugin_jar_url}" ]]; then
     echo >&2 "No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
     echo >&2 "${_versions_json}"
   fi
   echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
-  curl --silent --show-error --fail --retry 30 --retry-max-time 300 -L -o "${_destination}" "${_plugin_jar_url}"
+  wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
 
   if ! is_readable "${_destination}"; then
     echo >&2 "Plugin at '${_destination}' is not readable"
@@ -298,6 +312,12 @@ fi
 
 if [ -d /data ]; then
     check_mounted_folder_with_chown "/data"
+    if [ -d /data/databases ]; then
+        check_mounted_folder_with_chown "/data/databases"
+    fi
+    if [ -d /data/dbms ]; then
+        check_mounted_folder_with_chown "/data/dbms"
+    fi
 fi
 
 
@@ -418,7 +438,7 @@ if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
 fi
 
 if [ "${cmd}" == "dump-config" ]; then
-    if is_not_writable "/conf"; then
+    if ! is_writable "/conf"; then
         print_permissions_advice_and_fail "/conf"
     fi
     cp --recursive "${NEO4J_HOME}"/conf/* /conf
