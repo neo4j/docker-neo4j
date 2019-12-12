@@ -37,7 +37,7 @@ public class TestSettings
         {
             image = System.getenv( "NEO4J_IMAGE" );
         }
-        Assert.assertNotNull("Neo4j version has not been specified, either use mvn argument -Dimage or set env NEO4J_IMAGE", image);
+        Assert.assertNotNull("Neo4j image has not been specified, either use mvn argument -Dimage or set env NEO4J_IMAGE", image);
         return image;
     }
 
@@ -55,7 +55,7 @@ public class TestSettings
         case "enterprise":
             return Edition.ENTERPRISE;
         default:
-            Assert.fail( "Neo4j version has not been specified, either use mvn argument -Dedition or set env NEO4J_EDITION" );
+            Assert.fail( "Neo4j edition has not been specified, either use mvn argument -Dedition or set env NEO4J_EDITION" );
         }
         return null;
     }

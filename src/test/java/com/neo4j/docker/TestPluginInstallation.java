@@ -4,11 +4,9 @@ import com.neo4j.docker.plugins.ExampleNeo4jPlugin;
 import com.neo4j.docker.utils.HostFileHttpHandler;
 import com.neo4j.docker.utils.HttpServerRule;
 import com.neo4j.docker.plugins.JarBuilder;
-import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Rule;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +33,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 
 import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,7 +111,7 @@ public class TestPluginInstallation
         try ( Driver coreDriver = GraphDatabase.driver( boltAddress, AuthTokens.basic( "neo4j", "neo" ) ) )
         {
             Session session = coreDriver.session();
-            StatementResult res = session.run( "CALL dbms.procedures() YIELD name, signature RETURN name, signature" );
+            Result res = session.run( "CALL dbms.procedures() YIELD name, signature RETURN name, signature" );
 
             // Then the procedure from the plugin is listed
             assertTrue( res.stream().anyMatch( x -> x.get( "name" ).asString().equals( "com.neo4j.docker.plugins.defaultValues" ) ),
@@ -130,6 +128,38 @@ public class TestPluginInstallation
             assertEquals( record.get( "aFloat" ).asDouble(), 3.14d, 0.000001, message );
             assertEquals( record.get( "aBoolean" ).asBoolean(), true, message );
             assertFalse( res.hasNext(), "Our procedure should only return a single result" );
+
+            // Check that the config has been set
+            res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
+            record = res.single();
+            assertEquals( record.get( "value" ).asString(), "com.neo4j.docker.plugins.*", "neo4j config not updated for plugin" );
+            assertFalse( res.hasNext(), "Config lookup should only return a single result" );
+        }
+        finally
+        {
+            container.stop();
+        }
+    }
+
+    @Test
+    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
+    public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
+    {
+        // When we set a config value explicitly
+        container = container.withEnv ("NEO4J_dbms_security_procedures_unrestricted", "foo" );
+        // When we start the neo4j docker container
+        container.start();
+
+        // When we connect to the database with the plugin
+        String boltAddress = "bolt://" + container.getContainerIpAddress() + ":" + container.getMappedPort( DEFAULT_BOLT_PORT );
+        try ( Driver coreDriver = GraphDatabase.driver( boltAddress, AuthTokens.basic( "neo4j", "neo" ) ) )
+        {
+            Session session = coreDriver.session();
+            // Check that the config remains as set by our env var and is not overriden by the plugin defaults
+            Result res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
+            Record record = res.single();
+            assertEquals( record.get( "value" ).asString(), "foo", "neo4j config should not be overriden by plugin" );
+            assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally
         {

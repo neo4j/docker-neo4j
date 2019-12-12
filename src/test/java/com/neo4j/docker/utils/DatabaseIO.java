@@ -9,7 +9,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 
 public class DatabaseIO
 {
@@ -34,8 +34,7 @@ public class DatabaseIO
 		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
-			StatementResult
-					rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
+			Result rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
 			Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher CREATE query" );
 		}
 		driver.close();
@@ -46,7 +45,7 @@ public class DatabaseIO
 		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
-			StatementResult rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
+			Result rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
 			Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher CREATE query" );
 		}
 		driver.close();
@@ -59,7 +58,7 @@ public class DatabaseIO
 			Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, oldPassword ), TEST_DRIVER_CONFIG );
 			try ( Session session = driver.session( SessionConfig.forDatabase( "system" )))
 			{
-				StatementResult rs = session.run( "ALTER CURRENT USER SET PASSWORD FROM '"+oldPassword+"' TO '"+newPassword+"'" );
+				Result rs = session.run( "ALTER CURRENT USER SET PASSWORD FROM '"+oldPassword+"' TO '"+newPassword+"'" );
 			}
 			driver.close();
 		}
@@ -74,7 +73,7 @@ public class DatabaseIO
 		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
-			StatementResult rs = session.run( cypher );
+			Result rs = session.run( cypher );
 		}
 		driver.close();
 	}
