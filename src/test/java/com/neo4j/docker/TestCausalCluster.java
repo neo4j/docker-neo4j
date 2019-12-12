@@ -79,7 +79,7 @@ public class TestCausalCluster
         try ( Driver coreDriver = GraphDatabase.driver( core1Uri, AuthTokens.basic( "neo4j", "neo")))
         {
             Session session = coreDriver.session();
-            StatementResult rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
+            Result rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
             Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher CREATE query" );
         }
         catch (Exception e)
@@ -91,7 +91,7 @@ public class TestCausalCluster
         try ( Driver rrDriver = GraphDatabase.driver(rrUri, AuthTokens.basic("neo4j", "neo")))
         {
             Session session = rrDriver.session();
-            StatementResult rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
+            Result rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
             Assertions.assertEquals( "Arne", rs.single().get( 0 ).asString(), "did not receive expected result from cypher MATCH query" );
         }
         catch (Exception e)
