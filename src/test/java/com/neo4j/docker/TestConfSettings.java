@@ -314,4 +314,29 @@ public class TestConfSettings {
                 "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"),
             "dbms.jvm.additional was is overriden by docker-entrypoint");
     }
+
+    @Test
+    void testShellExpansionAvoided() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test only applicable to 4.0 and beyond." );
+
+        Path confMount;
+        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_security_procedures_unrestricted", "*"))
+        {
+            confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-shellexpansionavoided-", "/conf" );
+
+            SetContainerUser.nonRootUser( container );
+            //Start the container
+            container.setWaitStrategy(
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+            container.setCommand( "dump-config" );
+            container.start();
+        }
+        File conf = confMount.resolve( "neo4j.conf" ).toFile();
+        Map<String, String> configurations = parseConfFile(conf);
+        Assertions.assertTrue(configurations.containsKey("dbms.security.procedures.unrestricted"), "configuration not set from env var");
+        Assertions.assertEquals("*",
+                configurations.get("dbms.security.procedures.unrestricted"),
+                "Configuration value should be *. If it's not docker-entrypoint.sh probably evaluated it as a glob expression.");
+    }
 }
