@@ -18,6 +18,12 @@ tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := https://dist.neo4j.org
 series := $(shell echo "$(NEO4JVERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 
+# Use make test TESTS='<pattern>' to run specific tests
+# e.g. `make test TESTS='TestCausalCluster'` or `make test TESTS='*Cluster*'`
+# the value of variable is passed to the maven test property. For more info see https://maven.apache.org/surefire/maven-surefire-plugin/examples/single-test.html
+# by default this is empty which means all tests will be run
+TESTS?=""
+
 all: test
 .PHONY: all
 
@@ -25,11 +31,11 @@ test: test-enterprise test-community
 .PHONY: test
 
 test-enterprise: tmp/.image-id-enterprise
-> mvn test -Dimage=$$(cat $<) -Dedition=enterprise -Dversion=$(NEO4JVERSION)
+> mvn test -Dimage=$$(cat $<) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
 .PHONY: test-enterprise
 
 test-community: tmp/.image-id-community
-> mvn test -Dimage=$$(cat $<) -Dedition=community -Dversion=$(NEO4JVERSION)
+> mvn test -Dimage=$$(cat $<) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
 .PHONY: test-community
 
 # just build the images, don't test or package
