@@ -143,7 +143,7 @@ function load_plugin_from_github
   if [ -d /plugins ]; then
     local _plugins_dir="/plugins"
   fi
-  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value" /neo4jlabs-plugins.json )"
+  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /neo4jlabs-plugins.json )"
   # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
   local _destination="${_plugins_dir}/${_plugin_name}.jar"
   local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
@@ -153,8 +153,9 @@ function load_plugin_from_github
   local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
   local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output ".[] | select(.neo4j==\"${_neo4j_version}\") | .jar")"
   if [[ -z "${_plugin_jar_url}" ]]; then
-    echo >&2 "No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
+    echo >&2 "Error: No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
     echo >&2 "${_versions_json}"
+    exit 1
   fi
   echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
   wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
@@ -163,6 +164,46 @@ function load_plugin_from_github
     echo >&2 "Plugin at '${_destination}' is not readable"
     exit 1
   fi
+}
+
+function apply_plugin_default_configuration
+{
+  # Set the correct Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
+  # correct format.
+  local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
+  local _reference_conf="${2}" # used to determine if we can override properties
+  local _neo4j_conf="${NEO4J_HOME}/conf/neo4j.conf"
+
+  local _property _value
+  echo "Applying default values for plugin ${_plugin_name} to neo4j.conf"
+  for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /neo4jlabs-plugins.json); do
+    _property="$(jq --raw-output '.key' <<< "${_entry}")"
+    _value="$(jq --raw-output '.value' <<< "${_entry}")"
+
+    # the first grep strips out comments
+    if grep -o "^[^#]*" "${_reference_conf}" | grep -q --fixed-strings "${_property}=" ; then
+      # property is already set in the user provided config. In this case we don't override what has been set explicitly by the user.
+      echo "Skipping ${_property} for plugin ${_plugin_name} because it is already set"
+    else
+      if grep -o "^[^#]*" "${_neo4j_conf}" | grep -q --fixed-strings "${_property}=" ; then
+        sed --in-place "s/${_property}=/&${_value},/" "${_neo4j_conf}"
+      else
+        echo "${_property}=${_value}" >> "${_neo4j_conf}"
+      fi
+    fi
+  done
+}
+
+function install_neo4j_labs_plugins
+{
+  # We store a copy of the config before we modify it for the plugins to allow us to see if there are user-set values in the input config that we shouldn't override
+  local _old_config="$(mktemp)"
+  cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
+  for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
+    load_plugin_from_github "${plugin_name}"
+    apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
+  done
+  rm "${_old_config}"
 }
 
 # If we're running as root, then run as the neo4j user. Otherwise
@@ -421,10 +462,8 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
 done
 
 if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
-  # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc-procedures", "streams", "graphql"]'
-  for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
-    load_plugin_from_github "${plugin_name}"
-  done
+  # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
+  install_neo4j_labs_plugins
 fi
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
