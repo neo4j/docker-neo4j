@@ -130,6 +130,38 @@ public class TestPluginInstallation
             assertEquals( record.get( "aFloat" ).asDouble(), 3.14d, 0.000001, message );
             assertEquals( record.get( "aBoolean" ).asBoolean(), true, message );
             assertFalse( res.hasNext(), "Our procedure should only return a single result" );
+
+            // Check that the config has been set
+            res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
+            record = res.single();
+            assertEquals( record.get( "value" ).asString(), "com.neo4j.docker.plugins.*", "neo4j config not updated for plugin" );
+            assertFalse( res.hasNext(), "Config lookup should only return a single result" );
+        }
+        finally
+        {
+            container.stop();
+        }
+    }
+
+    @Test
+    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
+    public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
+    {
+        // When we set a config value explicitly
+        container = container.withEnv ("NEO4J_dbms_security_procedures_unrestricted", "foo" );
+        // When we start the neo4j docker container
+        container.start();
+
+        // When we connect to the database with the plugin
+        String boltAddress = "bolt://" + container.getContainerIpAddress() + ":" + container.getMappedPort( DEFAULT_BOLT_PORT );
+        try ( Driver coreDriver = GraphDatabase.driver( boltAddress, AuthTokens.basic( "neo4j", "neo" ) ) )
+        {
+            Session session = coreDriver.session();
+            // Check that the config remains as set by our env var and is not overriden by the plugin defaults
+            StatementResult res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
+            Record record = res.single();
+            assertEquals( record.get( "value" ).asString(), "foo", "neo4j config should not be overriden by plugin" );
+            assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally
         {
