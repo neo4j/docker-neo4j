@@ -416,8 +416,8 @@ temp_neo4j_home="${NEO4J_HOME}"
 # list env variables with prefix NEO4J_ and create settings from them
 unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL NEO4J_EDITION NEO4J_ACCEPT_LICENSE_AGREEMENT NEO4J_HOME
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
-    setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
-    value=$(echo ${!i})
+    setting=$(echo "${i}" | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
+    value=$(echo "${!i}")
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
