@@ -65,9 +65,27 @@ public class TestPasswords
         }
     }
 
+	@Test
+	void testDefaultPasswordAndPasswordResetIfNoNeo4jAuthSet()
+	{
+		try(GenericContainer container = createContainer( true ))
+        {
+            log.info( "Starting first container as current user and not specifying NEO4J_AUTH" );
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            // try with no password, this should fail because the default password should be applied with no NEO4J_AUTH env variable
+			Assertions.assertThrows( org.neo4j.driver.exceptions.AuthenticationException.class,
+									 () -> db.putInitialDataIntoContainer( "neo4j", "" ),
+									 "Able to access database with no password, even though NEO4J_AUTH=none was not specified!");
+			Assertions.assertThrows( org.neo4j.driver.exceptions.ClientException.class,
+									 () -> db.putInitialDataIntoContainer( "neo4j", "neo4j" ),
+									 "Was not prompted for a new password when using default");
+			db.changePassword( "neo4j", "neo4j", "newpassword" );
+            db.putInitialDataIntoContainer( "neo4j", "newpassword" );
+        }
+	}
 
-
-    @ParameterizedTest(name = "as current user={0}")
+	@ParameterizedTest(name = "as current user={0}")
     @ValueSource(booleans = {true, false})
     void testCanSetPassword( boolean asCurrentUser ) throws Exception
     {
@@ -100,21 +118,6 @@ public class TestPasswords
         }
     }
 
-//    @ParameterizedTest(name = "as current user={0}")
-//    @ValueSource(strings = {"true", "false"})
-//    void testCanSetInitialUsernameAndPassword( String asCurrentUser )
-//    {
-//        DatabaseIO db = new DatabaseIO();
-//        try(GenericContainer container = createContainer( asCurrentUser ))
-//        {
-//            String user = "newuser";
-//            String pass = "apassword";
-//            container.withEnv("NEO4J_AUTH", user+"/"+pass );
-//            container.start();
-//            db.putInitialDataIntoContainer( container, user, pass );
-//            db.verifyDataInContainer( container, user, pass );
-//        }
-//    }
 
     @ParameterizedTest(name = "as current user={0}")
     @ValueSource(booleans = {true, false})
