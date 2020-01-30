@@ -22,6 +22,12 @@
       "dbms.security.procedures.unrestricted":"algo.*"
     }
   },
+  "n10s": {
+    "versions": "https://raw.githubusercontent.com/neo4j-labs/neosemantics/master/versions.json",
+    "properties": {
+      "dbms.security.procedures.unrestricted":"semantics.*"
+    }
+  },  
   "_testing": {
     "versions": "http://host.testcontainers.internal:3000/versions.json",
     "properties": {
