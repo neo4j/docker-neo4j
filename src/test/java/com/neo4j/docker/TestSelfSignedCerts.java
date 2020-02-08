@@ -1,9 +1,10 @@
 package com.neo4j.docker;
 
-import com.neo4j.docker.utils.HostFileSystemOperations;
+import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -12,109 +13,73 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.TestSettings;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 
-public class TestMounting
+public class TestSelfSignedCerts
 {
-    private static Logger log = LoggerFactory.getLogger( TestMounting.class );
+    private static Logger log = LoggerFactory.getLogger( TestSelfSignedCerts.class );
 
-    static Stream<Arguments> defaultUserFlagSecurePermissionsFlag()
+    static Stream<Arguments> defaultUserFlag()
     {
         // "asUser={0}, secureFlag={1}"
         // expected behaviour is that if you set --user flag, your data should be read/writable
         // if you don't set --user flag then read/writability should be controlled by the secure file permissions flag
         // the asUser=true, secureflag=false combination is tested separately because the container should fail to start.
-        return Stream.of(
-                Arguments.arguments( false, false ),
-                Arguments.arguments(  true, false ),
-                Arguments.arguments(  true, true  ));
+        return Stream.of( Arguments.arguments( false ), Arguments.arguments( true ) );
     }
 
-    private GenericContainer setupBasicContainer( boolean asCurrentUser, boolean isSecurityFlagSet )
+    private Neo4jContainer setupBasicContainer( boolean asCurrentUser )
     {
-        log.info( "Running as user {}, {}",
-                  asCurrentUser?"non-root":"root",
-                  isSecurityFlagSet?"with secure file permissions":"with unsecured file permissions" );
+        log.info( "Running as user {}, {}", asCurrentUser ? "non-root" : "root" );
 
         Neo4jContainer container = new Neo4jContainer( TestSettings.IMAGE_ID );
-        container.withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_AUTH", "none" );
+        container.withExposedPorts( 7473, 7474, 7687 )
+                .withLogConsumer( new Slf4jLogConsumer( log ) )
+                .withEnv( "SSL_GENERATE_CERTIFICATES", "yes" )
+                .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
 
-        if(asCurrentUser)
+        if ( asCurrentUser )
         {
             SetContainerUser.nonRootUser( container );
-        }
-        if(isSecurityFlagSet)
-        {
-            container.withEnv( "SECURE_FILE_PERMISSIONS", "yes" );
         }
         return container;
     }
 
-    private void verifySingleFolder( Path folderToCheck, boolean shouldBeWritable )
+    @ParameterizedTest( name = "asUser={0}" )
+    @MethodSource( "defaultUserFlag" )
+    public void testSelfSignedCerts( boolean asCurrentUser ) throws IOException
     {
-        //String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
-        String folderForDiagnostics = folderToCheck.toAbsolutePath().toString();
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4, 0, 0 ) ), "SSL cert checks not valid before 4.0" );
 
-        Assertions.assertTrue( folderToCheck.toFile().exists(), "did not create " + folderForDiagnostics + " folder on host" );
-        if( shouldBeWritable )
+        try ( Neo4jContainer container = setupBasicContainer( asCurrentUser ) )
         {
-            Assertions.assertTrue( folderToCheck.toFile().canRead(), "cannot read host "+folderForDiagnostics+" folder" );
-            Assertions.assertTrue(folderToCheck.toFile().canWrite(),  "cannot write to host "+folderForDiagnostics+" folder" );
-        }
-    }
-
-    private void verifyDataFolderContentsArePresentOnHost( Path dataMount, boolean shouldBeWritable )
-    {
-        verifySingleFolder( dataMount.resolve( "dbms" ), shouldBeWritable );
-        verifySingleFolder( dataMount.resolve( "databases" ), shouldBeWritable );
-
-        if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
-        {
-            verifySingleFolder( dataMount.resolve( "transactions" ), shouldBeWritable );
-        }
-    }
-
-    private void verifyLogsFolderContentsArePresentOnHost( Path logsMount, boolean shouldBeWritable )
-    {
-        verifySingleFolder( logsMount, shouldBeWritable );
-        Assertions.assertTrue( logsMount.resolve( "debug.log" ).toFile().exists(),
-                               "Neo4j did not write a debug.log file to "+logsMount.toString() );
-        Assertions.assertEquals( shouldBeWritable,
-                                 logsMount.resolve( "debug.log" ).toFile().canWrite(),
-                                 String.format( "The debug.log file should %sbe writable", shouldBeWritable ? "" : "not ") );
-    }
-
-
-    @Test
-    void testDumpConfig( ) throws Exception
-    {
-        try(GenericContainer container = setupBasicContainer( true, false ))
-        {
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-dumpconfig-", "/conf" );
-            container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-            container.withCommand( "dump-config" );
             container.start();
 
-            Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
-            Assertions.assertTrue( expectedConfDumpFile.toFile().exists(),
-                                   "dump-config did not dump the config file to " + confMount.toString() );
+            container.setWaitStrategy( Wait.forHttps( "/" ).forPort( 7473 ).forStatusCode( 200 ) );
+            container.start();
+            Assertions.assertTrue( container.isRunning() );
+
+            try ( Driver coreDriver = GraphDatabase.driver( container.getBoltUrl(), AuthTokens.basic( "neo4j", container.getAdminPassword()), Config.builder().withEncryption().withTrustStrategy( Config.TrustStrategy.trustAllCertificates() ).build()))
+            {
+                Session session = coreDriver.session();
+                Result rs = session.run( "MATCH (a) RETURN COUNT(a)");
+                Assertions.assertEquals( 0, rs.single().get( 0 ).asInt(), "did not receive expected result from cypher" );
+            }
         }
     }
 
-
+/*
     @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
     @MethodSource( "defaultUserFlagSecurePermissionsFlag" )
     void testCanMountJustDataFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException
@@ -204,31 +169,5 @@ public class TestMounting
                                      "Neo4j should not start in secure mode if logs folder is unwritable" );
         }
     }
-
-    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
-    @MethodSource( "defaultUserFlagSecurePermissionsFlag" )
-    void testSelfSignedCerts(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException
-    {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,0,0 ) ),
-                "SSL cert checks not valid before 4.0" );
-
-        try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
-        {
-            Path sslMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "ssl-selfsignedcerts-", "/ssl" );
-            container.withEnv( "SSL_GENERATE_CERTIFICATES", "yes" );
-            container.setWaitStrategy( Wait.forHttps( "/" ).forPort( 7473 ).forStatusCode( 200 ) );
-            container.start();
-
-            // neo4j should now have started, so there'll be stuff in the data folder
-            // we need to check that stuff is readable and owned by the correct user
-
-            verifySingleFolder( sslMount, true );
-            verifySingleFolder( sslMount.resolve( "bolt" ), true );
-            verifySingleFolder( sslMount.resolve( "bolt/trusted" ), true );
-            verifySingleFolder( sslMount.resolve( "bolt/revoked" ), true );
-            verifySingleFolder( sslMount.resolve( "https" ), true );
-            verifySingleFolder( sslMount.resolve( "https/trusted" ), true );
-            verifySingleFolder( sslMount.resolve( "https/revoked" ), true );
-        }
-    }
+    */
 }

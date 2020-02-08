@@ -12,6 +12,11 @@ function secure_mode_enabled
     test "${SECURE_FILE_PERMISSIONS:=no}" = "yes"
 }
 
+function generate_ssl_certificates_enabled
+{
+    test "${SSL_GENERATE_CERTIFICATES:=no}" = "yes"
+}
+
 function containsElement
 {
   local e match="$1"
@@ -206,6 +211,98 @@ function install_neo4j_labs_plugins
   rm "${_old_config}"
 }
 
+function create_dir_if_necessary
+{
+    for directory in "$@"; do
+        if [ ! -d "${directory}" ]; then
+            mkdir -p "${directory}"
+            chown "${userid}":"${groupid}" "${directory}"
+        fi
+    done
+}
+
+function generate_self_signed_certificates
+{
+    local ip_address="${SSL_IP:-$(hostname -I)}"
+    local dns_address="${SSL_DNS:-localhost}"
+    local certificates_dir="${NEO4J_HOME}/certificates"
+    if [ -d /ssl ]; then
+        certificates_dir="/ssl"
+    fi
+
+    create_dir_if_necessary "${certificates_dir}/bolt/trusted" \
+        "${certificates_dir}/bolt/revoked" \
+        "${certificates_dir}/https/trusted" \
+        "${certificates_dir}/https/revoked"
+
+    local openssl_config="
+[ req ]
+prompt = no
+distinguished_name = req_distinguished_name
+x509_extensions = san_self_signed
+[ req_distinguished_name ]
+CN=${ip_address}
+[ san_self_signed ]
+subjectAltName = IP:${ip_address},DNS:${dns_address}
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = CA:false
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment, dataEncipherment, keyCertSign, cRLSign
+extendedKeyUsage = serverAuth, clientAuth, timeStamping
+"
+
+    local private_key="${certificates_dir}/bolt/private.key"
+    local public_cert="${certificates_dir}/bolt/public.crt"
+
+    openssl req \
+      -newkey rsa:2048 -nodes \
+      -keyout "${private_key}" \
+      -x509 -sha256 -days 800 \
+      -config <(echo "${openssl_config}") \
+      -out "${public_cert}"
+
+    chown "${userid}":"${groupid}" "${private_key}"
+    if running_as_root; then
+        chmod 444 "${private_key}"
+    else
+        chmod 440 "${private_key}"
+    fi
+    chown "${userid}":"${groupid}" "${public_cert}"
+    chmod 444 "${public_cert}"
+
+    cp "${private_key}" "${certificates_dir}/https/"
+    cp "${public_cert}" "${certificates_dir}/https/"
+
+    local _ssl_config='{
+     "dbms.ssl.policy.bolt.enabled":"true",
+     "dbms.ssl.policy.https.enabled":"true",
+     "dbms.connector.https.enabled":"true",
+     "dbms.connector.bolt.tls_level":"REQUIRED"
+    }'
+    local _reference_conf="$(mktemp)" # used to determine if we can override properties
+    local _neo4j_conf="${NEO4J_HOME}/conf/neo4j.conf"
+    cp "${_neo4j_conf}" "${_reference_conf}"
+
+    local _property _value
+    echo "Applying default values for ssl to neo4j.conf"
+    for _entry in $(jq  --compact-output --raw-output " to_entries[]" <<< "${_ssl_config}"); do
+        _property="$(jq --raw-output '.key' <<< "${_entry}")"
+        _value="$(jq --raw-output '.value' <<< "${_entry}")"
+
+        # the first grep strips out comments
+        if grep -o "^[^#]*" "${_reference_conf}" | grep -q --fixed-strings "${_property}=" ; then
+          # property is already set in the user provided config. In this case we don't override what has been set explicitly by the user.
+          echo "Overwriting ${_property} for self signed ssl certificates!"
+        fi
+        if grep -o "^[^#]*" "${_neo4j_conf}" | grep -q --fixed-strings "${_property}=" ; then
+            sed --in-place "s/${_property}=.*/${_property}=${_value}/" "${_neo4j_conf}"
+        else
+            echo "${_property}=${_value}" >> "${_neo4j_conf}"
+        fi
+    done
+    rm "${_reference_conf}"
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -316,7 +413,11 @@ fi
 
 if [ -d /ssl ]; then
     if secure_mode_enabled; then
-    	check_mounted_folder_readable "/ssl"
+        check_mounted_folder_readable "/ssl"
+        if generate_ssl_certificates_enabled; then
+            # We need write permissions
+            check_mounted_folder_with_chown "/ssl"
+        fi
     fi
     : ${NEO4J_dbms_directories_certificates:="/ssl"}
 fi
@@ -474,6 +575,9 @@ done
 export NEO4J_HOME="${temp_neo4j_home}"
 unset temp_neo4j_home
 
+if generate_ssl_certificates_enabled; then
+    generate_self_signed_certificates
+fi
 
 if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
   # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
