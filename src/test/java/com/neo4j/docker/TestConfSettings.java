@@ -79,14 +79,12 @@ public class TestConfSettings {
             WaitingConsumer waitingConsumer = new WaitingConsumer();
             container.followOutput( waitingConsumer );
 
-            Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil( frame -> frame.getUtf8String()
-                                                                                          .contains(
-                                                                                                  "WARNING: 1a not written to conf file because settings that " +
-                                                                                                  "start with a number are not permitted" ),
-                                                                            15, TimeUnit.SECONDS ),
-                                           "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`" );
-        }
-    }
+			Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil( frame -> frame.getUtf8String()
+					  .contains( "WARNING: 1a not written to conf file because settings that start with a number are not permitted" ),
+				15, TimeUnit.SECONDS ),
+			   "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`" );
+		}
+	}
 
     @Test
     void testEnvVarsOverrideDefaultConfigurations() throws Exception
