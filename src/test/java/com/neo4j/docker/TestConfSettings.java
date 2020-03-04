@@ -307,12 +307,13 @@ public class TestConfSettings {
         }
 
         //Read the debug.log to check that dbms.jvm.additional was set correctly
+        Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test not applicable in versions newer than 4.0." );
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
         lines.close();
         Assertions.assertTrue(isStringPresentInDebugLog( logMount.resolve("debug.log"),
                 "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"),
-            "dbms.jvm.additional was is overriden by docker-entrypoint");
+            "dbms.jvm.additional was is overriden by ker-entrypoint");
     }
 
     @Test
