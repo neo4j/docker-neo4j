@@ -313,7 +313,7 @@ public class TestConfSettings {
         lines.close();
         Assertions.assertTrue(isStringPresentInDebugLog( logMount.resolve("debug.log"),
                 "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"),
-            "dbms.jvm.additional was is overriden by ker-entrypoint");
+            "dbms.jvm.additional is overriden by Docker-entrypoint");
     }
 
     @Test
