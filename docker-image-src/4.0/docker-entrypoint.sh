@@ -439,17 +439,6 @@ for conf in ${!ENTERPRISE[@]} ; do
     fi
 done
 
-#The udc.source=tarball should be replaced by udc.source=docker in both dbms.jvm.additional and wrapper.java.additional
-#Using sed to replace only this part will allow the custom configs to be added after, separated by a ,.
-if grep -q "udc.source=tarball" "${NEO4J_HOME}"/conf/neo4j.conf; then
-     sed -i -e 's/udc.source=tarball/udc.source=docker/g' "${NEO4J_HOME}"/conf/neo4j.conf
-fi
-#The udc.source should always be set to docker by default and we have to allow also custom configs to be added after that.
-#In this case, this piece of code helps to add the default value and a , to support custom configs after.
-if ! grep -q "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker" "${NEO4J_HOME}"/conf/neo4j.conf; then
-  sed -i -e 's/dbms.jvm.additional=/dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,/g' "${NEO4J_HOME}"/conf/neo4j.conf
-fi
-
 # save NEO4J_HOME to a temp variable that doesn't begin with NEO4J_ so it doesn't get added to the conf
 temp_neo4j_home="${NEO4J_HOME}"
 # list env variables with prefix NEO4J_ and create settings from them
