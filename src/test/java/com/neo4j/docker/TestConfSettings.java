@@ -294,6 +294,7 @@ public class TestConfSettings {
 
         try(GenericContainer container = createContainer())
         {
+            Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test not applicable in versions newer than 4.0." );
             //Mount /conf
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-jvmaddnotoverridden-", "/conf" );
             logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-jvmaddnotoverridden-", "/logs" );
@@ -307,7 +308,6 @@ public class TestConfSettings {
         }
 
         //Read the debug.log to check that dbms.jvm.additional was set correctly
-        Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test not applicable in versions newer than 4.0." );
         Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
         Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
         lines.close();
