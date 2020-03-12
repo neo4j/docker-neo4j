@@ -15,10 +15,11 @@ public class HostFileSystemOperations
     private static Logger log = LoggerFactory.getLogger( HostFileSystemOperations.class);
     private static Random rng = new Random(  );
 
-    public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix, String containerMountPoint ) throws IOException
+    public static Path createTempFolderAndMountAsVolume( GenericContainer container, Path parentFolder,
+														 String hostFolderNamePrefix, String containerMountPoint ) throws IOException
     {
         String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
-        Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( hostFolderNamePrefix + randomStr);
+        Path hostFolder = parentFolder.resolve( hostFolderNamePrefix + randomStr);
         try
         {
             Files.createDirectories( hostFolder );
