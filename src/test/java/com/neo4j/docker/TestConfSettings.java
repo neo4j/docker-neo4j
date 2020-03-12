@@ -66,7 +66,6 @@ public class TestConfSettings {
         Optional<String> isMatch = lines.filter(s -> s.contains(matchThis)).findFirst();
         lines.close();
         return isMatch.isPresent();
-
     }
 
     @Test
@@ -101,11 +100,15 @@ public class TestConfSettings {
                 .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
                 .withEnv( "NEO4J_dbms_directories_logs", "/notdefaultlogs" )
                 .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" )
-                .withCommand("dump-config") )
-        {
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-overriddenbyenv-", "/conf" );
-            conf = confMount.resolve( "neo4j.conf" ).toFile();
-            container.setWaitStrategy(
+				.withCommand("dump-config") )
+		{
+			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					container,
+					TestSettings.TEST_TMP_FOLDER,
+					"overriddenbyenv-conf-",
+					"/conf" );
+			conf = confMount.resolve( "neo4j.conf" ).toFile();
+			container.setWaitStrategy(
                     Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
             SetContainerUser.nonRootUser( container );
             container.start();
@@ -145,11 +148,21 @@ public class TestConfSettings {
     void testReadsTheConfFile() throws Exception
     {
         Path debugLog;
+
         try(GenericContainer container = createContainer())
         {
+			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "confIsRead-" );
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-confisread-", "/conf" );
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-confisread-", "/logs" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					testOutputFolder,
+					"conf-",
+					"/conf" );
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					testOutputFolder,
+					"logs-",
+					"/logs" );
             debugLog = logMount.resolve("debug.log");
             SetContainerUser.nonRootUser( container );
             //Create ReadConf.conf file with the custom env variables
@@ -172,7 +185,11 @@ public class TestConfSettings {
         try(GenericContainer container = createContainer())
         {
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-replacedbydefault-", "/conf" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					TestSettings.TEST_TMP_FOLDER,
+					"replacedbydefault-conf-",
+					"/conf" );
             conf = confMount.resolve( "neo4j.conf" ).toFile();
             SetContainerUser.nonRootUser( container );
             //Create ConfsReplaced.conf file
@@ -200,7 +217,11 @@ public class TestConfSettings {
         try(GenericContainer container = createContainer())
         {
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-notoverriddenbydefault-", "/conf" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					TestSettings.TEST_TMP_FOLDER,
+					"notoverriddenbydefault-conf-",
+					"/conf" );
             conf = confMount.resolve( "neo4j.conf" ).toFile();
             SetContainerUser.nonRootUser( container );
             //Create ConfsNotOverriden.conf file
@@ -208,7 +229,8 @@ public class TestConfSettings {
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
+						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
             container.setCommand( "dump-config" );
             container.start();
         }
@@ -227,8 +249,17 @@ public class TestConfSettings {
         Path debugLog;
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
         {
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-envoverrideworks-", "/conf" );
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-envoverrideworks-", "/logs" );
+			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "envoverrideworks-" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					testOutputFolder,
+					"conf-",
+					"/conf" );
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					testOutputFolder,
+					"logs-",
+					"/logs" );
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Create EnvVarsOverride.conf file
@@ -252,7 +283,11 @@ public class TestConfSettings {
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
         {
             //Mount /logs
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-enterpriseonlysettings-", "/logs" );
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            		container,
+					TestSettings.TEST_TMP_FOLDER,
+					"enterpriseonlysettings-logs-",
+					"/logs" );
             SetContainerUser.nonRootUser( container );
             //Start the container
             container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
@@ -278,7 +313,11 @@ public class TestConfSettings {
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
         {
             //Mount /logs
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-enterprisesettingsnotincommunity-", "/logs" );
+			Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					container,
+					TestSettings.TEST_TMP_FOLDER,
+					"enterprisesettingsnotincommunity-logs-",
+					"/logs" );
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Start the container
@@ -299,10 +338,20 @@ public class TestConfSettings {
         try(GenericContainer container = createContainer())
         {
             Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test not applicable in versions newer than 4.0." );
+
+			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvmaddnotoverridden-" );
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-jvmaddnotoverridden-", "/conf" );
-            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-jvmaddnotoverridden-", "/logs" );
-            SetContainerUser.nonRootUser( container );
+			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					container,
+					testOutputFolder,
+					"conf-",
+					"/conf" );
+			logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					container,
+					testOutputFolder,
+					"logs-",
+					"/logs" );
+			SetContainerUser.nonRootUser( container );
             //Create JvmAdditionalNotOverriden.conf file
             Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
@@ -328,12 +377,17 @@ public class TestConfSettings {
         Path confMount;
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_security_procedures_unrestricted", "*"))
         {
-            confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf-shellexpansionavoided-", "/conf" );
+			confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					container,
+					TestSettings.TEST_TMP_FOLDER,
+					"shellexpansionavoided-conf-",
+					"/conf" );
 
             SetContainerUser.nonRootUser( container );
             //Start the container
             container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
+						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
             container.setCommand( "dump-config" );
             container.start();
         }

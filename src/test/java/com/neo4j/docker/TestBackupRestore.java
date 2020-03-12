@@ -37,15 +37,23 @@ public class TestBackupRestore
 	@Test
 	void dumpCompletes() throws IOException
 	{
-		Path backupDir, dumpDir, logDir;
+		Path dataDir, dumpDir, logDir;
+		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "dumpCompletes-" );
 
 		try(GenericContainer container = createContainer())
 		{
 			log.info( "creating a populated database to back up" );
-			backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			dataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					"backup-data-",
+					testOutputFolder,
+					"data-",
 					"/data" );
+			logDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					container,
+					testOutputFolder,
+					"logs-",
+					"/logs"
+			);
             container.start();
             DatabaseIO db = new DatabaseIO( container);
             db.putInitialDataIntoContainer( "","" );
@@ -58,11 +66,16 @@ public class TestBackupRestore
 			//start container and call neo4j-admin instead of default command
 			HostFileSystemOperations.mountHostFolderAsVolume(
 					container,
-					backupDir,
+					dataDir,
 					"/data");
+			HostFileSystemOperations.mountHostFolderAsVolume(
+					container,
+					logDir,
+					"/logs");
 			dumpDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					"dumpdb-",
+					testOutputFolder,
+					"dump-",
 					"/dump"
 			);
 			container.withCommand( "neo4j-admin", "dump", "--to=/dump", "--verbose" );

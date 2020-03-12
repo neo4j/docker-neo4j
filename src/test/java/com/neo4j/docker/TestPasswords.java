@@ -94,13 +94,15 @@ public class TestPasswords
         Path dataMount;
 
         try(GenericContainer firstContainer = createContainer( asCurrentUser ))
-        {
-            firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
-            dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
-                                                                                        "password-defaultuser-data-",
-                                                                                        "/data" );
-            log.info( String.format( "Starting first container as %s user and setting password",
-                                     asCurrentUser? "current" : "default" ) );
+		{
+			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
+			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					firstContainer,
+					TestSettings.TEST_TMP_FOLDER,
+					"password-defaultuser-data-",
+					"/data" );
+			log.info( String.format( "Starting first container as %s user and setting password",
+									 asCurrentUser? "current" : "default" ) );
             // create a database with stuff in
             firstContainer.start();
             DatabaseIO db = new DatabaseIO(firstContainer);
@@ -126,19 +128,21 @@ public class TestPasswords
         String password = "some_valid_password";
         Path dataMount;
 
-        try(GenericContainer firstContainer = createContainer( asCurrentUser ))
-        {
-            firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
-            dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( firstContainer,
-                                                                                   "password-envoverride-data-",
-                                                                                   "/data" );
+		try(GenericContainer firstContainer = createContainer( asCurrentUser ))
+		{
+			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
+			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+					firstContainer,
+					TestSettings.TEST_TMP_FOLDER,
+					"password-envoverride-data-",
+					"/data" );
 
-            // create a database with stuff in
-            log.info( String.format( "Starting first container as %s user and setting password",
-                                     asCurrentUser? "current" : "default" ) );
-            firstContainer.start();
-            DatabaseIO db = new DatabaseIO(firstContainer);
-            db.putInitialDataIntoContainer( "neo4j", password );
+			// create a database with stuff in
+			log.info( String.format( "Starting first container as %s user and setting password",
+									 asCurrentUser? "current" : "default" ) );
+			firstContainer.start();
+			DatabaseIO db = new DatabaseIO(firstContainer);
+			db.putInitialDataIntoContainer( "neo4j", password );
         }
 
         // with a new container, check the database data.
