@@ -64,7 +64,11 @@ public class TestCausalCluster
         DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
                 .withLocalCompose(true)
                 .withExposedService("core1", DEFAULT_BOLT_PORT )
-                .withExposedService("core1", 7474, Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ).withStartupTimeout( Duration.ofSeconds( 300 ) ))
+                .withExposedService("core1", 7474,
+									Wait.forHttp( "/" )
+										.forPort( 7474 )
+										.forStatusCode( 200 )
+										.withStartupTimeout( Duration.ofSeconds( 300 ) ))
                 .withExposedService("readreplica1", DEFAULT_BOLT_PORT);
 
         clusteringContainer.start();

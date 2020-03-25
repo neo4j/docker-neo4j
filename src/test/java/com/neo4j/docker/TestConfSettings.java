@@ -213,9 +213,9 @@ public class TestConfSettings {
 
         //Read the config file to check if the config is not overriden
         Map<String, String> configurations = parseConfFile(conf);
-        Assertions.assertTrue(configurations.containsKey("dbms.connector.https.listen_address"), "conf settings not set correctly by docker-entrypoint");
-        Assertions.assertEquals(":8483",
-                                configurations.get("dbms.connector.https.listen_address"),
+        Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "conf settings not set correctly by docker-entrypoint");
+        Assertions.assertEquals("1024M",
+                                configurations.get("dbms.memory.pagecache.size"),
                                 "docker-entrypoint has overriden custom setting set from user's conf");
     }
 
@@ -264,27 +264,28 @@ public class TestConfSettings {
         }
     }
 
-    @Test
-    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
-    {
-        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
-                               "This is testing only COMMUNITY EDITION configs");
-        Path debugLog;
-        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
-        {
-            //Mount /logs
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-enterprisesettingsnotincommunity-", "/logs" );
-            debugLog = logMount.resolve( "debug.log" );
-            SetContainerUser.nonRootUser( container );
-            //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
-            container.start();
-        }
+//    @Test
+//    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
+//    {
+//        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
+//                               "This is testing only COMMUNITY EDITION configs");
+//        Path debugLog;
+//        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
+//        {
+//            //Mount /logs
+//            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-enterprisesettingsnotincommunity-", "/logs" );
+//            debugLog = logMount.resolve( "debug.log" );
+//            SetContainerUser.nonRootUser( container );
+//            //Start the container
+//            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+//            container.start();
+//        }
+//
+//        //Read debug.log to check that causal_clustering confs are not present
+//        Assertions.assertFalse(isStringPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address" ),
+//                               "causal_clustering.transaction_listen_address should not be on the Community debug.log");
+//    }
 
-        //Read debug.log to check that causal_clustering confs are not present
-        Assertions.assertFalse(isStringPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address" ),
-                               "causal_clustering.transaction_listen_address should not be on the Community debug.log");
-    }
     @Test
     void testJvmAdditionalNotOverridden() throws Exception
     {
