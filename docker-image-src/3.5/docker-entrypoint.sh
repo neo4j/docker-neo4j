@@ -402,13 +402,9 @@ COMMUNITY=(
 )
 
 ENTERPRISE=(
-     [causal_clustering.transaction_listen_address]="0.0.0.0:6000"
-     [causal_clustering.raft_listen_address]="0.0.0.0:7000"
-     [causal_clustering.discovery_listen_address]="0.0.0.0:5000"
 )
 
 for conf in ${!COMMUNITY[@]} ; do
-
     if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
     then
         echo -e "\n"$conf=${COMMUNITY[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
@@ -416,7 +412,6 @@ for conf in ${!COMMUNITY[@]} ; do
 done
 
 for conf in ${!ENTERPRISE[@]} ; do
-
     if [ "${NEO4J_EDITION}" == "enterprise" ];
     then
        if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf

@@ -4,8 +4,10 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -264,27 +266,29 @@ public class TestConfSettings {
         }
     }
 
-//    @Test
-//    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
-//    {
-//        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
-//                               "This is testing only COMMUNITY EDITION configs");
-//        Path debugLog;
-//        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
-//        {
-//            //Mount /logs
-//            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-enterprisesettingsnotincommunity-", "/logs" );
-//            debugLog = logMount.resolve( "debug.log" );
-//            SetContainerUser.nonRootUser( container );
-//            //Start the container
-//            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
-//            container.start();
-//        }
-//
-//        //Read debug.log to check that causal_clustering confs are not present
-//        Assertions.assertFalse(isStringPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address" ),
-//                               "causal_clustering.transaction_listen_address should not be on the Community debug.log");
-//    }
+    @Disabled
+    @Test
+    void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
+    {
+		Assert.fail( "This test should not have run!" );
+        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
+                               "This is testing only COMMUNITY EDITION configs");
+        Path debugLog;
+        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
+        {
+            //Mount /logs
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-enterprisesettingsnotincommunity-", "/logs" );
+            debugLog = logMount.resolve( "debug.log" );
+            SetContainerUser.nonRootUser( container );
+            //Start the container
+            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            container.start();
+        }
+
+        //Read debug.log to check that causal_clustering confs are not present
+        Assertions.assertFalse(isStringPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address" ),
+                               "causal_clustering.transaction_listen_address should not be on the Community debug.log");
+    }
 
     @Test
     void testJvmAdditionalNotOverridden() throws Exception
