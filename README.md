@@ -36,4 +36,6 @@ See [DEVELOPMENT.md](DEVELOPMENT.md)
 
 # Getting support and contributing
 
-Please create issues and pull requests against this Github repository.
+For bug reports and feature requests, please create issues and pull requests against this Github repository.
+
+If you need guidance with using Neo4j you can ask questions here: https://community.neo4j.com/
