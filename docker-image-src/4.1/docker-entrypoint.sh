@@ -403,7 +403,7 @@ if [ "${cmd}" == "neo4j" ]; then
 fi
 
 declare -A COMMUNITY
-# declare -A ENTERPRISE
+declare -A ENTERPRISE
 
 COMMUNITY=(
      [dbms.tx_log.rotation.retention_policy]="100M size"
@@ -411,24 +411,25 @@ COMMUNITY=(
      [dbms.default_listen_address]="0.0.0.0"
 )
 
-for conf in ${!COMMUNITY[@]} ; do
+ENTERPRISE=(
+)
 
+for conf in ${!COMMUNITY[@]} ; do
     if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
     then
         echo -e "\n"$conf=${COMMUNITY[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
     fi
 done
 
-#for conf in ${!ENTERPRISE[@]} ; do
-#
-#    if [ "${NEO4J_EDITION}" == "enterprise" ];
-#    then
-#       if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
-#       then
-#        echo -e "\n"$conf=${ENTERPRISE[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
-#       fi
-#    fi
-#done
+for conf in ${!ENTERPRISE[@]} ; do
+    if [ "${NEO4J_EDITION}" == "enterprise" ];
+    then
+       if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
+       then
+        echo -e "\n"$conf=${ENTERPRISE[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
+       fi
+    fi
+done
 
 # save NEO4J_HOME to a temp variable that doesn't begin with NEO4J_ so it doesn't get added to the conf
 temp_neo4j_home="${NEO4J_HOME}"
