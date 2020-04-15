@@ -266,6 +266,7 @@ public class TestConfSettings {
         }
     }
 
+    // disabled because there are currently no enterprise-only settings
     @Disabled
     @Test
     void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception

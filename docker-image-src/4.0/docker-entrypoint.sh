@@ -234,7 +234,7 @@ if running_as_root; then
     # Non-recursive chown for the base directory
     chown "${userid}":"${groupid}" "${NEO4J_HOME}"
     chmod 700 "${NEO4J_HOME}"
-    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -user root -type d -exec chown -R ${userid}:${groupid} {} \;
+    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chown -R ${userid}:${groupid} {} \;
     find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chmod -R 700 {} \;
 fi
 
