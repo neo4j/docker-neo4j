@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -18,7 +19,10 @@ import com.neo4j.docker.utils.TestSettings;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.UserPrincipal;
 import java.time.Duration;
 import java.util.stream.Stream;
 
@@ -176,9 +180,6 @@ public class TestMounting
         try(GenericContainer container = setupBasicContainer( false, true ))
         {
             HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-nopermissioninsecuremode-", "/data" );
-
-            // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
-            // container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             container.setWaitStrategy( Wait.forListeningPort().withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
                                      () -> container.start(),
@@ -195,13 +196,33 @@ public class TestMounting
         try(GenericContainer container = setupBasicContainer( false, true ))
         {
             HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-nopermissioninsecuremode-", "/logs" );
-
-            // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
-            // container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             container.setWaitStrategy( Wait.forListeningPort().withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
                                      () -> container.start(),
                                      "Neo4j should not start in secure mode if logs folder is unwritable" );
         }
     }
+
+	@ParameterizedTest(name = "as current user {0}")
+    @ValueSource(booleans = {true, false})
+	void testMountingConfToNeo4jHomeKeepsFilePermissions(boolean asCurrentUser) throws IOException
+	{
+		Path conf = HostFileSystemOperations.createTempFolder( "conf-underhome-" );
+		// put a file in the mounted folder, it doesn't matter what the file is
+		Files.copy( Paths.get( "src", "test", "resources", "confs", "ReadConf.conf" ),
+					conf.resolve( "neo4j.conf" ) );
+		UserPrincipal originalFolderOwner = Files.getOwner( conf );
+		UserPrincipal originalFileOwner = Files.getOwner( conf.resolve( "neo4j.conf" ) );
+
+        try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
+        {
+        	HostFileSystemOperations.mountHostFolderAsVolume( container, conf, "/var/log/neo4j/conf");
+			container.start();
+        }
+		UserPrincipal newFolderOwner = Files.getOwner( conf );
+		UserPrincipal newFileOwner = Files.getOwner( conf.resolve( "neo4j.conf" ) );
+        Assertions.assertEquals( originalFolderOwner, newFolderOwner, "The owner of the folder mounted to /var/log/neo4j/conf changed" );
+        Assertions.assertEquals( originalFileOwner, newFileOwner,
+								 "The owner of the folder mounted to /var/log/neo4j/conf/neo4j.conf changed" );
+	}
 }
