@@ -49,11 +49,14 @@ public class TestMounting
                   asCurrentUser?"non-root":"root",
                   isSecurityFlagSet?"with secure file permissions":"with unsecured file permissions" );
 
-        Neo4jContainer container = new Neo4jContainer( TestSettings.IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_AUTH", "none" );
+                 .withEnv( "NEO4J_AUTH", "neo4j/password" )
+				 .waitingFor( Wait.forHttp( "/" )
+								  .forPort( 7474 )
+								  .withStartupTimeout( Duration.ofSeconds( 60 ) ) );
 
         if(asCurrentUser)
         {
@@ -68,7 +71,6 @@ public class TestMounting
 
     private void verifySingleFolder( Path folderToCheck, boolean shouldBeWritable )
     {
-        //String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
         String folderForDiagnostics = folderToCheck.toAbsolutePath().toString();
 
         Assertions.assertTrue( folderToCheck.toFile().exists(), "did not create " + folderForDiagnostics + " folder on host" );
