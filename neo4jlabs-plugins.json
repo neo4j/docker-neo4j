@@ -19,7 +19,13 @@
   "graph-algorithms": {
     "versions": "https://neo4j-contrib.github.io/neo4j-graph-algorithms/versions.json",
     "properties": {
-      "dbms.security.procedures.unrestricted":"algo.*"
+      "dbms.security.procedures.unrestricted": "algo.*"
+    }
+  },
+  "graph-data-science": {
+    "versions": "https://s3-eu-west-1.amazonaws.com/com.neo4j.graphalgorithms.dist/graph-data-science/versions.json",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "gds.*"
     }
   },
   "n10s": {
