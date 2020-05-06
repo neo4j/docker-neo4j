@@ -308,17 +308,14 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
     NEO4J_causalClustering_raftAdvertisedAddress
 
 if [ -d /conf ]; then
-    if secure_mode_enabled; then
-	    check_mounted_folder_readable "/conf"
-    fi
+    check_mounted_folder_readable "/conf"
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
-    if secure_mode_enabled; then
-    	check_mounted_folder_readable "/ssl"
-    fi
-    : ${NEO4J_dbms_directories_certificates:="/ssl"}
+    check_mounted_folder_readable "/ssl"
+    ln -s /ssl -t ${NEO4J_HOME}
+    mv ${NEO4J_HOME}/ssl ${NEO4J_HOME}/certificates
 fi
 
 if [ -d /plugins ]; then
@@ -327,22 +324,18 @@ if [ -d /plugins ]; then
             # We need write permissions
             check_mounted_folder_with_chown "/plugins"
         fi
-        check_mounted_folder_readable "/plugins"
     fi
+    check_mounted_folder_readable "/plugins"
     : ${NEO4J_dbms_directories_plugins:="/plugins"}
 fi
 
 if [ -d /import ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/import"
-    fi
+    check_mounted_folder_readable "/import"
     : ${NEO4J_dbms_directories_import:="/import"}
 fi
 
 if [ -d /metrics ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/metrics"
-    fi
+    check_mounted_folder_readable "/metrics"
     : ${NEO4J_dbms_directories_metrics:="/metrics"}
 fi
 
@@ -351,6 +344,8 @@ if [ -d /logs ]; then
     : ${NEO4J_dbms_directories_logs:="/logs"}
 fi
 
+echo "got here!"
+ls -ls /data
 if [ -d /data ]; then
     check_mounted_folder_with_chown "/data"
     if [ -d /data/databases ]; then
@@ -360,6 +355,7 @@ if [ -d /data ]; then
         check_mounted_folder_with_chown "/data/dbms"
     fi
 fi
+ls -ls /data
 
 
 

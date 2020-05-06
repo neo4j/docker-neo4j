@@ -70,7 +70,7 @@ public class TestSSL
 		// if you're using self-signed, untrustworthy certificates. This solution isn't great, but is much more readable.
 		try
 		{
-			String url = "https://" + container.getIpAddress() +":"+ container.getMappedPort( 7473 );
+			String url = "https://" + container.getContainerIpAddress() +":"+ container.getMappedPort( 7473 );
 			ProcessBuilder pb = new ProcessBuilder( "curl", "-sk", url ).redirectErrorStream( true );
 			Process proc = pb.start();
 			proc.waitFor();
@@ -101,9 +101,7 @@ public class TestSSL
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", "none" )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withExposedPorts( 7473 )
-                 .withExposedPorts( 7474 )
-                 .withExposedPorts( 7687 )
+                 .withExposedPorts( 7473, 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
         return container;
     }
