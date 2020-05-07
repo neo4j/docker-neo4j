@@ -11,7 +11,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;

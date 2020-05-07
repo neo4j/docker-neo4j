@@ -109,12 +109,6 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>neo4j</artifactId>
-			<version>1.12.5</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.neo4j.driver</groupId>
 			<artifactId>neo4j-java-driver</artifactId>
 			<version>4.0.0</version>

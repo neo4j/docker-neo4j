@@ -6,22 +6,18 @@ import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -31,15 +27,31 @@ public class TestSSL
 {
 	private static final Logger log = LoggerFactory.getLogger( TestSSL.class );
 
+	@BeforeAll
+	static void filterOutPre40()
+	{
+		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ),
+								"This test only applies to 4.0 onwards ssl configuration");
+	}
+
+	private GenericContainer createBasicContainer()
+	{
+		GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+		container.withEnv( "NEO4J_AUTH", "none" )
+				 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+				 .withExposedPorts( 7473, 7474, 7687 )
+				 .withLogConsumer( new Slf4jLogConsumer( log ) )
+				 .waitingFor( Wait.forHttp( "/" )
+								  .forPort( 7474 )
+								  .withStartupTimeout( Duration.ofSeconds( 60 ) ) );
+		return container;
+	}
+
 	@Test
 	void testHttpsNotAlreadyEnabled()
 	{
 		try(GenericContainer container = createBasicContainer())
 		{
-			 container.waitingFor( Wait.forHttp( "/" )
-								  .forPort( 7474 )
-								  .forStatusCode( 200 )
-								  .withStartupTimeout( Duration.ofSeconds( 60 ) ) );
 			container.start();
 			Assertions.assertTrue( container.isRunning(), "container did not start" );
 			Assertions.assertFalse( isHttpsResponsive( container ), "HTTPS was enabled when we didn't supply certificates" );
@@ -49,16 +61,39 @@ public class TestSSL
 	@Test
 	void testCanEncryptHttps() throws Exception
 	{
-		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ),
-								"This test only applies to 4.0 onwards ssl configuration");
 		try(GenericContainer container = createBasicContainer())
 		{
-			Path sslFolder = createSSLDirectory( container );
+			Path sslFolder = createSSLDirectory( container, "https" );
 			HostFileSystemOperations.mountHostFolderAsVolume( container, sslFolder, "/var/lib/neo4j/certificates" );
 			SetContainerUser.nonRootUser( container );
 			container.withEnv( "NEO4J_dbms_connector_https_enabled", "true" )
 					 .withEnv( "NEO4J_dbms_ssl_policy_https_enabled", "true" );
-			container.waitingFor( Wait.forHttp( "/" ).forPort( 7474 ).withStartupTimeout( Duration.ofSeconds( 60 ) ) );
+			container.start();
+			Assertions.assertTrue( isHttpsResponsive( container ), "https port was not responsive");
+		}
+	}
+
+	@Test
+	void testCanEncryptHttpsSimplified() throws Exception
+	{
+		try(GenericContainer container = createBasicContainer())
+		{
+			Path sslFolder = createSSLDirectory( container, "https" );
+			HostFileSystemOperations.mountHostFolderAsVolume( container, sslFolder, "/ssl" );
+			SetContainerUser.nonRootUser( container );
+			container.start();
+			Assertions.assertTrue( isHttpsResponsive( container ), "https port was not responsive");
+		}
+	}
+
+	@Test
+	void testCanEncryptHttpsAndBoltSimplified() throws Exception
+	{
+		try(GenericContainer container = createBasicContainer())
+		{
+			Path sslFolder = createSSLDirectory( container, "https", "bolt" );
+			HostFileSystemOperations.mountHostFolderAsVolume( container, sslFolder, "/ssl" );
+			SetContainerUser.nonRootUser( container );
 			container.start();
 			Assertions.assertTrue( isHttpsResponsive( container ), "https port was not responsive");
 		}
@@ -96,26 +131,20 @@ public class TestSSL
 		return false;
 	}
 
-	private GenericContainer createBasicContainer()
-    {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-        container.withEnv( "NEO4J_AUTH", "none" )
-                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withExposedPorts( 7473, 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        return container;
-    }
-
-	private Path createSSLDirectory( GenericContainer container ) throws IOException
+	private Path createSSLDirectory( GenericContainer container, String... scopes ) throws IOException
 	{
 		Path sslFolder = HostFileSystemOperations.createTempFolder( "ssl-" );
-		Path httpsFolder = Files.createDirectories(sslFolder.resolve( "https" ));
-		Files.createDirectories(httpsFolder.resolve( "trusted" ));
-		Files.createDirectories(httpsFolder.resolve( "revoked" ));
-		// copy certificates to the required locations
-		Files.copy( getResource( "ssl/private.key" ), httpsFolder.resolve( "private.key" ) );
-		Files.copy( getResource( "ssl/public.crt" ), httpsFolder.resolve( "public.crt" ) );
-		Files.copy( getResource( "ssl/public.crt" ), httpsFolder.resolve( "trusted" ).resolve( "public.crt" ) );
+
+		for(String scope : scopes)
+		{
+			Path scopedFolder = Files.createDirectories( sslFolder.resolve( scope ) );
+			Files.createDirectories( scopedFolder.resolve( "trusted" ) );
+			Files.createDirectories( scopedFolder.resolve( "revoked" ) );
+			// copy certificates to the required locations
+			Files.copy( getResource( "ssl/private.key" ), scopedFolder.resolve( "private.key" ) );
+			Files.copy( getResource( "ssl/public.crt" ), scopedFolder.resolve( "public.crt" ) );
+			Files.copy( getResource( "ssl/public.crt" ), scopedFolder.resolve( "trusted" ).resolve( "public.crt" ) );
+		}
 		return sslFolder;
 	}
 

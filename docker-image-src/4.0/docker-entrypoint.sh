@@ -314,16 +314,29 @@ fi
 
 if [ -d /ssl ]; then
     check_mounted_folder_readable "/ssl"
-    ln -s /ssl -t ${NEO4J_HOME}
-    mv ${NEO4J_HOME}/ssl ${NEO4J_HOME}/certificates
+    # do some magic to figure out what ssl policy scopes are wanted: bolt, https, cluster, backup and/or fabric.
+    _ssl_policies=("bolt" "https" "cluster" "backup" "fabric")
+    for policy in ${_ssl_policies[@]}
+    do
+        echo $policy
+        # does this policy folder exist in dir
+        if [[ -d /ssl/$policy ]]; then
+            echo "ssl policy \"$policy\" requested"
+            tmpvar=NEO4J_dbms_connector_${policy}_enabled
+            : ${!tmpvar:=true}
+            tmpvar=NEO4J_dbms_ssl_policy_${policy}_enabled
+            : ${!tmpvar:=true}
+            tmpvar=NEO4J_dbms_ssl_policy_${policy}_base__directory
+            : ${!tmpvar:=/ssl/$policy}
+        fi
+    done
+    # what should the error messaging be like? Link back to documentation?
 fi
 
 if [ -d /plugins ]; then
-    if secure_mode_enabled; then
-        if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
-            # We need write permissions
-            check_mounted_folder_with_chown "/plugins"
-        fi
+    if [[ -n "${NEO4JLABS_PLUGINS:-}" ]]; then
+        # We need write permissions
+        check_mounted_folder_with_chown "/plugins"
     fi
     check_mounted_folder_readable "/plugins"
     : ${NEO4J_dbms_directories_plugins:="/plugins"}
@@ -344,8 +357,6 @@ if [ -d /logs ]; then
     : ${NEO4J_dbms_directories_logs:="/logs"}
 fi
 
-echo "got here!"
-ls -ls /data
 if [ -d /data ]; then
     check_mounted_folder_with_chown "/data"
     if [ -d /data/databases ]; then
@@ -355,7 +366,6 @@ if [ -d /data ]; then
         check_mounted_folder_with_chown "/data/dbms"
     fi
 fi
-ls -ls /data
 
 
 
