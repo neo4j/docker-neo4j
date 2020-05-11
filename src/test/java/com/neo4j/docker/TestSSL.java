@@ -22,8 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import org.neo4j.cypher.internal.v4_0.expressions.functions.E;
-
 
 public class TestSSL
 {
