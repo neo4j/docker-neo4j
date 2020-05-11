@@ -206,6 +206,36 @@ function install_neo4j_labs_plugins
   rm "${_old_config}"
 }
 
+function process_ssl_policies
+{
+    local _found_a_policy_scope=false
+    local _ssl_policy_scopes=("bolt" "https" "cluster" "backup" "fabric")
+    for scope in ${_ssl_policy_scopes[@]}
+    do
+        echo $scope
+        # does this policy folder exist in dir
+        if [[ -d /ssl/$scope ]]; then
+            local _connector_flag=NEO4J_dbms_connector_${scope}_enabled
+            : ${!_connector_flag:=true}
+            local _policy_flag=NEO4J_dbms_ssl_policy_${scope}_enabled
+            : ${!_policy_flag:=true}
+            local _base_dir=NEO4J_dbms_ssl_policy_${scope}_base__directory
+            : ${!_base_dir:=/ssl/$scope}
+            _found_a_policy_scope=true
+            echo "ssl policy for \"$scope\" enabled"
+        fi
+    done
+    echo "got here"
+    echo "_found_a_policy_scope=${_found_a_policy_scope}"
+    if [ "${_found_a_policy_scope}" == "false" ]; then
+        echo >&2 "An /ssl folder was mounted but no valid ssl policies were found.
+Please consult the docker security documentation, for more help:
+https://neo4j.com/docs/operations-manual/4.1/docker/security/"
+        echo >&2 "Neo4j will continue to start, but encrypted connections may not behave as expected."
+    fi
+}
+
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -308,41 +338,31 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
     NEO4J_causalClustering_raftAdvertisedAddress
 
 if [ -d /conf ]; then
-    if secure_mode_enabled; then
-	    check_mounted_folder_readable "/conf"
-    fi
+    check_mounted_folder_readable "/conf"
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
-    if secure_mode_enabled; then
-    	check_mounted_folder_readable "/ssl"
-    fi
-    : ${NEO4J_dbms_directories_certificates:="/ssl"}
+    check_mounted_folder_readable "/ssl"
+    process_ssl_policies
 fi
 
 if [ -d /plugins ]; then
-    if secure_mode_enabled; then
-        if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
-            # We need write permissions
-            check_mounted_folder_with_chown "/plugins"
-        fi
-        check_mounted_folder_readable "/plugins"
+    if [[ -n "${NEO4JLABS_PLUGINS:-}" ]]; then
+        # We need write permissions
+        check_mounted_folder_with_chown "/plugins"
     fi
+    check_mounted_folder_readable "/plugins"
     : ${NEO4J_dbms_directories_plugins:="/plugins"}
 fi
 
 if [ -d /import ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/import"
-    fi
+    check_mounted_folder_readable "/import"
     : ${NEO4J_dbms_directories_import:="/import"}
 fi
 
 if [ -d /metrics ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/metrics"
-    fi
+    check_mounted_folder_readable "/metrics"
     : ${NEO4J_dbms_directories_metrics:="/metrics"}
 fi
 
