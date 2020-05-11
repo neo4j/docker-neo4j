@@ -99,7 +99,20 @@ public class TestSSL
 		}
 	}
 
-	private boolean isHttpsResponsive(GenericContainer container)
+	@Test
+	void testWarnsIfNoSSLPoliciesFound() throws Exception
+	{
+		try(GenericContainer container = createBasicContainer())
+		{
+			Path sslFolder = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "ssl-empty-", "/ssl" );
+			SetContainerUser.nonRootUser( container );
+			container.start();
+			String stdout = container.getLogs();
+			Assertions.assertTrue( stdout.contains( "no valid ssl policies" ), "Did not print warning that no ssl policies were found");
+		}
+	}
+
+	private boolean isHttpsResponsive( GenericContainer container)
 	{
 		// it's not ideal to shell out to curl, but the https library in java was incredibly complicated
 		// if you're using self-signed, untrustworthy certificates. This solution isn't great, but is much more readable.
@@ -138,12 +151,9 @@ public class TestSSL
 		for(String scope : scopes)
 		{
 			Path scopedFolder = Files.createDirectories( sslFolder.resolve( scope ) );
-			Files.createDirectories( scopedFolder.resolve( "trusted" ) );
-			Files.createDirectories( scopedFolder.resolve( "revoked" ) );
 			// copy certificates to the required locations
 			Files.copy( getResource( "ssl/private.key" ), scopedFolder.resolve( "private.key" ) );
 			Files.copy( getResource( "ssl/public.crt" ), scopedFolder.resolve( "public.crt" ) );
-			Files.copy( getResource( "ssl/public.crt" ), scopedFolder.resolve( "trusted" ).resolve( "public.crt" ) );
 		}
 		return sslFolder;
 	}
