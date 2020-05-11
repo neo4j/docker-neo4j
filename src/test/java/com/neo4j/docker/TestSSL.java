@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
+import org.neo4j.cypher.internal.v4_0.expressions.functions.E;
+
 
 public class TestSSL
 {
@@ -99,7 +101,20 @@ public class TestSSL
 		}
 	}
 
-	private boolean isHttpsResponsive(GenericContainer container)
+	@Test
+	void testWarnsIfNoSSLPoliciesFound() throws Exception
+	{
+		try(GenericContainer container = createBasicContainer())
+		{
+			Path sslFolder = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "ssl-empty-", "/ssl" );
+			SetContainerUser.nonRootUser( container );
+			container.start();
+			String stdout = container.getLogs();
+			Assertions.assertTrue( stdout.contains( "no valid ssl policies" ), "Did not print warning that no ssl policies were found");
+		}
+	}
+
+	private boolean isHttpsResponsive( GenericContainer container)
 	{
 		// it's not ideal to shell out to curl, but the https library in java was incredibly complicated
 		// if you're using self-signed, untrustworthy certificates. This solution isn't great, but is much more readable.

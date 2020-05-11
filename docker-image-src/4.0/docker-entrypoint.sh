@@ -206,6 +206,36 @@ function install_neo4j_labs_plugins
   rm "${_old_config}"
 }
 
+function process_ssl_policies
+{
+    local _found_a_policy_scope=false
+    local _ssl_policy_scopes=("bolt" "https" "cluster" "backup" "fabric")
+    for scope in ${_ssl_policy_scopes[@]}
+    do
+        echo $scope
+        # does this policy folder exist in dir
+        if [[ -d /ssl/$scope ]]; then
+            local _connector_flag=NEO4J_dbms_connector_${scope}_enabled
+            : ${!_connector_flag:=true}
+            local _policy_flag=NEO4J_dbms_ssl_policy_${scope}_enabled
+            : ${!_policy_flag:=true}
+            local _base_dir=NEO4J_dbms_ssl_policy_${scope}_base__directory
+            : ${!_base_dir:=/ssl/$scope}
+            _found_a_policy_scope=true
+            echo "ssl policy for \"$scope\" enabled"
+        fi
+    done
+    echo "got here"
+    echo "_found_a_policy_scope=${_found_a_policy_scope}"
+    if [ "${_found_a_policy_scope}" == "false" ]; then
+        echo >&2 "An /ssl folder was mounted but no valid ssl policies were found.
+Please consult the docker security documentation, for more help:
+https://neo4j.com/docs/operations-manual/4.0/docker/security/"
+        echo >&2 "Neo4j will continue to start, but encrypted connections may not behave as expected."
+    fi
+}
+
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -314,23 +344,7 @@ fi
 
 if [ -d /ssl ]; then
     check_mounted_folder_readable "/ssl"
-    # do some magic to figure out what ssl policy scopes are wanted: bolt, https, cluster, backup and/or fabric.
-    _ssl_policies=("bolt" "https" "cluster" "backup" "fabric")
-    for policy in ${_ssl_policies[@]}
-    do
-        echo $policy
-        # does this policy folder exist in dir
-        if [[ -d /ssl/$policy ]]; then
-            echo "ssl policy \"$policy\" requested"
-            tmpvar=NEO4J_dbms_connector_${policy}_enabled
-            : ${!tmpvar:=true}
-            tmpvar=NEO4J_dbms_ssl_policy_${policy}_enabled
-            : ${!tmpvar:=true}
-            tmpvar=NEO4J_dbms_ssl_policy_${policy}_base__directory
-            : ${!tmpvar:=/ssl/$policy}
-        fi
-    done
-    # what should the error messaging be like? Link back to documentation?
+    process_ssl_policies
 fi
 
 if [ -d /plugins ]; then
