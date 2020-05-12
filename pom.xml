@@ -54,6 +54,12 @@
 			<artifactId>neo4j</artifactId>
 			<version>${neo4j.version}</version>
 			<scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
 		</dependency>
 		<dependency>
 			<!-- logging library -->
@@ -99,12 +105,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>1.12.5</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>neo4j</artifactId>
 			<version>1.12.5</version>
 			<scope>test</scope>
 		</dependency>

@@ -158,7 +158,7 @@ public class TestPluginInstallation
             // Check that the config remains as set by our env var and is not overriden by the plugin defaults
             Result res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
             Record record = res.single();
-            assertEquals( record.get( "value" ).asString(), "foo", "neo4j config should not be overriden by plugin" );
+            assertEquals( record.get( "value" ).asString(), "foo", "neo4j config should not be overridden by plugin" );
             assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally
