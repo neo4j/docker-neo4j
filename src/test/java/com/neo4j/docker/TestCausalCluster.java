@@ -20,12 +20,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 
-@Disabled
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
 
-    @Disabled
     @Test
     void testCausalClusteringBasic() throws Exception
     {
@@ -61,15 +59,11 @@ public class TestCausalCluster
         outstream.close();
         System.out.println("logs: " + compose_file.getName() + " and " + tmpDir.toString());
 
-        DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
+        DockerComposeContainer<?> clusteringContainer = new DockerComposeContainer<>(compose_file)
                 .withLocalCompose(true)
-                .withExposedService("core1", DEFAULT_BOLT_PORT )
-                .withExposedService("core1", 7474,
-									Wait.forHttp( "/" )
-										.forPort( 7474 )
-										.forStatusCode( 200 )
-										.withStartupTimeout( Duration.ofSeconds( 300 ) ))
-                .withExposedService("readreplica1", DEFAULT_BOLT_PORT);
+                .withExposedService("core1", DEFAULT_BOLT_PORT, new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 300 ) ) )
+                .withExposedService("core1", 7474, new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 300 ) ) )
+                .withExposedService("readreplica1", DEFAULT_BOLT_PORT, new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 300 ) ));
 
         clusteringContainer.start();
 
@@ -109,7 +103,6 @@ public class TestCausalCluster
     }
 
     private InputStream getResource(String path) {
-        InputStream resource = getClass().getClassLoader().getResourceAsStream(path);
-        return resource;
+        return getClass().getClassLoader().getResourceAsStream(path);
     }
 }
