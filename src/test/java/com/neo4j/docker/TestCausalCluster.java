@@ -1,15 +1,14 @@
 package com.neo4j.docker;
 
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.*;
 import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.wait.strategy.*;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -20,6 +19,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
@@ -29,6 +34,8 @@ public class TestCausalCluster
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                "No causal clustering for community edition");
+
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ) );
 
         Path tmpDir = HostFileSystemOperations.createTempFolder( "CC_cluster_" );
 
