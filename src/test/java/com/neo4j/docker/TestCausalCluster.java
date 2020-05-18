@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -66,11 +67,12 @@ public class TestCausalCluster
         outstream.close();
         System.out.println("logs: " + compose_file.getName() + " and " + tmpDir.toString());
 
+        var startupWaitStrategy = new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 420 ) );
         DockerComposeContainer<?> clusteringContainer = new DockerComposeContainer<>(compose_file)
                 .withLocalCompose(true)
-                .withExposedService("core1", DEFAULT_BOLT_PORT, new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 300 ) ) )
-                .withExposedService("core1", 7474, new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 300 ) ) )
-                .withExposedService("readreplica1", DEFAULT_BOLT_PORT, new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 300 ) ));
+                .withExposedService("core1", DEFAULT_BOLT_PORT, startupWaitStrategy )
+                .withExposedService("core1", 7474, startupWaitStrategy )
+                .withExposedService("readreplica1", DEFAULT_BOLT_PORT, startupWaitStrategy );
 
         clusteringContainer.start();
 
