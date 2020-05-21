@@ -95,7 +95,7 @@ function check_mounted_folder_readable
     fi
 }
 
-function check_mounted_folder_with_chown
+function check_mounted_folder_writable_with_chown
 {
 # The /data and /log directory are a bit different because they are very likely to be mounted by the user but not
 # necessarily writable.
@@ -308,56 +308,47 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
     NEO4J_causalClustering_raftAdvertisedAddress
 
 if [ -d /conf ]; then
-    if secure_mode_enabled; then
-	    check_mounted_folder_readable "/conf"
-    fi
+    check_mounted_folder_readable "/conf"
     find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
-    if secure_mode_enabled; then
-    	check_mounted_folder_readable "/ssl"
-    fi
-    : ${NEO4J_dbms_directories_certificates:="/ssl"}
+    check_mounted_folder_readable "/ssl"
+    rm -rf "${NEO4J_HOME}"/certificates
+    ln -s /ssl "${NEO4J_HOME}"/certificates
 fi
 
 if [ -d /plugins ]; then
-    if secure_mode_enabled; then
-        if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
-            # We need write permissions
-            check_mounted_folder_with_chown "/plugins"
-        fi
-        check_mounted_folder_readable "/plugins"
+    if [[ -n "${NEO4JLABS_PLUGINS:-}" ]]; then
+        # We need write permissions
+        check_mounted_folder_writable_with_chown "/plugins"
     fi
+    check_mounted_folder_readable "/plugins"
     : ${NEO4J_dbms_directories_plugins:="/plugins"}
 fi
 
 if [ -d /import ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/import"
-    fi
+    check_mounted_folder_readable "/import"
     : ${NEO4J_dbms_directories_import:="/import"}
 fi
 
 if [ -d /metrics ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/metrics"
-    fi
+    check_mounted_folder_writable_with_chown "/metrics"
     : ${NEO4J_dbms_directories_metrics:="/metrics"}
 fi
 
 if [ -d /logs ]; then
-    check_mounted_folder_with_chown "/logs"
+    check_mounted_folder_writable_with_chown "/logs"
     : ${NEO4J_dbms_directories_logs:="/logs"}
 fi
 
 if [ -d /data ]; then
-    check_mounted_folder_with_chown "/data"
+    check_mounted_folder_writable_with_chown "/data"
     if [ -d /data/databases ]; then
-        check_mounted_folder_with_chown "/data/databases"
+        check_mounted_folder_writable_with_chown "/data/databases"
     fi
     if [ -d /data/dbms ]; then
-        check_mounted_folder_with_chown "/data/dbms"
+        check_mounted_folder_writable_with_chown "/data/dbms"
     fi
 fi
 
