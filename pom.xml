@@ -54,6 +54,12 @@
 			<artifactId>neo4j</artifactId>
 			<version>${neo4j.version}</version>
 			<scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
 		</dependency>
 		<dependency>
 			<!-- logging library -->

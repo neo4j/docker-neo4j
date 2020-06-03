@@ -206,6 +206,50 @@ function install_neo4j_labs_plugins
   rm "${_old_config}"
 }
 
+function set_initial_password
+{
+    local _neo4j_auth="${1}"
+
+    # set the neo4j initial password only if you run the database server
+    if [ "${cmd}" == "neo4j" ]; then
+        if [ "${_neo4j_auth:-}" == "none" ]; then
+            NEO4J_dbms_security_auth__enabled=false
+        elif [[ "${_neo4j_auth:-}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
+            admin_user="${BASH_REMATCH[1]}"
+            password="${BASH_REMATCH[2]}"
+            do_reset="${BASH_REMATCH[3]}"
+
+            if [ "${password}" == "neo4j" ]; then
+                echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
+                exit 1
+            fi
+            if [ "${admin_user}" != "neo4j" ]; then
+                echo >&2 "Invalid admin username, it must be neo4j"
+                exit 1
+            fi
+
+            if running_as_root; then
+                # running set-initial-password as root will create subfolders to /data as root, causing startup fail when neo4j can't read or write the /data/dbms folder
+                # creating the folder first will avoid that
+                mkdir -p /data/dbms
+                chown "${userid}":"${groupid}" /data/dbms
+            fi
+
+            # Will exit with error if users already exist (and print a message explaining that)
+            # we probably don't want the message though, since it throws an error message on restarting the container.
+            if [ "${do_reset}" == "true" ]; then
+                neo4j-admin set-initial-password "${password}" --require-password-change 2>/dev/null || true
+            else
+                neo4j-admin set-initial-password "${password}" 2>/dev/null || true
+            fi
+        elif [ -n "${_neo4j_auth:-}" ]; then
+            echo "$_neo4j_auth is invalid"
+            echo >&2 "Invalid value for NEO4J_AUTH: '${_neo4j_auth}'"
+            exit 1
+        fi
+    fi
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -352,47 +396,6 @@ if [ -d /data ]; then
     fi
 fi
 
-
-
-# set the neo4j initial password only if you run the database server
-if [ "${cmd}" == "neo4j" ]; then
-    if [ "${NEO4J_AUTH:-}" == "none" ]; then
-        NEO4J_dbms_security_auth__enabled=false
-    elif [[ "${NEO4J_AUTH:-}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
-        admin_user="${BASH_REMATCH[1]}"
-        password="${BASH_REMATCH[2]}"
-        do_reset="${BASH_REMATCH[3]}"
-
-        if [ "${password}" == "neo4j" ]; then
-            echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
-            exit 1
-        fi
-        if [ "${admin_user}" != "neo4j" ]; then
-            echo >&2 "Invalid admin username, it must be neo4j"
-            exit 1
-        fi
-
-        if running_as_root; then
-            # running set-initial-password as root will create subfolders to /data as root, causing startup fail when neo4j can't read or write the /data/dbms folder
-            # creating the folder first will avoid that
-            mkdir -p /data/dbms
-            chown "${userid}":"${groupid}" /data/dbms
-        fi
-
-        # Will exit with error if users already exist (and print a message explaining that)
-        # we probably don't want the message though, since it throws an error message on restarting the container.
-        if [ "${do_reset}" == "true" ]; then
-            neo4j-admin set-initial-password "${password}" --require-password-change 2>/dev/null || true
-        else
-            neo4j-admin set-initial-password "${password}" 2>/dev/null || true
-        fi
-    elif [ -n "${NEO4J_AUTH:-}" ]; then
-        echo "$NEO4J_AUTH is invalid"
-        echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
-        exit 1
-    fi
-fi
-
 declare -A COMMUNITY
 declare -A ENTERPRISE
 
@@ -422,8 +425,9 @@ for conf in ${!ENTERPRISE[@]} ; do
     fi
 done
 
-# save NEO4J_HOME to a temp variable that doesn't begin with NEO4J_ so it doesn't get added to the conf
+# save NEO4J_HOME and NEO4J_AUTH to temp variables that don't begin with NEO4J_ so they don't get added to the conf
 temp_neo4j_home="${NEO4J_HOME}"
+temp_neo4j_auth="${NEO4J_AUTH:-}"
 # list env variables with prefix NEO4J_ and create settings from them
 unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL NEO4J_EDITION NEO4J_ACCEPT_LICENSE_AGREEMENT NEO4J_HOME
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
@@ -445,6 +449,7 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
 done
 export NEO4J_HOME="${temp_neo4j_home}"
 unset temp_neo4j_home
+set_initial_password "${temp_neo4j_auth}"
 
 
 if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
