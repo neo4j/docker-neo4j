@@ -3,13 +3,16 @@ package com.neo4j.docker.utils;
 import org.junit.jupiter.api.Assertions;
 import org.testcontainers.containers.GenericContainer;
 
+import java.util.List;
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.Result;
 
 public class DatabaseIO
 {
@@ -68,21 +71,26 @@ public class DatabaseIO
 		}
 	}
 
-	public void runCypherProcedure( String user, String password, String cypher )
+	public List<Record> runCypherProcedure( String user, String password, String cypher )
 	{
-		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
-		try ( Session session = driver.session())
+		try( Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG ) )
 		{
-			Result rs = session.run( cypher );
+			try ( Session session = driver.session() )
+			{
+				return session.run( cypher ).list();
+			}
 		}
-		driver.close();
 	}
 
 	public void verifyConnectivity( String user, String password )
 	{
-		GraphDatabase.driver( getBoltURIFromContainer(container),
-							  AuthTokens.basic( user, password ),
-							  TEST_DRIVER_CONFIG )
-					 .verifyConnectivity();
+		try(var driver = GraphDatabase.driver(
+				getBoltURIFromContainer(container),
+				AuthTokens.basic( user, password ),
+				TEST_DRIVER_CONFIG ) )
+		{
+			driver.verifyConnectivity();
+		}
+
 	}
 }
