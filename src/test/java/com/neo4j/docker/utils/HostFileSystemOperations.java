@@ -15,6 +15,12 @@ public class HostFileSystemOperations
     private static Logger log = LoggerFactory.getLogger( HostFileSystemOperations.class);
     private static Random rng = new Random(  );
 
+	public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
+														 String containerMountPoint ) throws IOException
+	{
+		return createTempFolderAndMountAsVolume( container, TestSettings.TEST_TMP_FOLDER, hostFolderNamePrefix, containerMountPoint );
+	}
+
     public static Path createTempFolderAndMountAsVolume( GenericContainer container, Path parentFolder,
 														 String hostFolderNamePrefix, String containerMountPoint ) throws IOException
     {
