@@ -68,7 +68,6 @@ public class TestMounting
 
 	private void verifySingleFolder( Path folderToCheck, boolean shouldBeWritable )
 	{
-		//String folderForDiagnostics = TestSettings.TEST_TMP_FOLDER.relativize( folderToCheck ).toString();
 		String folderForDiagnostics = folderToCheck.toAbsolutePath().toString();
 
 		Assertions.assertTrue( folderToCheck.toFile().exists(), "did not create " + folderForDiagnostics + " folder on host" );
@@ -108,7 +107,6 @@ public class TestMounting
 		{
 			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"dumpconfig-conf-",
 					"/conf" );
 			container.setWaitStrategy(
@@ -135,7 +133,6 @@ public class TestMounting
 		{
 			Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"canmountjustdata-data-",
 					"/data" );
 			container.start();
@@ -157,7 +154,6 @@ public class TestMounting
 		{
 			Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"canmountjustlogs-logs-",
 					"/logs" );
 			container.start();
@@ -203,7 +199,6 @@ public class TestMounting
 		{
 			HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"nopermissioninsecuremode-data-",
 					"/data" );
 
@@ -227,7 +222,6 @@ public class TestMounting
 		{
 			HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"nopermissioninsecuremode-logs-",
 					"/logs" );
 

@@ -104,7 +104,6 @@ public class TestConfSettings {
 		{
 			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"overriddenbyenv-conf-",
 					"/conf" );
 			conf = confMount.resolve( "neo4j.conf" ).toFile();
@@ -187,7 +186,6 @@ public class TestConfSettings {
             //Mount /conf
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
             		container,
-					TestSettings.TEST_TMP_FOLDER,
 					"replacedbydefault-conf-",
 					"/conf" );
             conf = confMount.resolve( "neo4j.conf" ).toFile();
@@ -219,7 +217,6 @@ public class TestConfSettings {
             //Mount /conf
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
             		container,
-					TestSettings.TEST_TMP_FOLDER,
 					"notoverriddenbydefault-conf-",
 					"/conf" );
             conf = confMount.resolve( "neo4j.conf" ).toFile();
@@ -285,7 +282,6 @@ public class TestConfSettings {
             //Mount /logs
             Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
             		container,
-					TestSettings.TEST_TMP_FOLDER,
 					"enterpriseonlysettings-logs-",
 					"/logs" );
             SetContainerUser.nonRootUser( container );
@@ -315,7 +311,6 @@ public class TestConfSettings {
             //Mount /logs
 			Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"enterprisesettingsnotincommunity-logs-",
 					"/logs" );
             debugLog = logMount.resolve( "debug.log" );
@@ -379,7 +374,6 @@ public class TestConfSettings {
         {
 			confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					TestSettings.TEST_TMP_FOLDER,
 					"shellexpansionavoided-conf-",
 					"/conf" );
 

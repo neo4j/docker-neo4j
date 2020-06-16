@@ -98,7 +98,6 @@ public class TestPasswords
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
 			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					firstContainer,
-					TestSettings.TEST_TMP_FOLDER,
 					"password-defaultuser-data-",
 					"/data" );
 			log.info( String.format( "Starting first container as %s user and setting password",
@@ -133,7 +132,6 @@ public class TestPasswords
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
 			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					firstContainer,
-					TestSettings.TEST_TMP_FOLDER,
 					"password-envoverride-data-",
 					"/data" );
 
