@@ -10,7 +10,6 @@ public class Neo4jVersion
     //public static final Neo4jVersion LATEST_2X_VERSION = new Neo4jVersion(2,3,12);
     //public static final Neo4jVersion LATEST_32_VERSION = new Neo4jVersion(3,2,14);
     public static final Neo4jVersion NEO4J_VERSION_400 = new Neo4jVersion(4,0,0);
-    public static final Neo4jVersion NEO4J_VERSION_420 = new Neo4jVersion(4,2,0);
 
     public final int major;
     public final int minor;
