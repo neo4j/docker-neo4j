@@ -11,26 +11,37 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.ContainerFetchException;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.PullPolicy;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
+
+import org.neo4j.driver.Record;
+
+import static com.neo4j.docker.utils.HostFileSystemOperations.createTempFolderAndMountAsVolume;
+import static com.neo4j.docker.utils.HostFileSystemOperations.mountHostFolderAsVolume;
 
 public class TestUpgrade
 {
     private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
+    ImmutableList<String> readonlyMounts = ImmutableList.of( "conf" );
+    ImmutableList<String> writableMounts = ImmutableList.of( "data", "logs", "metrics" );
     private final String user = "neo4j";
     private final String password = "quality";
 
@@ -41,11 +52,27 @@ public class TestUpgrade
                              .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                              .withExposedPorts( 7474 )
                              .withExposedPorts( 7687 )
-                             .withLogConsumer( new Slf4jLogConsumer( log ) );
-        container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
-        container = container.withStartupTimeout( Duration.ofMinutes( 2 ) );
-        ;
+                             .withLogConsumer( new Slf4jLogConsumer( log ) )
+                             .waitingFor( Wait.forHttp( "/" )
+                                              .forPort( 7474 )
+                                              .forStatusCode( 200 )
+                                              .withStartupTimeout( Duration.ofSeconds( 120 ) ) );
+
         return container;
+    }
+
+    private Map<String,Path> createAllMounts( GenericContainer container, Path parentFolder ) throws IOException
+    {
+        HashMap<String,Path> hostFolders = new HashMap<>( readonlyMounts.size() + writableMounts.size() );
+        for ( String mount : readonlyMounts )
+        {
+            hostFolders.put( mount, createTempFolderAndMountAsVolume( container, parentFolder, mount, "/" + mount ) );
+        }
+        for ( String mount : writableMounts )
+        {
+            hostFolders.put( mount, createTempFolderAndMountAsVolume( container, parentFolder, mount, "/" + mount ) );
+        }
+        return hostFolders;
     }
 
     @Test
@@ -62,7 +89,7 @@ public class TestUpgrade
 
         try ( GenericContainer container = makeContainer( beforeFixImage ) )
         {
-            HostFileSystemOperations.mountHostFolderAsVolume( container, dataMount, "/data" );
+            mountHostFolderAsVolume( container, dataMount, "/data" );
             container.start();
             DatabaseIO db = new DatabaseIO( container );
             db.putInitialDataIntoContainer( user, password );
@@ -70,7 +97,7 @@ public class TestUpgrade
 
         try ( GenericContainer container = makeContainer( TestSettings.IMAGE_ID ) )
         {
-            HostFileSystemOperations.mountHostFolderAsVolume( container, dataMount, "/data" );
+            mountHostFolderAsVolume( container, dataMount, "/data" );
             container.start();
             DatabaseIO db = new DatabaseIO( container );
             db.verifyDataInContainer( user, password );
@@ -78,103 +105,135 @@ public class TestUpgrade
     }
 
     @Test
-    void canUpgradeFromReleasedVersion() throws Exception
+    void canUpgradeFromSameMinorVersion() throws Exception
     {
-        var targetNeo4jVersion = TestSettings.NEO4J_VERSION;
+        Neo4jVersion version = TestSettings.NEO4J_VERSION;
 
-        // If this is the very first in a new major series (i.e. a .0.0 release) then this test isn't expected to work
-        Assumptions.assumeFalse( targetNeo4jVersion.major == 0 && targetNeo4jVersion.minor == 0 );
+        // If this is the very first in a new minor series we don't expect there to be a released version available to test upgrade
+        Assumptions.assumeTrue( version.patch > 0 );
 
-        // TODO: update this when moving to the next minor release
-        // I am taking a guess here that we will have published 4.1.0 by 1st of July
-        if ( Instant.now().isBefore( Instant.parse( "2020-07-01T00:00:00.00Z" ) ) )
+        TestUpgradeFromImage( releaseImageName( version.major, version.minor ) );
+    }
+
+    @Test
+    void canUpgradeFromPreviousMinorVersion() throws Exception
+    {
+        Neo4jVersion version = TestSettings.NEO4J_VERSION;
+
+        // If this is the very first in a new major series (i.e. a x.0.0 release) then this test isn't expected to work
+        Assumptions.assumeTrue( version.minor > 0 );
+
+        try
         {
-            // This sort-of-hack is necessary when we cut a new minor branch before the previous minor branch has been published to dockerhub.
-            Assumptions.assumeTrue( Neo4jVersion.NEO4J_VERSION_420.isNewerThan( targetNeo4jVersion ) );
+            TestUpgradeFromImage( releaseImageName( version.major, version.minor - 1 ) );
         }
-        String fromImageName = dockerImageToUpgradeFrom( targetNeo4jVersion );
+        catch ( ContainerLaunchException launchException )
+        {
+            if ( causedByContainerNotFound( launchException ) )
+            {
+                // There is a period when we create a new minor branch but the previous minor version has not yet been published.
+                // during this time it should be safe to test upgrades from the n-2 minor version - provided n >= 2.
+                Assumptions.assumeTrue( version.minor >= 2 );
+                TestUpgradeFromImage( releaseImageName( version.major, version.minor - 2 ) );
+            }
+            else
+            {
+                throw launchException;
+            }
+        }
+    }
 
-        var testMountDirPrefix = String.format( "upgrade-from-%s", fromImageName ).replaceAll( ":", "_" );
+    private void TestUpgradeFromImage( String fromImageName ) throws IOException, InterruptedException
+    {
+        String testMountDirPrefix = String.format( "upgrade-from-%s", fromImageName ).replaceAll( ":", "_" );
         Path testMountDir = HostFileSystemOperations.createTempFolder( testMountDirPrefix );
+        Map<String,Path> allMounts;
 
-        // TODO: test /plugins and /ssl directories
-        Map<String,@NotNull Path> readonlyMounts = createDirectories( testMountDir, List.of( "/conf" ) );
-        Map<String,@NotNull Path> writableMounts = createDirectories( testMountDir, List.of( "/data", "/logs", "/metrics" ) );
-
-        // write a value to neo4j.conf
-        try ( var confFile = new FileWriter( readonlyMounts.get( "/conf" ).resolve( "neo4j.conf" ).toFile() ) )
+        // Start and write data using the released image
+        log.info( "Testing upgrade from {}", fromImageName );
+        try ( GenericContainer container = makeContainer( fromImageName ) )
         {
-            confFile.write( "dbms.memory.pagecache.size=8m" );
-        }
+            // Make sure we use a reasonably up to date released version
+            container.withImagePullPolicy( PullPolicy.ageBased( Duration.ofDays( 1 ) ) );
 
-        var allMounts = new HashMap<String,Path>();
-        allMounts.putAll( readonlyMounts );
-        allMounts.putAll( writableMounts );
+            // given
+            allMounts = createAllMounts( container, testMountDir );
+            writeNeoConf( allMounts.get( "conf" ), "dbms.memory.pagecache.size=9m" );
+            // sleep a tiny bit otherwise some of the files-last-modified checks fail
+            Thread.sleep( 1 );
 
-        try ( var container = makeContainer( fromImageName ) )
-        {
-            allMounts.forEach( ( containerMount, hostFolder ) -> HostFileSystemOperations.mountHostFolderAsVolume( container, hostFolder, containerMount ) );
-
-            final var startTime = Instant.now().toEpochMilli();
+            // when
+            final long startTime = Instant.now().toEpochMilli();
             container.start();
             DatabaseIO db = new DatabaseIO( container );
             db.putInitialDataIntoContainer( user, password );
-
-            validateConfig( db );
-
-            // validate that writes actually went to the mounted directories
-            writableMounts.forEach( ( containerMount, hostFolder ) -> assertDirectoryModifiedSince( hostFolder, startTime ) );
-            container.stop();
-        }
-
-        // when
-        try ( var container = makeContainer( TestSettings.IMAGE_ID ) )
-        {
-            allMounts.forEach( ( k, v ) -> HostFileSystemOperations.mountHostFolderAsVolume( container, v, k ) );
-
-            final var startTime = Instant.now().toEpochMilli();
-            container.start();
-            DatabaseIO db = new DatabaseIO( container );
 
             // then
-            // verify that data from previous version is still present (and that reads work)
-            db.verifyDataInContainer( user, password );
+            validateDb( db );
 
-            // verify config still loaded
-            validateConfig( db );
+            // TODO: test plugin and ssl features work after upgrade
 
-            // check that writes work
-            db.putInitialDataIntoContainer( user, password );
-
-            // validate that writes updated the mounted directories
-            writableMounts.forEach( ( containerMount, hostFolder ) -> assertDirectoryModifiedSince( hostFolder, startTime ) );
             container.stop();
+
+            // check mounts after container stop to be sure that shutdown doesn't mess with them
+            validateMounts( allMounts, startTime );
+        }
+
+        // Now try with the current image
+        try ( GenericContainer container = makeContainer( TestSettings.IMAGE_ID ) )
+        {
+
+            allMounts.forEach( ( mount, hostFolder ) -> mountHostFolderAsVolume( container, hostFolder, "/" + mount ) );
+
+            final long startTime = Instant.now().toEpochMilli();
+            container.start();
+            DatabaseIO db = new DatabaseIO( container );
+
+            validateDb( db );
+
+            container.stop();
+
+            // check mounts after container stop to be sure that shutdown doesn't mess with them
+            validateMounts( allMounts, startTime );
         }
     }
 
-    @NotNull
-    private Map<String,@NotNull Path> createDirectories( Path testMountDirectory, List<String> strings )
+    private void validateMounts( Map<String,Path> allMounts, long startTime )
     {
-        return strings
-                .stream()
-                .collect( Collectors.toMap( c -> c, c -> createDirectory( testMountDirectory, c.replaceFirst( "/", "" ) ) ) );
+        // check that writes updated the mounted directories
+        writableMounts.forEach( mount -> assertDirectoryModifiedSince( allMounts.get( mount ), startTime ) );
+        // check that we didn't write anything to read only directories
+        readonlyMounts.forEach( mount -> assertDirectoryNotModifiedSince( allMounts.get( mount ), startTime ) );
     }
 
-    private String dockerImageToUpgradeFrom( Neo4jVersion targetNeo4jVersion )
+    private void writeNeoConf( Path confMount, String... confValues ) throws IOException
     {
-        // The most recent minor release that we expect to already have been released.
-        var minorVersionToUpgradeFrom = targetNeo4jVersion.patch == 0 ? targetNeo4jVersion.minor - 1 : targetNeo4jVersion.minor;
+        try ( Writer confFile = new FileWriter( confMount.resolve( "neo4j.conf" ).toFile() ) )
+        {
+            for ( String confString : confValues )
+            {
+                confFile.write( confString );
+            }
+        }
+    }
 
-        // given
-        return String.format( "neo4j:%d.%d%s", targetNeo4jVersion.major, minorVersionToUpgradeFrom,
-                              (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE) ? "-enterprise" : "" );
+    private void validateDb( DatabaseIO db )
+    {
+        // check that test data is present
+        db.verifyDataInContainer( user, password );
+
+        // check the config
+        validateConfig( db );
+
+        // check that writes work
+        db.createAndDeleteNode( user, password );
     }
 
     private void validateConfig( DatabaseIO db )
     {
-        var configValue = db.runCypherProcedure( user, password,
-                                                 "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.memory.pagecache.size' RETURN value" );
-        Assertions.assertEquals( "8m", configValue.get( 0 ).get( "value" ).asString() );
+        String cypher = "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.memory.pagecache.size' RETURN value";
+        List<Record> configValue = db.runCypherProcedure( user, password, cypher );
+        Assertions.assertEquals( "9m", configValue.get( 0 ).get( "value" ).asString() );
     }
 
     /**
@@ -183,29 +242,59 @@ public class TestUpgrade
      * @param mountDirectory path to local directory mounted into the docker container.
      * @param startTimestamp timestamp (milliseconds since epoch) to check for modifications since.
      */
-    private void assertDirectoryModifiedSince( Path mountDirectory, long startTimestamp )
+    private static void assertDirectoryModifiedSince( Path mountDirectory, long startTimestamp )
     {
-        log.info( "Checking {}", mountDirectory );
-        var dir = mountDirectory.toFile();
-        Assertions.assertTrue( dir.isDirectory() );
-        var files = dir.listFiles();
-        Assertions.assertTrue( files.length > 0 );
-        var lastModified = Arrays.stream( files ).max( Comparators.byLongFunction( File::lastModified ) );
-        Assertions.assertTrue( lastModified.get().lastModified() > startTimestamp );
+        log.info( "Checking {} for files modified since {}", mountDirectory, startTimestamp );
+        File lastModifiedFile = getLastModifiedFile( mountDirectory );
+        Assertions.assertTrue( lastModifiedFile.lastModified() > startTimestamp );
+    }
+
+    /**
+     * Checks that the {@code mountDirectory} contains at lease one file that has been modified after the {@code startTimestamp}
+     *
+     * @param mountDirectory path to local directory mounted into the docker container.
+     * @param startTimestamp timestamp (milliseconds since epoch) to check for modifications since.
+     */
+    private static void assertDirectoryNotModifiedSince( Path mountDirectory, long startTimestamp )
+    {
+        log.info( "Checking {} does not contain files modified since {}", mountDirectory, startTimestamp );
+        File lastModifiedFile = getLastModifiedFile( mountDirectory );
+        Assertions.assertTrue( lastModifiedFile.lastModified() < startTimestamp );
     }
 
     @NotNull
-    private Path createDirectory( Path mount, String s )
+    private static File getLastModifiedFile( Path mountDirectory )
     {
-        var subfolder = mount.resolve( s );
-        log.info( "created folder " + subfolder.toString() + " to test upgrade" );
+        File dir = mountDirectory.toFile();
+        Assertions.assertTrue( dir.isDirectory() );
+
         try
         {
-            return Files.createDirectories( subfolder );
+            Optional<File> lastModified = Files.walk( dir.toPath() )
+                                               .filter( Files::isRegularFile )
+                                               .map( Path::toFile )
+                                               .max( Comparators.byLongFunction( File::lastModified ) );
+            Assertions.assertTrue( lastModified.isPresent() );
+            return lastModified.get();
         }
         catch ( IOException e )
         {
+            // convert to RuntimeException so we can use this in lambdas
             throw new RuntimeException( e );
         }
+    }
+
+    private static boolean causedByContainerNotFound( ContainerLaunchException launchException )
+    {
+        Throwable cause = launchException.getCause();
+        return cause != null &&
+               cause instanceof ContainerFetchException &&
+               cause.getCause() instanceof com.github.dockerjava.api.exception.NotFoundException;
+    }
+
+    private static String releaseImageName( int major, int minor )
+    {
+        return String.format( "neo4j:%d.%d%s", major, minor,
+                              (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE) ? "-enterprise" : "" );
     }
 }
