@@ -17,7 +17,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.PullPolicy;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -27,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +41,9 @@ import static com.neo4j.docker.utils.HostFileSystemOperations.mountHostFolderAsV
 public class TestUpgrade
 {
     private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
-    ImmutableList<String> readonlyMounts = ImmutableList.of( "conf" );
-    ImmutableList<String> writableMounts = ImmutableList.of( "data", "logs", "metrics" );
+    private static final List<String> readonlyMounts = Collections.singletonList( "conf" );
+    private static final List<String> writableMounts = getWriteableMounts();
+
     private final String user = "neo4j";
     private final String password = "quality";
 
@@ -104,6 +106,7 @@ public class TestUpgrade
         }
     }
 
+    // TODO: parameterize these tests for different configurations (e.g. running as non-root user)
     @Test
     void canUpgradeFromSameMinorVersion() throws Exception
     {
@@ -296,5 +299,20 @@ public class TestUpgrade
     {
         return String.format( "neo4j:%d.%d%s", major, minor,
                               (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE) ? "-enterprise" : "" );
+    }
+
+    private static List<String> getWriteableMounts()
+    {
+        switch ( TestSettings.EDITION )
+        {
+        case COMMUNITY:
+            return Arrays.asList( "data", "logs" );
+        case ENTERPRISE:
+            // /metrics doesn't get chowned in 3.x so doesn't always work
+            return TestSettings.NEO4J_VERSION.major < 4 ? Arrays.asList( "data", "logs" ) : Arrays.asList( "data", "logs", "metrics" );
+        default:
+            Assertions.fail( "Unknown Edition: " + TestSettings.EDITION );
+            return Collections.emptyList();
+        }
     }
 }
