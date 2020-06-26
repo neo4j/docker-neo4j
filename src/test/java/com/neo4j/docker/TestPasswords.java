@@ -43,8 +43,21 @@ public class TestPasswords
         return container;
     }
 
+	@Test
+	void testNoPassword()
+	{
+		// we test that setting NEO4J_AUTH to none lets the database start in TestBasic.java but not that we can read/write the database
+		try(GenericContainer container = createContainer( false ))
+		{
+			container.withEnv( "NEO4J_AUTH", "none" );
+			container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            db.putInitialDataIntoContainer( "neo4j", "none" );
+			db.verifyDataInContainer( "neo4j", "none" );
+		}
+	}
 
-    @Test
+	@Test
     void testPasswordCantBeNeo4j() throws Exception
     {
         try(GenericContainer failContainer = new GenericContainer( TestSettings.IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) ))

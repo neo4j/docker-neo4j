@@ -206,6 +206,20 @@ function install_neo4j_labs_plugins
   rm "${_old_config}"
 }
 
+function add_setting_to_conf
+{
+    local _setting=${1}
+    local _value=${2}
+    local _neo4j_home=${3}
+
+    if grep -q -F "${_setting}=" "${_neo4j_home}"/conf/neo4j.conf; then
+        # Remove any lines containing the setting already
+        sed --in-place "/^${_setting}=.*/d" "${_neo4j_home}"/conf/neo4j.conf
+    fi
+    # Then always append setting to file
+    echo "${_setting}=${_value}" >> "${_neo4j_home}"/conf/neo4j.conf
+}
+
 function set_initial_password
 {
     local _neo4j_auth="${1}"
@@ -213,7 +227,8 @@ function set_initial_password
     # set the neo4j initial password only if you run the database server
     if [ "${cmd}" == "neo4j" ]; then
         if [ "${_neo4j_auth:-}" == "none" ]; then
-            NEO4J_dbms_security_auth__enabled=false
+            add_setting_to_conf "dbms.security.auth_enabled" "false" "${NEO4J_HOME}"
+            # NEO4J_dbms_security_auth__enabled=false
         elif [[ "${_neo4j_auth:-}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
             admin_user="${BASH_REMATCH[1]}"
             password="${BASH_REMATCH[2]}"
@@ -436,12 +451,7 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            if grep -q -F "${setting}=" "${temp_neo4j_home}"/conf/neo4j.conf; then
-                # Remove any lines containing the setting already
-                sed --in-place "/^${setting}=.*/d" "${temp_neo4j_home}"/conf/neo4j.conf
-            fi
-            # Then always append setting to file
-            echo "${setting}=${value}" >> "${temp_neo4j_home}"/conf/neo4j.conf
+            add_setting_to_conf "${setting}" "${value}" "${temp_neo4j_home}"
         else
             echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
