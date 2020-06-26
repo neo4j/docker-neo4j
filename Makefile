@@ -23,6 +23,7 @@ series := $(shell echo "$(NEO4JVERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
 # the value of variable is passed to the maven test property. For more info see https://maven.apache.org/surefire/maven-surefire-plugin/examples/single-test.html
 # by default this is empty which means all tests will be run
 TESTS?=""
+NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
 
 all: test
 .PHONY: all
@@ -92,6 +93,7 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
 > cp $(filter %/docker-entrypoint.sh,$^) $(@D)/docker-entrypoint.sh
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
 > <$(filter %/Dockerfile,$^) sed \
+    -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \
     -e "s|%%NEO4J_SHA%%|$${sha}|" \
     -e "s|%%NEO4J_TARBALL%%|$(call tarball,$*,$(NEO4JVERSION))|" \
     -e "s|%%NEO4J_EDITION%%|$*|" \
