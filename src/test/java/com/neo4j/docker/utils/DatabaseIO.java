@@ -3,6 +3,7 @@ package com.neo4j.docker.utils;
 import org.junit.jupiter.api.Assertions;
 import org.testcontainers.containers.GenericContainer;
 
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -31,7 +32,7 @@ public class DatabaseIO
 
 	public void putInitialDataIntoContainer( String user, String password )
 	{
-		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
 			Result rs = session.run( "CREATE (arne:dog {name:'Arne'})-[:SNIFFS]->(bosse:dog {name:'Bosse'}) RETURN arne.name");
@@ -42,7 +43,7 @@ public class DatabaseIO
 
 	public void verifyDataInContainer( String user, String password )
 	{
-		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
 			Result rs = session.run( "MATCH (a:dog)-[:SNIFFS]->(b:dog) RETURN a.name");
@@ -70,7 +71,7 @@ public class DatabaseIO
 
 	public void runCypherProcedure( String user, String password, String cypher )
 	{
-		Driver driver = GraphDatabase.driver( boltUri, AuthTokens.basic( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
 			Result rs = session.run( cypher );
@@ -81,8 +82,20 @@ public class DatabaseIO
 	public void verifyConnectivity( String user, String password )
 	{
 		GraphDatabase.driver( getBoltURIFromContainer(container),
-							  AuthTokens.basic( user, password ),
+							  getToken( user, password ),
 							  TEST_DRIVER_CONFIG )
 					 .verifyConnectivity();
+	}
+
+	private AuthToken getToken(String user, String password)
+	{
+		if(password.equals( "none" ))
+		{
+			return AuthTokens.none();
+		}
+		else
+		{
+			return AuthTokens.basic( user, password );
+		}
 	}
 }
