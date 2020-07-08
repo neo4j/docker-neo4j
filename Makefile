@@ -30,12 +30,12 @@ build: tmp/.image-id-community tmp/.image-id-enterprise
 package: package-community package-enterprise
 .PHONY: package
 
-package-community: tmp/.image-id-community
+package-community: tmp/.image-id-community out/community/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4JVERSION)
 > docker save neo4j:$(NEO4JVERSION) > out/neo4j-community-$(NEO4JVERSION)-docker-loadable.tar
 
-package-enterprise: tmp/.image-id-enterprise
+package-enterprise: tmp/.image-id-enterprise out/enterprise/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4JVERSION)-enterprise
 > docker save neo4j:$(NEO4JVERSION)-enterprise > out/neo4j-enterprise-$(NEO4JVERSION)-docker-loadable.tar
@@ -51,3 +51,9 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
 > echo "NEO4JVERSION=$(NEO4JVERSION)" > tmp/devenv-${*}.env
 > echo "NEO4J_IMAGE=$$image" >> tmp/devenv-${*}.env
 > echo "NEO4J_EDITION=${*}" >> tmp/devenv-${*}.env
+
+# copy the releaseable version of the image to the output folder.
+out/%/.sentinel: tmp/image-%/.sentinel
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> touch $@
