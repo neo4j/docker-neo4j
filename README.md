@@ -29,6 +29,27 @@ docker run \
 Mounting the `/data` and `/logs` folder is optional, 
 but it means that data can persist between closing and reopening Neo4j containers.
 
+# Neo4j images for ARM64
+
+We provide unsupported and untested builds of ARM64 Neo4j community edition from 4.0.0 and onwards. 
+These are unsuitable for production use, but may be useful for experimentation purposes. 
+
+They are available on Docker hub at:
+
+https://hub.docker.com/r/neo4j/neo4j-arm64-experimental
+
+
+The images take the name format `neo4j/neo4j-arm64-experimental:<VERSION>-arm64`.
+Example usage:
+
+```shell script
+docker run \
+    --publish=7474:7474 --publish=7687:7687 \
+    --volume=$HOME/neo4j/data:/data \
+    --volume=$HOME/neo4j/logs:/logs \
+    neo4j/neo4j-arm64-experimental:4.1.0-arm64
+```
+
 
 # Building and Developing the Neo4j Docker Image
 
