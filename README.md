@@ -32,7 +32,7 @@ but it means that data can persist between closing and reopening Neo4j container
 # Neo4j images for ARM64
 
 We provide unsupported and untested builds of ARM64 Neo4j community edition from 4.0.0 and onwards. 
-These are unsuitable for production use, but may be useful for experimentation purposes. 
+These are unsuitable for production use, but may be useful for experimentation or hobbyists. 
 
 They are available on Docker hub at:
 
