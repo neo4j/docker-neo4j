@@ -2,7 +2,7 @@ include make-common.mk
 
 NEO4J_BASE_IMAGE?="arm64v8/openjdk:11-jdk-slim"
 
-package-arm: arm
+package-arm: build-arm
 > mkdir -p out
 > docker tag $$(cat tmp/.image-id-community-arm) neo4j:$(NEO4JVERSION)-arm64
 > docker save neo4j:$(NEO4JVERSION)-arm64 > out/neo4j-community-$(NEO4JVERSION)-arm64-docker-loadable.tar
@@ -14,7 +14,7 @@ package-arm: arm
 build-arm: tmp/.image-id-community-arm tmp/.image-id-enterprise-arm
 .PHONY: arm
 
-tmp/.image-id-%-arm: tmp/local-context-%/.sentinel
+tmp/.image-id-%-arm: tmp/local-context-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION))
 > image=test/$$RANDOM-arm
 > docker build --tag=$$image \
     --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
