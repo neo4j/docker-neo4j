@@ -1,5 +1,9 @@
 package com.neo4j.docker;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.Volume;
+import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -24,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.UserPrincipal;
 import java.time.Duration;
+import java.util.Random;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
@@ -54,7 +60,7 @@ public class TestMounting
 				 .withLogConsumer( new Slf4jLogConsumer( log ) )
 				 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
 				 .withEnv( "NEO4J_AUTH", "none" );
-
+		container.withoutAuthentication();
 		if(asCurrentUser)
 		{
 			SetContainerUser.nonRootUser( container );
@@ -232,6 +238,33 @@ public class TestMounting
 			Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
 									 () -> container.start(),
 									 "Neo4j should not start in secure mode if logs folder is unwritable" );
+		}
+	}
+
+	@ParameterizedTest(name = "as current user={0}")
+	@ValueSource(booleans = {true, false})
+	void canMountNamedVolumes(boolean asCurrentUser)
+	{
+		String namedVolume = String.format( "datavolume-%04d", new Random( ).nextInt( 10000 ));
+		log.info( "creating named volume "+namedVolume );
+		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
+		{
+			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds( Bind.parse ( namedVolume+":/data" ) ) );
+			//log.info(container.getDockerClient().createVolumeCmd().withName( namedVolume ).exec().toString());
+
+			container.start();
+			DatabaseIO databaseIO = new DatabaseIO( container );
+			databaseIO.putInitialDataIntoContainer( "neo4j", "none" );
+			databaseIO.verifyDataInContainer( "neo4j", "none" );
+		}
+		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
+		{
+			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds( Bind.parse ( namedVolume+":/data" ) ) );
+			//log.info(container.getDockerClient().createVolumeCmd().withName( namedVolume ).exec().toString());
+
+			container.start();
+			DatabaseIO databaseIO = new DatabaseIO( container );
+			databaseIO.verifyDataInContainer( "neo4j", "none" );
 		}
 	}
 }
