@@ -4,7 +4,6 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
-import com.neo4j.docker.utils.NamedVolumes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -25,6 +23,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -51,12 +50,11 @@ public class TestMounting
 				  asCurrentUser?"non-root":"root",
 				  isSecurityFlagSet?"with secure file permissions":"with unsecured file permissions" );
 
-		Neo4jContainer container = new Neo4jContainer( TestSettings.IMAGE_ID );
+		GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
 		container.withExposedPorts( 7474, 7687 )
 				 .withLogConsumer( new Slf4jLogConsumer( log ) )
 				 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
 				 .withEnv( "NEO4J_AUTH", "none" );
-		container.withoutAuthentication();
 		if(asCurrentUser)
 		{
 			SetContainerUser.nonRootUser( container );
@@ -82,7 +80,7 @@ public class TestMounting
 
 	private void verifyDataFolderContentsArePresentOnHost( Path dataMount, boolean shouldBeWritable )
 	{
-		verifySingleFolder( dataMount.resolve( "dbms" ), shouldBeWritable );
+		//verifySingleFolder( dataMount.resolve( "dbms" ), shouldBeWritable );
 		verifySingleFolder( dataMount.resolve( "databases" ), shouldBeWritable );
 
 		if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
@@ -241,10 +239,13 @@ public class TestMounting
 	@ValueSource(booleans = {true, false})
 	void canMountNamedVolumes(boolean asCurrentUser)
 	{
-		String dataVolume;
+		String dataVolume = String.format( "data-volume-%04d", new Random().nextInt( 10000 ));
+		log.info("mounting named volume: "+dataVolume);
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			dataVolume = NamedVolumes.createAndMountNamedVolume( container, "datavolume-", "/data" );
+			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>)
+				  cmd -> cmd.getHostConfig().withBinds( Bind.parse (dataVolume + ":/data" ) ) );
+
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
 			databaseIO.putInitialDataIntoContainer( "neo4j", "none" );
@@ -252,7 +253,8 @@ public class TestMounting
 		}
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			NamedVolumes.mountExistingNamedVolume( container, dataVolume, "/data" );
+			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>)
+				  cmd -> cmd.getHostConfig().withBinds( Bind.parse (dataVolume + ":/data" ) ) );
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
 			databaseIO.verifyDataInContainer( "neo4j", "none" );
