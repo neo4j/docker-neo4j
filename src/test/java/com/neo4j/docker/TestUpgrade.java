@@ -40,7 +40,7 @@ public class TestUpgrade
 
 	private static List<Neo4jVersion> upgradableNeo4jVersions()
 	{
-		return Arrays.asList( new Neo4jVersion( 3, 5, 3 ),
+		return Arrays.asList( new Neo4jVersion( 3, 5, 3 ), // 3.5.6 image introduced file permission changes, so we need to test upgrades before that version
 							  new Neo4jVersion( 3, 5, 7 ),
 							  Neo4jVersion.NEO4J_VERSION_400,
 							  new Neo4jVersion( 4,1,0 ));
