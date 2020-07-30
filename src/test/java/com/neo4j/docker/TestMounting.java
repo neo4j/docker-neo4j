@@ -133,7 +133,7 @@ public class TestMounting
 		{
 			Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					"canmountjustdata-data-",
+					"canmountjustdata-",
 					"/data" );
 			container.start();
 
@@ -154,7 +154,7 @@ public class TestMounting
 		{
 			Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					"canmountjustlogs-logs-",
+					"canmountjustlogs-",
 					"/logs" );
 			container.start();
 
@@ -237,26 +237,47 @@ public class TestMounting
 
 	@ParameterizedTest(name = "as current user={0}")
 	@ValueSource(booleans = {true, false})
-	void canMountNamedVolumes(boolean asCurrentUser)
+	void canMountAllTheThings_fileMounts(boolean asCurrentUser) throws Exception
 	{
-		String dataVolume = String.format( "data-volume-%04d", new Random().nextInt( 10000 ));
-		log.info("mounting named volume: "+dataVolume);
+		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "mount-everything-" );
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>)
-				  cmd -> cmd.getHostConfig().withBinds( Bind.parse (dataVolume + ":/data" ) ) );
-
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "conf", "/conf" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "data", "/data" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "import", "/import" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "logs", "/logs" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "metrics", "/metrics" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "plugins", "/plugins" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "ssl", "/ssl" );
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
+			// do some database writes so that we try writing to writable folders.
 			databaseIO.putInitialDataIntoContainer( "neo4j", "none" );
 			databaseIO.verifyDataInContainer( "neo4j", "none" );
 		}
+	}
+
+	@ParameterizedTest(name = "as current user={0}")
+	@ValueSource(booleans = {true, false})
+	void canMountAllTheThings_namedVolumes(boolean asCurrentUser) throws Exception
+	{
+		String id = String.format( "%04d", new Random().nextInt( 10000 ));
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>)
-				  cmd -> cmd.getHostConfig().withBinds( Bind.parse (dataVolume + ":/data" ) ) );
+			container.withCreateContainerCmdModifier(
+					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
+							Bind.parse("conf-"+id+":/conf"),
+							Bind.parse("data-"+id+":/data"),
+							Bind.parse("import-"+id+":/import"),
+							Bind.parse("logs-"+id+":/logs"),
+							//Bind.parse("metrics-"+id+":/metrics"), 	//todo metrics needs to be writable but we aren't chowning in the dockerfile, so a named volume for metrics will fail
+							Bind.parse("plugins-"+id+":/plugins"),
+							Bind.parse("ssl-"+id+":/ssl")
+					));
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
+			// do some database writes so that we try writing to writable folders.
+			databaseIO.putInitialDataIntoContainer( "neo4j", "none" );
 			databaseIO.verifyDataInContainer( "neo4j", "none" );
 		}
 	}
