@@ -248,7 +248,6 @@ public class TestMounting
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "logs", "/logs" );
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "metrics", "/metrics" );
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "plugins", "/plugins" );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "ssl", "/ssl" );
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
 			// do some database writes so that we try writing to writable folders.
@@ -271,8 +270,7 @@ public class TestMounting
 							Bind.parse("import-"+id+":/import"),
 							Bind.parse("logs-"+id+":/logs"),
 							//Bind.parse("metrics-"+id+":/metrics"), 	//todo metrics needs to be writable but we aren't chowning in the dockerfile, so a named volume for metrics will fail
-							Bind.parse("plugins-"+id+":/plugins"),
-							Bind.parse("ssl-"+id+":/ssl")
+							Bind.parse("plugins-"+id+":/plugins")
 					));
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
