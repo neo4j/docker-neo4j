@@ -121,10 +121,17 @@ function check_mounted_folder_writable_with_chown
 
     local mountFolder=${1}
     if running_as_root; then
-        if ! is_writable "${mountFolder}" && ! secure_mode_enabled; then
-            # warn that we're about to chown the folder and then chown it
-            echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
-            chown -R "${userid}":"${groupid}" "${mountFolder}"
+        if ! secure_mode_enabled; then
+            # check folder permissions
+            if ! is_writable "${mountFolder}" ;  then
+                # warn that we're about to chown the folder and then chown it
+                echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
+                chown -R "${userid}":"${groupid}" "${mountFolder}"
+            # check permissions on files in the folder
+            elif [ $(gosu "${userid}":"${groupid}" find "${mountFolder}" -not -writable | wc -l) -gt 0 ]; then
+                echo "Warning: Some files inside \"${mountFolder}\" are not writable from inside container. Changing folder owner to ${userid}."
+                chown -R "${userid}":"${groupid}" "${mountFolder}"
+            fi
         fi
     else
         if [[ ! -w "${mountFolder}" ]]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
@@ -349,6 +356,9 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-"$(hostname):7000"}}
    # Custom settings for dockerized neo4j
    : ${NEO4J_causal__clustering_discovery__advertised__address:=$(hostname):5000}
+    fi
+    if [ -d /data/transactions ]; then
+        check_mounted_folder_writable_with_chown "/data/transactions"
    : ${NEO4J_causal__clustering_transaction__advertised__address:=$(hostname):6000}
    : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
 fi
@@ -408,6 +418,9 @@ if [ -d /data ]; then
     fi
     if [ -d /data/dbms ]; then
         check_mounted_folder_writable_with_chown "/data/dbms"
+    fi
+    if [ -d /data/transactions ]; then
+        check_mounted_folder_writable_with_chown "/data/transactions"
     fi
 fi
 
