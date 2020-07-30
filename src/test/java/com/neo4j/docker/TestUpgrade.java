@@ -40,43 +40,16 @@ public class TestUpgrade
 
 	private static List<Neo4jVersion> upgradableNeo4jVersions()
 	{
-		return Arrays.asList( new Neo4jVersion( 3, 5, 7 ),
+		return Arrays.asList( new Neo4jVersion( 3, 5, 3 ),
+							  new Neo4jVersion( 3, 5, 7 ),
 							  Neo4jVersion.NEO4J_VERSION_400,
 							  new Neo4jVersion( 4,1,0 ));
 	}
 
-	@Test
-	void canUpgradeFromBeforeFilePermissionFix35() throws Exception
-	{
-		Neo4jVersion beforeFix = new Neo4jVersion( 3,5,3 );
-		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( beforeFix ), "test only applicable to 3.5 docker" );
-		Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ),
-								"test only applicable to latest 3.5 docker" );
-
-		String beforeFixImage = getUpgradeFromImage( beforeFix );
-		Path dataMount = HostFileSystemOperations.createTempFolder( "data-upgrade-" );
-		log.info( "created folder " + dataMount.toString() + " to test upgrade" );
-
-		try(GenericContainer container = makeContainer( beforeFixImage ))
-		{
-			HostFileSystemOperations.mountHostFolderAsVolume( container, dataMount, "/data" );
-			container.start();
-			DatabaseIO db = new DatabaseIO( container );
-			db.putInitialDataIntoContainer( user, password );
-		}
-
-		try(GenericContainer container = makeContainer( TestSettings.IMAGE_ID ))
-		{
-			HostFileSystemOperations.mountHostFolderAsVolume( container, dataMount, "/data" );
-			container.start();
-			DatabaseIO db = new DatabaseIO( container );
-			db.verifyDataInContainer( user, password );
-		}
-	}
 
 	@ParameterizedTest(name = "upgrade from {0}")
     @MethodSource("upgradableNeo4jVersions")
-	void canUpgradeNeo4j(Neo4jVersion upgradeFrom) throws Exception
+	void canUpgradeNeo4j_fileMounts(Neo4jVersion upgradeFrom) throws Exception
 	{
 		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( upgradeFrom ), "cannot upgrade from newer version "+upgradeFrom.toString() );
 		String upgradeFromImage = getUpgradeFromImage( upgradeFrom );
@@ -109,23 +82,26 @@ public class TestUpgrade
 		}
 	}
 
-
-	@Test
-	void canUpgradeWhenUsingNamedVolumes() throws Exception
+	@ParameterizedTest(name = "upgrade from {0}")
+	@MethodSource("upgradableNeo4jVersions")
+	void canUpgradeNeo4j_namedVolumes(Neo4jVersion upgradeFrom) throws Exception
 	{
-		Neo4jVersion upgradeFrom = new Neo4jVersion( 4,0,0 );
 		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( upgradeFrom ), "cannot upgrade from newer version "+upgradeFrom.toString() );
 		String upgradeFromImage = getUpgradeFromImage( upgradeFrom );
-		String testId = String.format( "%04d", new Random().nextInt( 10000 ));
-		String dataVolume =  "upgrade-data-" + testId;
-		String logVolume = "upgrade-logs-" + testId;
-		log.info("Creating upgrade-data-"+testId);
-		log.info("Creating upgrade-logs-"+testId);
+		String id = String.format( "%04d", new Random().nextInt( 10000 ));
+		log.info( "creating volumes with id: "+id );
 
 		try(GenericContainer container = makeContainer( upgradeFromImage ))
 		{
-			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>)
-					cmd -> cmd.getHostConfig().withBinds( Bind.parse ( dataVolume + ":/data" ), Bind.parse( logVolume + ":/logs" ) ) );
+			container.withCreateContainerCmdModifier(
+					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
+							Bind.parse("upgrade-conf-"+id+":/conf"),
+							Bind.parse("upgrade-data-"+id+":/data"),
+							Bind.parse("upgrade-import-"+id+":/import"),
+							Bind.parse("upgrade-logs-"+id+":/logs"),
+							Bind.parse("upgrade-metrics-"+id+":/metrics"),
+							Bind.parse("upgrade-plugins-"+id+":/plugins")
+					));
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
 			db.putInitialDataIntoContainer( user, password );
@@ -134,9 +110,15 @@ public class TestUpgrade
 
 		try(GenericContainer container = makeContainer( TestSettings.IMAGE_ID ))
 		{
-			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>)
-					cmd -> cmd.getHostConfig().withBinds( Bind.parse ( dataVolume + ":/data" ) ) );
-//					cmd -> cmd.getHostConfig().withBinds( Bind.parse ( dataVolume + ":/data" ), Bind.parse( logVolume + ":/logs" ) ) );
+			container.withCreateContainerCmdModifier(
+					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
+							Bind.parse("upgrade-conf-"+id+":/conf"),
+							Bind.parse("upgrade-data-"+id+":/data"),
+							Bind.parse("upgrade-import-"+id+":/import"),
+							Bind.parse("upgrade-logs-"+id+":/logs"),
+							Bind.parse("upgrade-metrics-"+id+":/metrics"),
+							Bind.parse("upgrade-plugins-"+id+":/plugins")
+					));
 			container.withEnv( "NEO4J_dbms_allow__upgrade", "true" );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
