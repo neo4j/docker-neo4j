@@ -1,6 +1,8 @@
 package com.neo4j.docker.utils;
 
 import org.junit.jupiter.api.Assertions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 
 import org.neo4j.driver.AuthToken;
@@ -15,6 +17,7 @@ import org.neo4j.driver.Result;
 public class DatabaseIO
 {
 	private static Config TEST_DRIVER_CONFIG = Config.builder().withoutEncryption().build();
+	private static final Logger log = LoggerFactory.getLogger( DatabaseIO.class );
 
 	private GenericContainer container;
 	private String boltUri;
@@ -32,6 +35,7 @@ public class DatabaseIO
 
 	public void putInitialDataIntoContainer( String user, String password )
 	{
+		log.info( "Writing data into database" );
 		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
@@ -43,6 +47,7 @@ public class DatabaseIO
 
 	public void verifyDataInContainer( String user, String password )
 	{
+		log.info( "verifying data is present in the database" );
 		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())
 		{
