@@ -234,14 +234,10 @@ readonly groups
 readonly exec_cmd
 
 
-# Need to chown the home directory - but a user might have mounted a
-# volume here (notably a conf volume). So take care not to chown
-# volumes (stuff not owned by neo4j)
+# Need to chown the home directory
 if running_as_root; then
-    # Non-recursive chown for the base directory
-    chown "${userid}":"${groupid}" "${NEO4J_HOME}"
+    chown -R "${userid}":"${groupid}" "${NEO4J_HOME}"
     chmod 700 "${NEO4J_HOME}"
-    find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chown -R ${userid}:${groupid} {} \;
     find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chmod -R 700 {} \;
 fi
 
