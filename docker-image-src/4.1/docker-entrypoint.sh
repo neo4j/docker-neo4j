@@ -302,6 +302,9 @@ if running_as_root; then
     chmod 700 "${NEO4J_HOME}"
     find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chown -R ${userid}:${groupid} {} \;
     find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chmod -R 700 {} \;
+    # github issue #223 sometimes neo4j.conf is unreadable for no apparent reason.
+    chown "${userid}":"${groupid}" "${NEO4J_HOME}"/conf/neo4j.conf
+    chmod u+r "${NEO4J_HOME}"/conf/neo4j.conf
 fi
 
 # Only prompt for license agreement if command contains "neo4j" in it
