@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
+import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
@@ -108,7 +110,9 @@ public class TestConfSettings {
 					"/conf" );
 			conf = confMount.resolve( "neo4j.conf" ).toFile();
 			container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
+						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
             SetContainerUser.nonRootUser( container );
             container.start();
         }
@@ -195,7 +199,18 @@ public class TestConfSettings {
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 ).withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
+						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+            // what is StartupCheckStrategy you wonder. Well, let me tell you a story.
+			// There was a time all these tests were failing because the config file was being dumped
+			// and the container closed so quickly. So quickly that it exposed a race condition between the container
+			// and the TestContainers library. The container could start and finish before the container library
+			// got around to checking if the container had started.
+			// The default "Has the container started" check strategy is to see if the container is running.
+			// But our container wasn't running because it was so quick it had already finished! The check failed and we had flaky tests :(
+			// This strategy here will check to see if the container is running OR if it exited with status code 0.
+			// It seems to do what we need... FOR NOW??
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
             container.setCommand( "dump-config" );
             container.start();
         }
@@ -228,6 +243,7 @@ public class TestConfSettings {
             container.setWaitStrategy(
                     Wait.forLogMessage( ".*Config Dumped.*", 1 )
 						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
             container.setCommand( "dump-config" );
             container.start();
         }
@@ -382,6 +398,7 @@ public class TestConfSettings {
             container.setWaitStrategy(
                     Wait.forLogMessage( ".*Config Dumped.*", 1 )
 						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
             container.setCommand( "dump-config" );
             container.start();
         }

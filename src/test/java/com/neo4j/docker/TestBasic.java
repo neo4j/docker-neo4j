@@ -13,6 +13,7 @@ import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
@@ -77,6 +78,7 @@ public class TestBasic
         {
             container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )
                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
 
             Assertions.assertDoesNotThrow( () -> container.start(),
                                            "Neo4j did not notify about accepting the license agreement" );
