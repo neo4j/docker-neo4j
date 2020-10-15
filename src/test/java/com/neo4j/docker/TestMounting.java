@@ -18,6 +18,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
@@ -112,6 +113,7 @@ public class TestMounting
 			container.setWaitStrategy(
 					Wait.forLogMessage( ".*Config Dumped.*", 1 )
 						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
 			container.withCommand( "dump-config" );
 			container.start();
 
