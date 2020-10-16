@@ -79,9 +79,9 @@ public class TestBasic
             container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )
                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
 			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-
-            Assertions.assertDoesNotThrow( () -> container.start(),
-                                           "Neo4j did not notify about accepting the license agreement" );
+			// container start should fail due to licensing.
+            Assertions.assertThrows( Exception.class, () -> container.start(),
+									 "Neo4j did not notify about accepting the license agreement" );
             logsOut = container.getLogs();
         }
         // double check the container didn't warn and start neo4j anyway
