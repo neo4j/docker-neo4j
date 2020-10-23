@@ -18,11 +18,12 @@ public class HostFileSystemOperations
 	public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
 														 String containerMountPoint ) throws IOException
 	{
-		return createTempFolderAndMountAsVolume( container, TestSettings.TEST_TMP_FOLDER, hostFolderNamePrefix, containerMountPoint );
+		return createTempFolderAndMountAsVolume( container, hostFolderNamePrefix, containerMountPoint,
+												 TestSettings.TEST_TMP_FOLDER );
 	}
 
-    public static Path createTempFolderAndMountAsVolume( GenericContainer container, Path parentFolder,
-														 String hostFolderNamePrefix, String containerMountPoint ) throws IOException
+    public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
+														 String containerMountPoint, Path parentFolder ) throws IOException
     {
         String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
         Path hostFolder = parentFolder.resolve( hostFolderNamePrefix + randomStr);
@@ -50,8 +51,13 @@ public class HostFileSystemOperations
 
     public static Path createTempFolder( String folderNamePrefix ) throws IOException
     {
+    	return createTempFolder( folderNamePrefix, TestSettings.TEST_TMP_FOLDER );
+    }
+
+    public static Path createTempFolder( String folderNamePrefix, Path parentFolder ) throws IOException
+    {
         String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
-        Path hostFolder = TestSettings.TEST_TMP_FOLDER.resolve( folderNamePrefix + randomStr);
+        Path hostFolder = parentFolder.resolve( folderNamePrefix + randomStr);
         try
         {
             Files.createDirectories( hostFolder );

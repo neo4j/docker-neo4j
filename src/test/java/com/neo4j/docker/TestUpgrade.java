@@ -7,7 +7,6 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -58,10 +57,14 @@ public class TestUpgrade
 
 		try(GenericContainer container = makeContainer( upgradeFromImage ))
 		{
-			data = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, tmpMountFolder, "data-", "/data" );
-			logs = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, tmpMountFolder, "logs-", "/logs" );
-			imports = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, tmpMountFolder, "import-", "/import" );
-			metrics = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, tmpMountFolder, "metrics-", "/metrics" );
+			data = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data",
+																			  tmpMountFolder );
+			logs = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs",
+																			  tmpMountFolder );
+			imports = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import-", "/import",
+																				 tmpMountFolder );
+			metrics = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "metrics-", "/metrics",
+																				 tmpMountFolder );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
 			db.putInitialDataIntoContainer( user, password );

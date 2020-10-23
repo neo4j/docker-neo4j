@@ -176,14 +176,12 @@ public class TestMounting
 			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "canmountdataandlogs-" );
 			Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					testOutputFolder,
-					"data-",
-					"/data" );
+					"data-", "/data", testOutputFolder
+			);
 			Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					testOutputFolder,
-					"logs-",
-					"/logs" );
+					"logs-", "/logs", testOutputFolder
+			);
 			container.start();
 
 			verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
@@ -244,12 +242,15 @@ public class TestMounting
 		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "mount-everything-" );
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "conf", "/conf" );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "data", "/data" );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "import", "/import" );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "logs", "/logs" );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "metrics", "/metrics" );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, testOutputFolder, "plugins", "/plugins" );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data", "/data", testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import", "/import",
+																	   testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs", "/logs", testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "metrics", "/metrics",
+																	   testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "plugins", "/plugins",
+																	   testOutputFolder );
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
 			// do some database writes so that we try writing to writable folders.
