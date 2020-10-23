@@ -490,7 +490,7 @@ fi
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-    if [ ${EXTENDED_CONF+"yes"} == "yes" ]; then
+    if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
         ${exec_cmd} neo4j console --expand-commands
     else
         ${exec_cmd} neo4j console
