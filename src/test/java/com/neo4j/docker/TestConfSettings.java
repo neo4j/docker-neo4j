@@ -15,7 +15,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
-import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
@@ -158,14 +157,14 @@ public class TestConfSettings {
             //Mount /conf
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
             		container,
-					testOutputFolder,
 					"conf-",
-					"/conf" );
+					"/conf",
+					testOutputFolder);
             Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
             		container,
-					testOutputFolder,
 					"logs-",
-					"/logs" );
+					"/logs",
+					testOutputFolder);
             debugLog = logMount.resolve("debug.log");
             SetContainerUser.nonRootUser( container );
             //Create ReadConf.conf file with the custom env variables
@@ -264,15 +263,15 @@ public class TestConfSettings {
         {
 			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "envoverrideworks-" );
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-            		container,
-					testOutputFolder,
+					container,
 					"conf-",
-					"/conf" );
+					"/conf",
+					testOutputFolder );
             Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-            		container,
-					testOutputFolder,
+					container,
 					"logs-",
-					"/logs" );
+					"/logs",
+					testOutputFolder );
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Create EnvVarsOverride.conf file
@@ -354,14 +353,13 @@ public class TestConfSettings {
             //Mount /conf
 			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					testOutputFolder,
 					"conf-",
-					"/conf" );
+					"/conf", testOutputFolder);
 			logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
-					testOutputFolder,
 					"logs-",
-					"/logs" );
+					"/logs",
+					testOutputFolder);
 			SetContainerUser.nonRootUser( container );
             //Create JvmAdditionalNotOverriden.conf file
             Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf" );

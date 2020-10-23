@@ -39,7 +39,6 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            createBasicContainer();
             container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );

@@ -298,6 +298,7 @@ if running_as_root; then
     chown -R "${userid}":"${groupid}" "${NEO4J_HOME}"
     chmod 700 "${NEO4J_HOME}"
     find "${NEO4J_HOME}" -mindepth 1 -maxdepth 1 -type d -exec chmod -R 700 {} \;
+    find "${NEO4J_HOME}"/conf -type f -exec chmod -R 600 {} \;
 fi
 
 # Only prompt for license agreement if command contains "neo4j" in it
@@ -371,7 +372,8 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
 
 if [ -d /conf ]; then
     check_mounted_folder_readable "/conf"
-    find /conf -type f -exec cp {} "${NEO4J_HOME}"/conf \;
+    rm -rf "${NEO4J_HOME}"/conf/*
+    find /conf -type f -exec cp --preserve=ownership,mode {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
@@ -488,7 +490,11 @@ fi
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-  ${exec_cmd} neo4j console
+    if [ ${EXTENDED_CONF+"yes"} == "yes" ]; then
+        ${exec_cmd} neo4j console --expand-commands
+    else
+        ${exec_cmd} neo4j console
+    fi
 else
   ${exec_cmd} "$@"
 fi
