@@ -48,8 +48,6 @@ public class TestBasic
     @Test
     void testNoUnexpectedErrors() throws Exception
     {
-        // version 4.0 still has some annoying warnings that haven't been cleaned up, skip this test for now
-
         try(GenericContainer container = createBasicContainer())
         {
 			container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );

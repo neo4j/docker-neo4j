@@ -5,11 +5,11 @@ import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.support.AnnotationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -20,14 +20,10 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -66,6 +62,7 @@ public class TestExtendedConf
         }
 	}
 
+	@Ignore
 	@Test
 	void testReadsTheExtendedConfFile_defaultUser() throws Exception
 	{
@@ -75,8 +72,8 @@ public class TestExtendedConf
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
 
 		// copy configuration file and set permissions
-		Path confFile = Paths.get( "src", "test", "resources", "confs", "ExtendedConf-neo4jowner.conf" );
-		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ), StandardCopyOption.COPY_ATTRIBUTES );
+		Path confFile = Paths.get( "src", "test", "resources", "confs", "ExtendedConf.conf" );
+		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
 		setFileOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
 		chmod600( confFolder.resolve( "neo4j.conf" ) );
 
@@ -121,7 +118,7 @@ public class TestExtendedConf
 
 		//Check if the container reads the conf file
 		Stream<String> lines = Files.lines( debugLog);
-		Optional<String> isMatch = lines.filter( s -> s.contains("dbms.max_databases=20")).findFirst();
+		Optional<String> isMatch = lines.filter( s -> s.contains("dbms.logs.http.rotation.keep_number=20")).findFirst();
 		lines.close();
 		Assertions.assertTrue(  isMatch.isPresent(), "dbms.max_databases was not set correctly");
 	}
@@ -138,17 +135,18 @@ public class TestExtendedConf
 
 	private void setFileOwnerToNeo4j(Path file) throws Exception
 	{
-		log.info( System.getProperty( "os.name" ) );
 		ProcessBuilder pb = new ProcessBuilder( "chown", "7474:7474", file.toAbsolutePath().toString() ).redirectErrorStream( true );
 		Process proc = pb.start();
 		proc.waitFor();
 		if(proc.exitValue() != 0)
 		{
-			String errorMsg = new BufferedReader( new InputStreamReader( proc.getInputStream()) )
+			String errorMsg = new BufferedReader( new InputStreamReader( proc.getInputStream() ) )
 					.lines()
-					.collect( Collectors.joining());
+					.collect( Collectors.joining() );
 			// if we cannot set up test conditions properly, abort test but don't register a test failure.
-			Assumptions.assumeTrue( false, "Could not change owner of test file to 7474. User needs to be in sudoers list. Error:\n"+errorMsg );
+			Assumptions.assumeTrue( false,
+									"Could not change owner of test file to 7474. User needs to be in sudoers list. Error:\n" +
+									errorMsg );
 		}
 		return;
 	}
