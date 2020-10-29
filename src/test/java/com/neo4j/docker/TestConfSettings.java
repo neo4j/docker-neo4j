@@ -176,7 +176,7 @@ public class TestConfSettings {
         }
 
         //Check if the container reads the conf file
-        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.heap.max_size=512m" ),
+        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.heap.max_size=512" ),
                                "dbms.memory.heap.max_size was not set correctly");
     }
 
@@ -282,7 +282,7 @@ public class TestConfSettings {
             container.start();
         }
 
-        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.pagecache.size=512m" ),
+        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.pagecache.size=512" ),
                               "dbms.memory.pagecache.size was not set correctly");
     }
 
