@@ -419,6 +419,11 @@ if [ -d /data ]; then
     fi
 fi
 
+if [ -d /licenses ]; then
+    check_mounted_folder_readable "/licenses"
+    : ${NEO4J_dbms_directories_licenses:="/licenses"}
+fi
+
 declare -A COMMUNITY
 declare -A ENTERPRISE
 
