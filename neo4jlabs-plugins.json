@@ -5,6 +5,14 @@
       "dbms.security.procedures.unrestricted": "apoc.*"
     }
   },
+  "bloom": {
+    "versions": "https://bloom-plugins.s3.eu-west-2.amazonaws.com/versions.json",
+    "properties": {
+      "dbms.unmanaged_extension_classes": "com.neo4j.bloom.server=/browser/bloom",
+      "dbms.security.procedures.unrestricted": "bloom.*",
+      "neo4j.bloom.license_file": "/licenses/bloom.license"
+    }
+  },  
   "streams": {
     "versions": "https://neo4j-contrib.github.io/neo4j-streams/versions.json",
     "properties": {}
