@@ -17,7 +17,6 @@ endif
 tarball = neo4j-$(1)-$(2)-unix.tar.gz
 dist_site := https://dist.neo4j.org
 series := $(shell echo "$(NEO4JVERSION)" | sed -E 's/^([0-9]+\.[0-9]+)\..*/\1/')
-NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
 
 out/%/.sentinel: tmp/image-%/.sentinel
 > mkdir -p $(@D)
