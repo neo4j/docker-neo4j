@@ -12,7 +12,7 @@ package-arm: build-arm
 
 # create release images for arm architecture (not for production use!)
 build-arm: tmp/.image-id-community-arm tmp/.image-id-enterprise-arm
-.PHONY: arm
+.PHONY: build-arm
 
 tmp/.image-id-%-arm: tmp/local-context-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION))
 > image=test/$$RANDOM-arm
