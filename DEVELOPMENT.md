@@ -19,7 +19,7 @@ other Linuxes. Pull requests welcomed for other platforms.
 The build will create two images (one for Enterprise and one for Community) for a single version of Neo4j. 
 
 The make script will automatically download the source files needed to build the images. 
-You just need to specify the **full** Neo4j version including major, minor and patch numbers For example:
+You just need to specify the **full** Neo4j version including major, minor and patch numbers. For example:
 
 ```bash
 NEO4JVERSION=3.5.11 make clean build
@@ -27,7 +27,7 @@ NEO4JVERSION=3.5.11 make clean build
 
 If you want to build an alpha/beta release, this will still work:
 
-```$bash
+```bash
 NEO4JVERSION=3.5.0-alpha01 make clean build
 ```
 
@@ -39,6 +39,16 @@ test/19564
 
 $ cat tmp/.image-id-enterprise
 test/13909
+```
+
+## Building ARM64 based images
+
+There is a separate make script for building ARM64 based images. 
+
+Like with `amd64` images, you must still specify the **full** Neo4j version including major, minor and patch numbers. For example:
+
+```bash
+NEO4JVERSION=3.5.11 make -f make-arm64.mk clean tag-arm
 ```
 
 
