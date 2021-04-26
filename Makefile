@@ -1,6 +1,6 @@
 include make-common.mk
 
-NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
+NEO4J_BASE_IMAGE?="openjdk:11.0.11-jdk-slim"
 
 # Use make test TESTS='<pattern>' to run specific tests
 # e.g. `make test TESTS='TestCausalCluster'` or `make test TESTS='*Cluster*'`
