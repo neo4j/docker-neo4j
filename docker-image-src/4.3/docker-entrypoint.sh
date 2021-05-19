@@ -266,9 +266,9 @@ function set_initial_password
             # Will exit with error if users already exist (and print a message explaining that)
             # we probably don't want the message though, since it throws an error message on restarting the container.
             if [ "${do_reset}" == "true" ]; then
-                neo4j-admin set-initial-password "${password}" --require-password-change $(expand_commands_optionally) 2>/dev/null || true
+                ${neo4j_admin_cmd} set-initial-password "${password}" --require-password-change $(expand_commands_optionally) 2>/dev/null || true
             else
-                neo4j-admin set-initial-password "${password}" $(expand_commands_optionally) 2>/dev/null || true
+                ${neo4j_admin_cmd} set-initial-password "${password}" $(expand_commands_optionally) 2>/dev/null || true
             fi
         elif [ -n "${_neo4j_auth:-}" ]; then
             echo "$_neo4j_auth is invalid"
@@ -287,16 +287,19 @@ if running_as_root; then
   groupid="neo4j"
   groups=($(id -G neo4j))
   exec_cmd="exec gosu neo4j:neo4j"
+  neo4j_admin_cmd="gosu neo4j:neo4j neo4j-admin"
 else
   userid="$(id -u)"
   groupid="$(id -g)"
   groups=($(id -G))
   exec_cmd="exec"
+  neo4j_admin_cmd="neo4j-admin"
 fi
 readonly userid
 readonly groupid
 readonly groups
 readonly exec_cmd
+readonly neo4j_admin_cmd
 
 
 # Need to chown the home directory
