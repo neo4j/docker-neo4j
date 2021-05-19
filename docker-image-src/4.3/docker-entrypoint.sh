@@ -501,15 +501,28 @@ if [ "${cmd}" == "dump-config" ]; then
     exit 0
 fi
 
+# this prints out a command for us to run.
+# the command is something like: `java ...[lots of java options]... neo4j.mainClass ...[some neo4j options]...`
+function get_neo4j_run_cmd {
+
+    local cmd="neo4j console --dry-run"
+
+    if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
+        cmd="${cmd} --expand-commands"
+    fi
+
+    if running_as_root; then
+        eval "gosu neo4j:neo4j ${cmd}"
+    else
+        eval "${cmd}"
+    fi
+}
+
 # Use su-exec to drop privileges to neo4j user
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-    if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
-        ${exec_cmd} neo4j console --expand-commands
-    else
-        ${exec_cmd} neo4j console
-    fi
+    eval "${exec_cmd} $(get_neo4j_run_cmd)"
 else
   ${exec_cmd} "$@"
 fi
