@@ -59,7 +59,6 @@ public class TestExtendedConf
                 .withLogConsumer(new Slf4jLogConsumer( log));
     }
 
-
 	@ParameterizedTest
 	@ValueSource(strings = {"", "secretN30"})
 	public void shouldStartWithExtendedConf(String password)
@@ -109,6 +108,9 @@ public class TestExtendedConf
 	@ValueSource( strings = {"", "secretN30"} )
 	void testReadsExistingConfFileWithExtension_rootUser( String password ) throws Exception
 	{
+		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
+								"Extended configuration for included conf not available before 4.3" );
+
 		// set up test folders
 		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
@@ -132,6 +134,9 @@ public class TestExtendedConf
 	@ValueSource( strings = {"", "secretN30"} )
 	void testReadsExistingConfFileWithExtension_7474User( String password ) throws Exception
 	{
+		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
+								"Extended configuration for included conf not available before 4.3" );
+
 		// set up test folders
 		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
