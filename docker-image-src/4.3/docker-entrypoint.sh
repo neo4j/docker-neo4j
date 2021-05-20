@@ -522,7 +522,9 @@ function get_neo4j_run_cmd {
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-    eval "${exec_cmd} $(get_neo4j_run_cmd)"
+    # separate declaration and use of get_neo4j_run_cmd so that error codes are correctly surfaced
+    neo4j_console_cmd="$(get_neo4j_run_cmd)"
+    eval "${exec_cmd} ${neo4j_console_cmd?:No Neo4j command was generated}"
 else
     ${exec_cmd} "$@"
 fi
