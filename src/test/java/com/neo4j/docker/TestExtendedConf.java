@@ -114,6 +114,7 @@ public class TestExtendedConf
 		// set up test folders
 		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
+		setFileOwnerToNeo4j(logsFolder);
 
 		try ( GenericContainer container = createContainer( password ) )
 		{
@@ -140,6 +141,7 @@ public class TestExtendedConf
 		// set up test folders
 		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
+		setFileOwnerToNeo4j(logsFolder);
 
 		try ( GenericContainer container = createContainer( password ) )
 		{
