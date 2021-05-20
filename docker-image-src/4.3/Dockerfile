@@ -30,6 +30,7 @@ RUN apt update \
     && chmod -R 777 /logs \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
+    && chmod 640 "${NEO4J_HOME}"/conf/* \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \

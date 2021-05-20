@@ -1,5 +1,6 @@
 package com.neo4j.docker;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
@@ -13,6 +14,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -25,8 +27,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,7 +105,78 @@ public class TestExtendedConf
 		}
 	}
 
+	@ParameterizedTest
+	@ValueSource( strings = {"", "secretN30"} )
+	void testReadsExistingConfFileWithExtension_rootUser( String password ) throws Exception
+	{
+		// set up test folders
+		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
+		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
 
+		try ( GenericContainer container = createContainer( password ) )
+		{
+			HostFileSystemOperations.mountHostFolderAsVolume( container, logsFolder, "/logs" );
+			container.start();
+			Container.ExecResult result = container.execInContainer(
+					"bash", "-c", "printf '\\ndbms.logs.http.rotation.keep_number=$(expr 2 * 10)\\n' >> ${NEO4J_HOME}/conf/neo4j.conf"
+			);
+			String logs = String.format( "stdout:\n%s\n\nstderr:\n%s", result.getStdout(), result.getStderr() );
+			Assertions.assertEquals( 0, result.getExitCode(), logs );
+			restartNeo4j( container );
+
+			runContainerAndVerify( container, null, logsFolder, password );
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource( strings = {"", "secretN30"} )
+	void testReadsExistingConfFileWithExtension_7474User( String password ) throws Exception
+	{
+		// set up test folders
+		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
+		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
+
+		try ( GenericContainer container = createContainer( password ) )
+		{
+			container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd -> cmd.withUser( "7474:7474" ) );
+			HostFileSystemOperations.mountHostFolderAsVolume( container, logsFolder, "/logs" );
+			container.start();
+			Container.ExecResult result = container.execInContainer(
+					"bash", "-c", "printf '\\ndbms.logs.http.rotation.keep_number=$(expr 2 * 10)\\n' >> ${NEO4J_HOME}/conf/neo4j.conf"
+			);
+			String logs = String.format( "stdout:\n%s\n\nstderr:\n%s", result.getStdout(), result.getStderr() );
+			Assertions.assertEquals( 0, result.getExitCode(), logs );
+			restartNeo4j( container );
+
+			runContainerAndVerify( container, null, logsFolder, password );
+		}
+	}
+
+	private void restartNeo4j( GenericContainer container ) throws InterruptedException, TimeoutException
+	{
+		container.getDockerClient().restartContainerCmd( container.getContainerId() ).exec();
+
+		Instant deadline = Instant.now().plusSeconds( 60 );
+		while ( countStarts( container.getLogs() ) < 2 )
+		{
+			Thread.sleep( 1000 );
+			if ( Instant.now().isAfter( deadline ) )
+			{
+				throw new TimeoutException( "timed out waiting for neo4j to restart" );
+			}
+		}
+	}
+
+	private int countStarts( String logs )
+	{
+		int count = 0;
+		Matcher matcher = Pattern.compile( "Started." ).matcher( logs );
+		while ( matcher.find() )
+		{
+			count++;
+		}
+		return count;
+	}
 
 	@ParameterizedTest
 	@ValueSource(strings = {"", "secretN30"})
@@ -125,7 +203,10 @@ public class TestExtendedConf
 
 	private void runContainerAndVerify(GenericContainer container, Path confFolder, Path logsFolder, String password) throws Exception
 	{
-		HostFileSystemOperations.mountHostFolderAsVolume( container, confFolder, "/conf" );
+		if (confFolder != null)
+		{
+			HostFileSystemOperations.mountHostFolderAsVolume( container, confFolder, "/conf" );
+		}
 		HostFileSystemOperations.mountHostFolderAsVolume( container, logsFolder, "/logs" );
 
 		container.start();
@@ -137,7 +218,7 @@ public class TestExtendedConf
 		Stream<String> lines = Files.lines( debugLog);
 		Optional<String> isMatch = lines.filter( s -> s.contains("dbms.logs.http.rotation.keep_number=20")).findFirst();
 		lines.close();
-		Assertions.assertTrue(  isMatch.isPresent(), "dbms.max_databases was not set correctly");
+		Assertions.assertTrue(  isMatch.isPresent(), "dbms.logs.http.rotation.keep_number was not set correctly");
 
 		//Check the password was changed if set
 		assertPasswordChangedLogIsCorrect( password, container );

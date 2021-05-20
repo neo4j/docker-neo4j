@@ -132,6 +132,43 @@ public class TestPasswords
         }
     }
 
+    @ParameterizedTest(name = "as current user={0}")
+    @ValueSource(booleans = {true, false})
+    void testCanSetPasswordWithExpandCommands( boolean asCurrentUser ) throws Exception
+    {
+        // create container and mount /data folder so that data can persist between sessions
+        String password = "some_valid_password";
+        Path dataMount;
+
+
+        try(GenericContainer firstContainer = createContainer( asCurrentUser ))
+        {
+            firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password )
+                          .withEnv( "EXTENDED_CONF", "yes" );
+            dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    firstContainer,
+                    "password-defaultuser-data-",
+                    "/data" );
+            log.info( String.format( "Starting first container as %s user and setting password",
+                                     asCurrentUser? "current" : "default" ) );
+            // create a database with stuff in
+            firstContainer.start();
+            DatabaseIO db = new DatabaseIO(firstContainer);
+            db.putInitialDataIntoContainer( "neo4j", password );
+        }
+
+        // with a new container, check the database data.
+        try(GenericContainer secondContainer = createContainer( asCurrentUser ))
+        {
+            secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE )
+                           .withEnv( "EXTENDED_CONF", "yes" );;
+            log.info( "starting new container with same /data mount as same user without setting password" );
+            secondContainer.start();
+            DatabaseIO db = new DatabaseIO(secondContainer);
+            db.verifyDataInContainer( "neo4j", password );
+        }
+    }
+
 
     @ParameterizedTest(name = "as current user={0}")
     @ValueSource(booleans = {true, false})
