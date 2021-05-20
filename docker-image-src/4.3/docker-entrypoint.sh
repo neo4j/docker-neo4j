@@ -505,16 +505,16 @@ fi
 # the command is something like: `java ...[lots of java options]... neo4j.mainClass ...[some neo4j options]...`
 function get_neo4j_run_cmd {
 
-    local cmd="neo4j console --dry-run"
+    local extraArgs=()
 
     if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
-        cmd="${cmd} --expand-commands"
+        extraArgs+=("--expand-commands")
     fi
 
     if running_as_root; then
-        eval "gosu neo4j:neo4j ${cmd}"
+        gosu neo4j:neo4j neo4j console --dry-run "${extraArgs[@]}"
     else
-        eval "${cmd}"
+        neo4j console --dry-run "${extraArgs[@]}"
     fi
 }
 
@@ -524,5 +524,5 @@ function get_neo4j_run_cmd {
 if [ "${cmd}" == "neo4j" ]; then
     eval "${exec_cmd} $(get_neo4j_run_cmd)"
 else
-  ${exec_cmd} "$@"
+    ${exec_cmd} "$@"
 fi
