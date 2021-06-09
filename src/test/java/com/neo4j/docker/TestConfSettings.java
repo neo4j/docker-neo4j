@@ -4,10 +4,8 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,13 +58,23 @@ public class TestConfSettings {
         return configurations;
     }
 
-    private boolean isStringPresentInDebugLog( Path debugLog, String matchThis) throws IOException
+    private void assertConfigurationPresentInDebugLog( Path debugLog, String setting, String value, boolean shouldBeFound ) throws IOException
     {
         // searches the debug log for the given string, returns true if present
         Stream<String> lines = Files.lines(debugLog);
-        Optional<String> isMatch = lines.filter(s -> s.contains(matchThis)).findFirst();
+        Optional<String> actualSetting = lines.filter(s -> s.contains( setting )).findFirst();
         lines.close();
-        return isMatch.isPresent();
+        if(shouldBeFound)
+        {
+            Assertions.assertTrue( actualSetting.isPresent(), setting+" was never set" );
+            Assertions.assertTrue( actualSetting.get().endsWith( value ),
+                                   setting +" is set to the wrong value. Expected: "+value+" Actual: " + actualSetting.get().strip() );
+        }
+        else
+        {
+            Assertions.assertFalse( actualSetting.isPresent(),
+                                    setting+" was set when it should not have been. Actual value: "+actualSetting.get().strip() );
+        }
     }
 
     @Test
@@ -176,8 +184,7 @@ public class TestConfSettings {
         }
 
         //Check if the container reads the conf file
-        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.heap.max_size=512" ),
-                               "dbms.memory.heap.max_size was not set correctly");
+        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.heap.max_size", "512m", true );
     }
 
     @Test
@@ -276,14 +283,13 @@ public class TestConfSettings {
             SetContainerUser.nonRootUser( container );
             //Create EnvVarsOverride.conf file
             Path confFile = Paths.get( "src", "test", "resources", "confs", "EnvVarsOverride.conf" );
-            Files.copy( confFile, confMount.resolve( "EnvVarsOverride.conf" ) );
+            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
             container.start();
         }
 
-        Assertions.assertTrue( isStringPresentInDebugLog( debugLog, "dbms.memory.pagecache.size=512" ),
-                              "dbms.memory.pagecache.size was not set correctly");
+        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.pagecache.size", "512m",true );
     }
 
     @Test
@@ -306,18 +312,52 @@ public class TestConfSettings {
             //Read debug.log to check that causal_clustering confs are set successfully
             String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
 
-            Assertions.assertTrue( isStringPresentInDebugLog(logMount.resolve( "debug.log" ),
-                                                             "causal_clustering.transaction_advertised_address=" + expectedTxAddress ),
-                                   "causal_clustering.transaction_advertised_address was not set correctly" );
+            assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
+                                                  "causal_clustering.transaction_advertised_address",
+                                                  expectedTxAddress,
+                                                  true );
         }
     }
 
-    // disabled because there are currently no enterprise-only settings
-    @Disabled
+    @Test
+    void testEnterpriseOnlyDefaultsDontOverrideConfFile () throws Exception
+    {
+        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+                               "This is testing only ENTERPRISE EDITION configs");
+
+        try(GenericContainer container = createContainer())
+        {
+            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "ee-only-not-ovewritten-" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "conf-",
+                    "/conf",
+                    testOutputFolder );
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "logs-",
+                    "/logs",
+                    testOutputFolder );
+            // mount a configuration file with enterprise only sttings already set
+            Path confFile = Paths.get( "src", "test", "resources", "confs", "EnterpriseOnlyNotOverwritten.conf");
+            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+
+            //Start the container
+            SetContainerUser.nonRootUser( container );
+            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            container.start();
+            //Read debug.log to check that causal_clustering confs are set successfully
+
+            assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
+                                                  "causal_clustering.transaction_advertised_address",
+                                                  "localhost:6060",
+                                                  true );
+        }
+    }
+
     @Test
     void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
     {
-		Assert.fail( "This test should not have run!" );
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                "This is testing only COMMUNITY EDITION configs");
         Path debugLog;
@@ -336,8 +376,9 @@ public class TestConfSettings {
         }
 
         //Read debug.log to check that causal_clustering confs are not present
-        Assertions.assertFalse(isStringPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address" ),
-                               "causal_clustering.transaction_listen_address should not be on the Community debug.log");
+        assertConfigurationPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address",
+                                              "*",
+                                              false );
     }
 
     @Test
@@ -369,13 +410,10 @@ public class TestConfSettings {
             container.start();
         }
 
-        //Read the debug.log to check that dbms.jvm.additional was set correctly
-        Stream<String> lines = Files.lines(logMount.resolve("debug.log"));
-        Optional<String> jvmAdditionalMatch = lines.filter(s -> s.contains("dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")).findFirst();
-        lines.close();
-        Assertions.assertTrue(isStringPresentInDebugLog( logMount.resolve("debug.log"),
-                "dbms.jvm.additional=-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"),
-            "dbms.jvm.additional is overriden by Docker-entrypoint");
+        assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
+                                              "dbms.jvm.additional",
+                                              "-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+                                              true );
     }
 
     @Test
