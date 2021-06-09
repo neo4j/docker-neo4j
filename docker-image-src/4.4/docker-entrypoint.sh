@@ -219,8 +219,22 @@ function install_neo4j_labs_plugins
   rm "${_old_config}"
 }
 
-function add_setting_to_conf
+function add_docker_default_to_conf
 {
+    # docker defaults should NOT overwrite values already in the conf file
+    local _setting="${1}"
+    local _value="${2}"
+    local _neo4j_home="${3}"
+
+    if ! grep -q "^${_setting}=" "${_neo4j_home}"/conf/neo4j.conf
+    then
+        echo -e "\n"${_setting}=${_value} >> "${_neo4j_home}"/conf/neo4j.conf
+    fi
+}
+
+function add_env_setting_to_conf
+{
+    # settings from environment variables should overwrite values already in the conf
     local _setting=${1}
     local _value=${2}
     local _neo4j_home=${3}
@@ -240,7 +254,7 @@ function set_initial_password
     # set the neo4j initial password only if you run the database server
     if [ "${cmd}" == "neo4j" ]; then
         if [ "${_neo4j_auth:-}" == "none" ]; then
-            add_setting_to_conf "dbms.security.auth_enabled" "false" "${NEO4J_HOME}"
+            add_env_setting_to_conf "dbms.security.auth_enabled" "false" "${NEO4J_HOME}"
             # NEO4J_dbms_security_auth__enabled=false
         elif [[ "${_neo4j_auth:-}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
             admin_user="${BASH_REMATCH[1]}"
@@ -310,6 +324,8 @@ if running_as_root; then
     find "${NEO4J_HOME}"/conf -type f -exec chmod -R 600 {} \;
 fi
 
+# ==== CHECK LICENSE AGREEMENT ====
+
 # Only prompt for license agreement if command contains "neo4j" in it
 if [[ "${cmd}" == *"neo4j"* ]]; then
   if [ "${NEO4J_EDITION}" == "enterprise" ]; then
@@ -338,6 +354,8 @@ To do this you can use the following docker argument:
   fi
 fi
 
+# ==== RENAME LEGACY ENVIRONMENT CONF VARIABLES ====
+
 # Env variable naming convention:
 # - prefix NEO4J_
 # - double underscore char '__' instead of single underscore '_' char in the setting name
@@ -348,7 +366,7 @@ fi
 
 # Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
 # Set some to default values if unset
-: ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-"100M size"}}
+: ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-}}
 : ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
 : ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
 : ${NEO4J_dbms_connectors_default__advertised__address:=${NEO4J_dbms_connectors_defaultAdvertisedAddress:-}}
@@ -357,14 +375,9 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
   then
    : ${NEO4J_causal__clustering_expected__core__cluster__size:=${NEO4J_causalClustering_expectedCoreClusterSize:-}}
    : ${NEO4J_causal__clustering_initial__discovery__members:=${NEO4J_causalClustering_initialDiscoveryMembers:-}}
-   : ${NEO4J_causal__clustering_discovery__advertised__address:=${NEO4J_causalClustering_discoveryAdvertisedAddress:-"$(hostname):5000"}}
-   : ${NEO4J_causal__clustering_transaction__advertised__address:=${NEO4J_causalClustering_transactionAdvertisedAddress:-"$(hostname):6000"}}
-   : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-"$(hostname):7000"}}
-   # Custom settings for dockerized neo4j
-   : ${NEO4J_dbms_routing_advertised__address:=$(hostname):7688}
-   : ${NEO4J_causal__clustering_discovery__advertised__address:=$(hostname):5000}
-   : ${NEO4J_causal__clustering_transaction__advertised__address:=$(hostname):6000}
-   : ${NEO4J_causal__clustering_raft__advertised__address:=$(hostname):7000}
+   : ${NEO4J_causal__clustering_discovery__advertised__address:=${NEO4J_causalClustering_discoveryAdvertisedAddress:-}}
+   : ${NEO4J_causal__clustering_transaction__advertised__address:=${NEO4J_causalClustering_transactionAdvertisedAddress:-}}
+   : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-}}
 fi
 
 # unset old hardcoded unsupported env variables
@@ -379,6 +392,9 @@ unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
     NEO4J_causalClustering_transactionAdvertisedAddress \
     NEO4J_causalClustering_raftListenAddress \
     NEO4J_causalClustering_raftAdvertisedAddress
+
+# ==== CHECK FILE PERMISSIONS ON MOUNTED FOLDERS ====
+
 
 if [ -d /conf ]; then
     check_mounted_folder_readable "/conf"
@@ -434,34 +450,24 @@ if [ -d /licenses ]; then
     : ${NEO4J_dbms_directories_licenses:="/licenses"}
 fi
 
-declare -A COMMUNITY
-declare -A ENTERPRISE
+# ==== SET CONFIGURATIONS ====
 
-COMMUNITY=(
-     [dbms.tx_log.rotation.retention_policy]="100M size"
-     [dbms.memory.pagecache.size]="512M"
-     [dbms.default_listen_address]="0.0.0.0"
-)
+## == DOCKER SPECIFIC DEFAULT CONFIGURATIONS ===
+## these should not override *any* configurations set by the user
 
-ENTERPRISE=(
-)
+add_docker_default_to_conf "dbms.tx_log.rotation.retention_policy" "100M size" "${NEO4J_HOME}"
+add_docker_default_to_conf "dbms.memory.pagecache.size" "512M" "${NEO4J_HOME}"
+add_docker_default_to_conf "dbms.default_listen_address" "0.0.0.0" "${NEO4J_HOME}"
+# set enterprise only docker defaults
+if [ "${NEO4J_EDITION}" == "enterprise" ];
+then
+    add_docker_default_to_conf "causal_clustering.discovery_advertised_address" "$(hostname):5000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "causal_clustering.transaction_advertised_address" "$(hostname):6000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "causal_clustering.raft_advertised_address" "$(hostname):7000" "${NEO4J_HOME}"
+fi
 
-for conf in ${!COMMUNITY[@]} ; do
-    if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
-    then
-        echo -e "\n"$conf=${COMMUNITY[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
-    fi
-done
-
-for conf in ${!ENTERPRISE[@]} ; do
-    if [ "${NEO4J_EDITION}" == "enterprise" ];
-    then
-       if ! grep -q "^$conf" "${NEO4J_HOME}"/conf/neo4j.conf
-       then
-        echo -e "\n"$conf=${ENTERPRISE[$conf]} >> "${NEO4J_HOME}"/conf/neo4j.conf
-       fi
-    fi
-done
+## == ENVIRONMENT VARIABLE CONFIGURATIONS ===
+## these override BOTH defaults and any existing values in the neo4j.conf file
 
 # save NEO4J_HOME and NEO4J_AUTH to temp variables that don't begin with NEO4J_ so they don't get added to the conf
 temp_neo4j_home="${NEO4J_HOME}"
@@ -474,7 +480,7 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            add_setting_to_conf "${setting}" "${value}" "${temp_neo4j_home}"
+            add_env_setting_to_conf "${setting}" "${value}" "${temp_neo4j_home}"
         else
             echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
@@ -482,6 +488,9 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
 done
 export NEO4J_HOME="${temp_neo4j_home}"
 unset temp_neo4j_home
+
+# ==== SET PASSWORD AND PLUGINS ====
+
 set_initial_password "${temp_neo4j_auth}"
 
 
@@ -489,6 +498,8 @@ if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
   # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
   install_neo4j_labs_plugins
 fi
+
+# ==== INVOKE NEO4J STARTUP ====
 
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
@@ -501,15 +512,30 @@ if [ "${cmd}" == "dump-config" ]; then
     exit 0
 fi
 
+# this prints out a command for us to run.
+# the command is something like: `java ...[lots of java options]... neo4j.mainClass ...[some neo4j options]...`
+function get_neo4j_run_cmd {
+
+    local extraArgs=()
+
+    if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
+        extraArgs+=("--expand-commands")
+    fi
+
+    if running_as_root; then
+        gosu neo4j:neo4j neo4j console --dry-run "${extraArgs[@]}"
+    else
+        neo4j console --dry-run "${extraArgs[@]}"
+    fi
+}
+
 # Use su-exec to drop privileges to neo4j user
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-    if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
-        ${exec_cmd} neo4j console --expand-commands
-    else
-        ${exec_cmd} neo4j console
-    fi
+    # separate declaration and use of get_neo4j_run_cmd so that error codes are correctly surfaced
+    neo4j_console_cmd="$(get_neo4j_run_cmd)"
+    eval "${exec_cmd} ${neo4j_console_cmd?:No Neo4j command was generated}"
 else
-  ${exec_cmd} "$@"
+    ${exec_cmd} "$@"
 fi
