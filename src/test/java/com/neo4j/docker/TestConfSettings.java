@@ -62,18 +62,18 @@ public class TestConfSettings {
     {
         // searches the debug log for the given string, returns true if present
         Stream<String> lines = Files.lines(debugLog);
-        Optional<String> actualSetting = lines.filter(s -> s.contains( setting )).findFirst();
+        String actualSetting = lines.filter(s -> s.contains( setting )).findFirst().orElse( "" );
         lines.close();
         if(shouldBeFound)
         {
-            Assertions.assertTrue( actualSetting.isPresent(), setting+" was never set" );
-            Assertions.assertTrue( actualSetting.get().endsWith( value ),
-                                   setting +" is set to the wrong value. Expected: "+value+" Actual: " + actualSetting.get().strip() );
+            Assertions.assertTrue( !actualSetting.isEmpty(), setting+" was never set" );
+            Assertions.assertTrue( actualSetting.endsWith( value ),
+                                   setting +" is set to the wrong value. Expected: "+value+" Actual: " + actualSetting );
         }
         else
         {
-            Assertions.assertFalse( actualSetting.isPresent(),
-                                    setting+" was set when it should not have been. Actual value: "+actualSetting.get().strip() );
+            Assertions.assertTrue( actualSetting.isEmpty(),
+                                    setting+" was set when it should not have been. Actual value: "+actualSetting );
         }
     }
 
