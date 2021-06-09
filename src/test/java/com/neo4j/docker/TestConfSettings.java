@@ -67,7 +67,7 @@ public class TestConfSettings {
         if(shouldBeFound)
         {
             Assertions.assertTrue( !actualSetting.isEmpty(), setting+" was never set" );
-            Assertions.assertTrue( actualSetting.endsWith( value ),
+            Assertions.assertTrue( actualSetting.contains( value ),
                                    setting +" is set to the wrong value. Expected: "+value+" Actual: " + actualSetting );
         }
         else
@@ -184,7 +184,7 @@ public class TestConfSettings {
         }
 
         //Check if the container reads the conf file
-        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.heap.max_size", "512m", true );
+        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.heap.max_size", "512", true );
     }
 
     @Test
