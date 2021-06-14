@@ -24,7 +24,6 @@ services:
       - NEO4J_causalClustering_discoveryAdvertisedAddress=core1:5000
       - NEO4J_causalClustering_transactionAdvertisedAddress=core1:6000
       - NEO4J_causalClustering_raftAdvertisedAddress=core1:7000
-      - NEO4J_causalClustering_expectedCoreClusterSize=3
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
       - NEO4J_causal__clustering_disable__middleware__logging=false
 
@@ -47,7 +46,6 @@ services:
       - NEO4J_causalClustering_discoveryAdvertisedAddress=core2:5000
       - NEO4J_causalClustering_transactionAdvertisedAddress=core2:6000
       - NEO4J_causalClustering_raftAdvertisedAddress=core2:7000
-      - NEO4J_causalClustering_expectedCoreClusterSize=3
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
       - NEO4J_causalClustering_refuseToBeLeader=true
 
@@ -70,11 +68,8 @@ services:
       - NEO4J_causalClustering_discoveryAdvertisedAddress=core3:5000
       - NEO4J_causalClustering_transactionAdvertisedAddress=core3:6000
       - NEO4J_causalClustering_raftAdvertisedAddress=core3:7000
-      - NEO4J_causalClustering_expectedCoreClusterSize=3
       - NEO4J_causalClustering_initialDiscoveryMembers=core1:5000,core2:5000,core3:5000
       - NEO4J_causalClustering_refuseToBeLeader=true
-      - NEO4J_dbms_backup_enabled=true
-      - NEO4J_dbms_backup_address=0.0.0.0:6362
 
   readreplica1:
     user: "%%USERIDGROUPID%%"
