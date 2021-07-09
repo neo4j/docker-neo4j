@@ -5,6 +5,12 @@
       "dbms.security.procedures.unrestricted": "apoc.*"
     }
   },
+  "apoc-core": {
+    "location": "/labs/apoc-core-*.jar",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "apoc.*"
+    }
+  },
   "bloom": {
     "versions": "https://bloom-plugins.s3.eu-west-2.amazonaws.com/versions.json",
     "properties": {
@@ -12,7 +18,7 @@
       "dbms.security.procedures.unrestricted": "bloom.*",
       "neo4j.bloom.license_file": "/licenses/bloom.license"
     }
-  },  
+  },
   "streams": {
     "versions": "https://neo4j-contrib.github.io/neo4j-streams/versions.json",
     "properties": {}
@@ -41,7 +47,7 @@
     "properties": {
       "dbms.security.procedures.unrestricted":"semantics.*"
     }
-  },  
+  },
   "_testing": {
     "versions": "http://host.testcontainers.internal:3000/versions.json",
     "properties": {

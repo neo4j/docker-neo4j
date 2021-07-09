@@ -213,10 +213,13 @@ function install_neo4j_labs_plugins
   local _old_config="$(mktemp)"
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
-    load_plugin_from_github "${plugin_name}"
+    local _location="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.location" /neo4jlabs-plugins.json )"
+    if "${_location}" != "null"; then
+        install_plugin_from_location "${_location}"
+    else
+        load_plugin_from_github "${plugin_name}"
+    fi
     apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
-  done
-  rm "${_old_config}"
 }
 
 function add_docker_default_to_conf
