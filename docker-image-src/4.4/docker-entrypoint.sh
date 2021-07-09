@@ -220,6 +220,8 @@ function install_neo4j_labs_plugins
         load_plugin_from_github "${plugin_name}"
     fi
     apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
+  done
+  rm "${_old_config}"
 }
 
 function add_docker_default_to_conf
