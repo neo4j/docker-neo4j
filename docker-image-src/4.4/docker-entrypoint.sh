@@ -146,6 +146,30 @@ function check_mounted_folder_writable_with_chown
     fi
 }
 
+function install_plugin_from_location
+{
+  # Install a plugin from location at runtime.
+  local _plugin_name="${1}" #e.g. apoc-core
+
+  local _plugins_dir="${NEO4J_HOME}/plugins"
+  if [ -d /plugins ]; then
+    local _plugins_dir="/plugins"
+  fi
+  local _location="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.location" /neo4jlabs-plugins.json )"
+  # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
+  local _destination="${_plugins_dir}/${_plugin_name}.jar"
+  local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
+
+  # Now we install the plugin that is shipped with Neo4j
+  echo "Installing Plugin '${_plugin_name}' from ${_location} to ${_destination} "
+  wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_location}"
+
+  if ! is_readable "${_destination}"; then
+    echo >&2 "Plugin at '${_destination}' is not readable"
+    exit 1
+  fi
+}
+
 function load_plugin_from_github
 {
   # Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
