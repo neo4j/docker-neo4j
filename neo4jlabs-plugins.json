@@ -6,7 +6,7 @@
     }
   },
   "apoc-core": {
-    "location": "/labs/apoc-core-*.jar",
+    "location": /var/lib/neo4j/labs/apoc-core-*.jar",
     "properties": {
       "dbms.security.procedures.unrestricted": "apoc.*"
     }
