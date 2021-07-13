@@ -10,7 +10,6 @@
     "properties": {
       "dbms.security.procedures.unrestricted": "apoc.*"
     }
-  },
   "bloom": {
     "versions": "https://bloom-plugins.s3.eu-west-2.amazonaws.com/versions.json",
     "properties": {
