@@ -95,8 +95,7 @@ public class TestBundledPluginInstallation
             // Then we get the response we expect
             Record record = res.single();
             String version = record.get( 0 ).asString();
-            assertTrue( version.startsWith( String.format( "%d.%d", TestSettings.NEO4J_VERSION.major, TestSettings.NEO4J_VERSION.minor ) ),
-                        "unexpected version: " + version );
+            assertTrue( version.startsWith( String.format( "%d.", TestSettings.NEO4J_VERSION.major ) ), "unexpected version: " + version );
             assertFalse( res.hasNext(), "Our procedure should only return a single result" );
 
             // Check that the config has been set
