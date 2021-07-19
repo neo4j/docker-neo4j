@@ -161,7 +161,7 @@ function load_plugin_from_location
 
   # Now we install the plugin that is shipped with Neo4j
   echo "Installing Plugin '${_plugin_name}' from ${_location} to ${_destination} "
-  cp "${_location}" "${_destination}"
+  cp $_location "${_destination}"
 
   if ! is_readable "${_destination}"; then
     echo >&2 "Plugin at '${_destination}' is not readable"
