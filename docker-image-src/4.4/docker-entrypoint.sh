@@ -237,7 +237,7 @@ function install_neo4j_labs_plugins
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
     local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /neo4jlabs-plugins.json )"
-    if "${_location}" != "null"; then
+    if [ "${_location}" != "null" ]; then
         load_plugin_from_location "${plugin_name}" "${_location}"
     else
         load_plugin_from_github "${plugin_name}"
