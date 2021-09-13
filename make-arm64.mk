@@ -2,6 +2,8 @@ include make-common.mk
 
 NEO4J_BASE_IMAGE?="arm64v8/openjdk:11-jdk-slim"
 
+
+
 package-arm: tag-arm
 > mkdir -p out
 > docker save neo4j/neo4j-arm64-experimental:$(NEO4JVERSION)-arm64 > out/neo4j-community-$(NEO4JVERSION)-arm64-docker-loadable.tar
@@ -12,6 +14,11 @@ tag-arm: build-arm
 > docker tag $$(cat tmp/.image-id-community-arm) neo4j/neo4j-arm64-experimental:$(NEO4JVERSION)-arm64
 > docker tag $$(cat tmp/.image-id-enterprise-arm) neo4j/neo4j-arm64-experimental:$(NEO4JVERSION)-arm64-enterprise
 .PHONY: tag-arm
+
+test-arm: build-arm
+> mvn test -Dimage=$$(cat tmp/.image-id-community-arm) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.TestBasic
+> mvn test -Dimage=$$(cat tmp/.image-id-enterprise-arm) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.TestBasic
+.PHONY test-arm
 
 # create release images for arm architecture (not for production use!)
 build-arm: tmp/.image-id-community-arm tmp/.image-id-enterprise-arm
