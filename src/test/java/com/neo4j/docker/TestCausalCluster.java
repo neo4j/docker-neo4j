@@ -1,15 +1,15 @@
 package com.neo4j.docker;
 
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.*;
 import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.wait.strategy.*;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -20,17 +20,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 
-@Disabled
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
 
-    @Disabled
     @Test
     void testCausalClusteringBasic() throws Exception
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                "No causal clustering for community edition");
+
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ) );
 
         Path tmpDir = HostFileSystemOperations.createTempFolder( "CC_cluster_" );
 
@@ -61,15 +67,12 @@ public class TestCausalCluster
         outstream.close();
         System.out.println("logs: " + compose_file.getName() + " and " + tmpDir.toString());
 
-        DockerComposeContainer clusteringContainer = new DockerComposeContainer(compose_file)
+        var startupWaitStrategy = new HostPortWaitStrategy().withStartupTimeout( Duration.ofSeconds( 420 ) );
+        DockerComposeContainer<?> clusteringContainer = new DockerComposeContainer<>(compose_file)
                 .withLocalCompose(true)
-                .withExposedService("core1", DEFAULT_BOLT_PORT )
-                .withExposedService("core1", 7474,
-									Wait.forHttp( "/" )
-										.forPort( 7474 )
-										.forStatusCode( 200 )
-										.withStartupTimeout( Duration.ofSeconds( 300 ) ))
-                .withExposedService("readreplica1", DEFAULT_BOLT_PORT);
+                .withExposedService("core1", DEFAULT_BOLT_PORT, startupWaitStrategy )
+                .withExposedService("core1", 7474, startupWaitStrategy )
+                .withExposedService("readreplica1", DEFAULT_BOLT_PORT, startupWaitStrategy );
 
         clusteringContainer.start();
 
@@ -109,7 +112,6 @@ public class TestCausalCluster
     }
 
     private InputStream getResource(String path) {
-        InputStream resource = getClass().getClassLoader().getResourceAsStream(path);
-        return resource;
+        return getClass().getClassLoader().getResourceAsStream(path);
     }
 }
