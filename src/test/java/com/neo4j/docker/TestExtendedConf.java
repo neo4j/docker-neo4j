@@ -13,10 +13,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.output.ToStringConsumer;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.BufferedReader;
@@ -26,10 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
-import java.time.Instant;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -44,14 +45,6 @@ public class TestExtendedConf
 	{
 		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,2,1 ) ),
 								"Extended configuration feature not available before 4.2" );
-	}
-
-	protected GenericContainer createContainerNoWait(String password)
-	{
-		GenericContainer container = createContainer( password );
-		// we have to override the default wait strategy with something that will return more quickly
-		container.setWaitStrategy( new LogMessageWaitStrategy().withRegEx( ".+" ) );
-		return container;
 	}
 
 	protected GenericContainer createContainer(String password)
@@ -111,55 +104,43 @@ public class TestExtendedConf
 		}
 	}
 
-	@ParameterizedTest
-	@ValueSource( strings = {"", "secretN30"} )
-	void testInvalidExtendedConfFile_nonRootUser( String password ) throws Exception
-	{
-		// set up test folders
-		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
-		Path confFolder = HostFileSystemOperations.createTempFolder( "conf-", testOutputFolder );
-		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
+    @ParameterizedTest
+    @ValueSource( strings = {"", "secretN30"} )
+    void testInvalidExtendedConfFile_nonRootUser( String password ) throws Exception
+    {
+        // set up test folders
+        Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
+        Path confFolder = HostFileSystemOperations.createTempFolder( "conf-", testOutputFolder );
 
-		// copy configuration file and set permissions
-		Path confFile = Paths.get( "src", "test", "resources", "confs", "InvalidExtendedConf.conf" );
-		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
-		chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
+        // copy configuration file and set permissions
+        Path confFile = Paths.get( "src", "test", "resources", "confs", "InvalidExtendedConf.conf" );
+        Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
+        chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 
-		try ( GenericContainer container = createContainerNoWait( password ) )
-		{
-			SetContainerUser.nonRootUser( container );
-			container.withFileSystemBind( "/etc/passwd", "/etc/passwd", BindMode.READ_ONLY );
-			container.withFileSystemBind( "/etc/group", "/etc/group", BindMode.READ_ONLY );
-			HostFileSystemOperations.mountHostFolderAsVolume( container, confFolder, "/conf" );
-			container.start();
+        try(GenericContainer container = createContainer( password ))
+        {
+            SetContainerUser.nonRootUser( container );
+            container.withFileSystemBind( "/etc/passwd", "/etc/passwd", BindMode.READ_ONLY );
+            container.withFileSystemBind( "/etc/group", "/etc/group", BindMode.READ_ONLY );
+            HostFileSystemOperations.mountHostFolderAsVolume( container, confFolder, "/conf" );
+            container.setStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 30 ) ) );
+            container.setWaitStrategy(
+                    Wait.forLogMessage( ".*this is an error message from inside neo4j config command expansion.*", 1 )
+                        .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
 
-			// expect the container to exit promptly
-			Instant deadline = Instant.now().plusSeconds( 60 );
-			while ( container.isRunning() )
-			{
-				Thread.sleep( 1000 );
-				if ( Instant.now().isAfter( deadline ) )
-				{
-					throw new TimeoutException( "Timed out waiting for container to exit" );
-				}
-			}
-			Assertions.assertFalse( container.isRunning() );
+            Assert.assertThrows( "Container should have errored on start",
+                                 ContainerLaunchException.class,
+                                 () -> container.start() );
 
-			// An error occurred so we expect a non-zero exit code
-			Assertions.assertNotEquals( 0, container.getCurrentContainerInfo().getState().getExitCodeLong() );
-
-			String logs = container.getLogs();
-
-			// check that error messages from neo4j are visible in docker logs
-			Assertions.assertTrue( logs.contains( "Error evaluating value for setting 'dbms.logs.http.rotation.keep_number'" ) );
-
-			// check that error messages from the command that failed are visible in docker logs
-			Assertions.assertTrue( logs.contains( "this is an error message from inside neo4j config command expansion" ) );
-
-			// check that the error is only encountered once (i.e. we quit the docker entrypoint the first time it was encountered)
-			Assertions.assertEquals( 1, countOccurrences( Pattern.compile( "Error evaluating value for setting" ), logs ) );
-		}
-	}
+            String logs = container.getLogs();
+            // check that error messages from neo4j are visible in docker logs
+            Assertions.assertTrue( logs.contains( "Error evaluating value for setting 'dbms.logs.http.rotation.keep_number'" ) );
+            // check that error messages from the command that failed are visible in docker logs
+            Assertions.assertTrue( logs.contains( "this is an error message from inside neo4j config command expansion" ) );
+            // check that the error is only encountered once (i.e. we quit the docker entrypoint the first time it was encountered)
+            Assertions.assertEquals( 1, countOccurrences( Pattern.compile( "Error evaluating value for setting" ), logs ) );
+        }
+    }
 
 	private int countOccurrences( Pattern pattern, String inString )
 	{
