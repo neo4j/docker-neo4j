@@ -1,9 +1,9 @@
-package com.neo4j.docker;
+package com.neo4j.docker.neo4jserver;
 
-import com.neo4j.docker.plugins.ExampleNeo4jPlugin;
+import com.neo4j.docker.neo4jserver.plugins.ExampleNeo4jPlugin;
 import com.neo4j.docker.utils.HostFileHttpHandler;
 import com.neo4j.docker.utils.HttpServerRule;
-import com.neo4j.docker.plugins.JarBuilder;
+import com.neo4j.docker.neo4jserver.plugins.JarBuilder;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Rule;
@@ -114,25 +114,25 @@ public class TestPluginInstallation
             Result res = session.run( "CALL dbms.procedures() YIELD name, signature RETURN name, signature" );
 
             // Then the procedure from the plugin is listed
-            assertTrue( res.stream().anyMatch( x -> x.get( "name" ).asString().equals( "com.neo4j.docker.plugins.defaultValues" ) ),
+            assertTrue( res.stream().anyMatch( x -> x.get( "name" ).asString().equals( "com.neo4j.docker.neo4jserver.plugins.defaultValues" ) ),
                     "Missing procedure provided by our plugin" );
 
             // When we call the procedure from the plugin
-            res = session.run( "CALL com.neo4j.docker.plugins.defaultValues" );
+            res = session.run( "CALL com.neo4j.docker.neo4jserver.plugins.defaultValues" );
 
             // Then we get the response we expect
             Record record = res.single();
             String message = "Result from calling our procedure doesnt match our expectations";
-            assertEquals( record.get( "string" ).asString(), "a string", message );
-            assertEquals( record.get( "integer" ).asInt(), 42L, message );
-            assertEquals( record.get( "aFloat" ).asDouble(), 3.14d, 0.000001, message );
-            assertEquals( record.get( "aBoolean" ).asBoolean(), true, message );
+            assertEquals( "a string", record.get( "string" ).asString(), message );
+            assertEquals( 42L, record.get( "integer" ).asInt(), message );
+            assertEquals( 3.14d, record.get( "aFloat" ).asDouble(), 0.000001, message );
+            assertEquals( true, record.get( "aBoolean" ).asBoolean(), message );
             assertFalse( res.hasNext(), "Our procedure should only return a single result" );
 
             // Check that the config has been set
             res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
             record = res.single();
-            assertEquals( record.get( "value" ).asString(), "com.neo4j.docker.plugins.*", "neo4j config not updated for plugin" );
+            assertEquals( "com.neo4j.docker.neo4jserver.plugins.*", record.get( "value" ).asString(), "neo4j config not updated for plugin" );
             assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally
@@ -158,7 +158,7 @@ public class TestPluginInstallation
             // Check that the config remains as set by our env var and is not overriden by the plugin defaults
             Result res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
             Record record = res.single();
-            assertEquals( record.get( "value" ).asString(), "foo", "neo4j config should not be overriden by plugin" );
+            assertEquals( "foo", record.get( "value" ).asString(), "neo4j config should not be overriden by plugin" );
             assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally

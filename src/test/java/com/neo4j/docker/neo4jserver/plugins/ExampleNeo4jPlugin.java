@@ -1,4 +1,4 @@
-package com.neo4j.docker.plugins;
+package com.neo4j.docker.neo4jserver.plugins;
 
 import java.util.stream.Stream;
 

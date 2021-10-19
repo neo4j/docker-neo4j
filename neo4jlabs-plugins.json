@@ -51,7 +51,7 @@
   "_testing": {
     "versions": "http://host.testcontainers.internal:3000/versions.json",
     "properties": {
-      "dbms.security.procedures.unrestricted": "com.neo4j.docker.plugins.*"
+      "dbms.security.procedures.unrestricted": "com.neo4j.docker.neo4jserver.plugins.*"
     }
   }
 }
