@@ -27,7 +27,8 @@ test-arm: build-arm
 > mvn test -Dimage=$$(cat tmp/.image-id-enterprise-arm) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.TestBasic
 .PHONY: test-arm
 
-build-arm: tmp/.image-id-community-arm tmp/.image-id-enterprise-arm
+# neo4j-admin builds don't need tini so we don't need to have an architecture specific target for them
+build-arm: tmp/.image-id-community-arm tmp/.image-id-enterprise-arm tmp/.image-id-neo4j-admin-community tmp/.image-id-neo4j-admin-enterprise
 .PHONY: build-arm
 
 tmp/.image-id-%-arm: tmp/local-context-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION))

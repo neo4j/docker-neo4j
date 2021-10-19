@@ -23,19 +23,31 @@ test-community: tmp/.image-id-community
 .PHONY: test-community
 
 # just build the images, don't test or package
-build: tmp/.image-id-community tmp/.image-id-enterprise
+build: build-community build-enterprise
 .PHONY: build
+
+build-community: tmp/.image-id-community tmp/.image-id-neo4j-admin-community tmp/devenv-community.env
+.PHONY: build-community
+
+build-enterprise: tmp/.image-id-enterprise tmp/.image-id-neo4j-admin-enterprise tmp/devenv-enterprise.env
+.PHONY: build-enterprise
+
+tmp/devenv-%.env:  tmp/.image-id-% tmp/.image-id-neo4j-admin-%
+> echo "NEO4JVERSION=$(NEO4JVERSION)" > ${@}
+> echo "NEO4J_IMAGE=$$(cat tmp/.image-id-${*})" >> ${@}
+> echo "NEO4JADMIN_IMAGE=$$(cat tmp/.image-id-neo4j-admin-${*})" >> ${@}
+> echo "NEO4J_EDITION=${*}" >> ${@}
 
 # create release images and loadable images
 package: package-community package-enterprise
 .PHONY: package
 
-package-community: tmp/.image-id-community out/community/.sentinel
+package-community: tmp/.image-id-community tmp/.image-id-neo4j-admin-community out/community/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4JVERSION)
 > docker save neo4j:$(NEO4JVERSION) > out/neo4j-community-$(NEO4JVERSION)-docker-loadable.tar
 
-package-enterprise: tmp/.image-id-enterprise out/enterprise/.sentinel
+package-enterprise: tmp/.image-id-enterprise tmp/.image-id-neo4j-admin-enterprise out/enterprise/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4JVERSION)-enterprise
 > docker save neo4j:$(NEO4JVERSION)-enterprise > out/neo4j-enterprise-$(NEO4JVERSION)-docker-loadable.tar
@@ -48,9 +60,6 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
     --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
     $(<D)
 > echo -n $$image >$@
-> echo "NEO4JVERSION=$(NEO4JVERSION)" > tmp/devenv-${*}.env
-> echo "NEO4J_IMAGE=$$image" >> tmp/devenv-${*}.env
-> echo "NEO4J_EDITION=${*}" >> tmp/devenv-${*}.env
 
 # copy the releaseable version of the image to the output folder.
 out/%/.sentinel: tmp/image-%/.sentinel

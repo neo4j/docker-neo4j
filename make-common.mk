@@ -25,6 +25,14 @@ out/%/.sentinel: tmp/image-%/.sentinel
 
 ## building the image ##
 
+tmp/.image-id-neo4j-admin-%: tmp/local-context-neo4j-admin-%/.sentinel
+> mkdir -p $(@D)
+> image=test/admin-$$RANDOM
+> docker build --tag=$$image \
+    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
+    $(<D)
+> echo -n $$image >$@
+
 # tmp/local-context-{community,enterprise} is a local folder containing the
 # Dockerfile/entrypoint/Neo4j/etc required to build a complete image locally.
 tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION)) tmp/neo4jlabs-plugins.json
@@ -33,6 +41,13 @@ tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J
 > cp -r $(<D)/* $(@D)
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
 > cp $(filter %.json,$^) $(@D)/local-package
+> touch $@
+
+tmp/local-context-neo4j-admin-%/.sentinel: tmp/image-neo4j-admin-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION))
+> rm -rf $(@D)
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> cp $(filter %.tar.gz,$^) $(@D)/local-package
 > touch $@
 
 # tmp/image-{community,enterprise} contains the Dockerfile, docker-entrypoint.sh and plugins.json
@@ -52,6 +67,20 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
 > cp $(filter %.json,$^) $(@D)/local-package
+> touch $(@D)/local-package/.sentinel
+> touch $@
+
+tmp/image-neo4j-admin-%/.sentinel: docker-image-src/$(series)/neo4j-admin/Dockerfile in/$(call tarball,%,$(NEO4JVERSION))
+> mkdir -p $(@D)
+> sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
+> <$(filter %/Dockerfile,$^) sed \
+    -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \
+    -e "s|%%NEO4J_SHA%%|$${sha}|" \
+    -e "s|%%NEO4J_TARBALL%%|$(call tarball,$*,$(NEO4JVERSION))|" \
+    -e "s|%%NEO4J_EDITION%%|$*|" \
+    -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
+    >$(@D)/Dockerfile
+> mkdir -p $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
 
