@@ -1,4 +1,4 @@
-package com.neo4j.docker;
+package com.neo4j.docker.neo4jserver;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;

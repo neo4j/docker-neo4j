@@ -1,4 +1,4 @@
-package com.neo4j.docker;
+package com.neo4j.docker.neo4jserver;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;

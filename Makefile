@@ -14,11 +14,11 @@ all: test
 test: test-enterprise test-community
 .PHONY: test
 
-test-enterprise: tmp/.image-id-enterprise
+test-enterprise: build-enterprise
 > mvn test -Dimage=$$(cat $<) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
 .PHONY: test-enterprise
 
-test-community: tmp/.image-id-community
+test-community: build-community
 > mvn test -Dimage=$$(cat $<) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
 .PHONY: test-community
 

@@ -1,4 +1,4 @@
-package com.neo4j.docker;
+package com.neo4j.docker.neo4jserver;
 
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
@@ -101,7 +101,7 @@ public class TestBundledPluginInstallation
             // Check that the config has been set
             res = session.run( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
             record = res.single();
-            assertEquals( record.get( "value" ).asString(), "apoc.*", "neo4j config not updated for plugin" );
+            assertEquals( "apoc.*", record.get( "value" ).asString(), "neo4j config not updated for plugin" );
             assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally
