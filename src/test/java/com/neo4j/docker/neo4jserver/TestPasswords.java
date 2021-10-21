@@ -124,7 +124,7 @@ public class TestPasswords
         // with a new container, check the database data.
         try(GenericContainer secondContainer = createContainer( asCurrentUser ))
         {
-            secondContainer.withFileSystemBind( dataMount.toString(), "/data", BindMode.READ_WRITE );
+            HostFileSystemOperations.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
             log.info( "starting new container with same /data mount as same user without setting password" );
             secondContainer.start();
             DatabaseIO db = new DatabaseIO(secondContainer);

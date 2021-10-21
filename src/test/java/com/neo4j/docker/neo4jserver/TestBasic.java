@@ -59,15 +59,28 @@ public class TestBasic
     }
 
     @Test
-    void testLicenseAcceptanceRequired()
+    void testLicenseAcceptanceRequired_Neo4jServer()
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
+                                "No license checks before version 3.3.0");
+        testLicenseAcceptance( TestSettings.IMAGE_ID );
+    }
+
+    @Test
+    void testLicenseAcceptanceRequired_Neo4jAdmin()
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 ) ),
+                                "No Neo4j admin image before version 4.4.0");
+        testLicenseAcceptance( TestSettings.ADMIN_IMAGE_ID );
+    }
+
+    private void testLicenseAcceptance(String image)
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "No license checks for community edition");
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
-                                "No license checks before version 3.3.0");
 
         String logsOut;
-        try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
+        try(GenericContainer container = new GenericContainer( image )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
             container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )
