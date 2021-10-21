@@ -5,7 +5,6 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -29,7 +28,7 @@ public class TestDumpLoad
 
     private static Logger log = LoggerFactory.getLogger( TestDumpLoad.class );
 
-    private GenericContainer createDBContainer()
+    private GenericContainer createDBContainer( boolean asDefaultUser )
     {
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", "none" )
@@ -45,11 +44,14 @@ public class TestDumpLoad
                  // it'll send a SIGTERM to initiate neo4j shutdown. See also stopContainer method.
                  .withCreateContainerCmdModifier(
                          (Consumer<CreateContainerCmd>) cmd -> cmd.withStopSignal( "SIGTERM" ).withStopTimeout( 20 ));
-        //SetContainerUser.nonRootUser( container );
+        if(!asDefaultUser)
+        {
+            SetContainerUser.nonRootUser( container );
+        }
         return container;
     }
 
-    private GenericContainer createAdminContainer()
+    private GenericContainer createAdminContainer( boolean asDefaultUser )
     {
         GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", "none" )
@@ -59,18 +61,33 @@ public class TestDumpLoad
                  .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Done: \\d+ files, [\\d\\.,]+[KMGi]+B processed\\..*" ) )
 //                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Done: .*" ) )
                  .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 90 ) ) );
-        //SetContainerUser.nonRootUser( container );
+        if(!asDefaultUser)
+        {
+            SetContainerUser.nonRootUser( container );
+        }
         return container;
     }
 
-    //container.stop() actually runs the killContainer Command, preventing clean shutdown. This runs the actual stop command.
+    @Test
+    void shouldDumpAndLoad_defaultUser() throws Exception
+    {
+        shouldCreateDumpAndLoadDump( true );
+    }
+
+    @Test
+    void shouldDumpAndLoad_nonDefaultUser() throws Exception
+    {
+        shouldCreateDumpAndLoadDump( false );
+    }
+
+    //container.stop() actually runs the killContainer Command, preventing clean shutdown.
+    // This runs the actual stop command. Which we set up in createDBContainer to send SIGTERM
     private void stopContainer(GenericContainer container)
     {
         container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
     }
 
-    @Test
-    void shouldCreateDumpAndLoadDump() throws Exception
+    private void shouldCreateDumpAndLoadDump( boolean asDefaultUser ) throws Exception
     {
         Path testOutputFolder = HostFileSystemOperations.createTempFolder( "dumpandload-" );
         Path firstDataDir;
@@ -78,7 +95,7 @@ public class TestDumpLoad
         Path backupDir;
 
         // start a database and populate it
-        try(GenericContainer container = createDBContainer())
+        try(GenericContainer container = createDBContainer( asDefaultUser ))
         {
             firstDataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     container, "data1-", "/data", testOutputFolder );
@@ -89,19 +106,19 @@ public class TestDumpLoad
         }
 
         // use admin container to create dump
-        try(GenericContainer admin = createAdminContainer())
+        try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
             HostFileSystemOperations.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
             backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     admin, "dump-", "/backup", testOutputFolder );
-            admin.withCommand( "neo4j-admin", "dump", "--database=neo4j", "--to=/backup/" );
+            admin.withCommand( "neo4j-admin", "dump", "--database=neo4j", "--to=/backup/neo4j.dump" );
             admin.start();
         }
         Assertions.assertTrue( backupDir.resolve( "neo4j.dump" ).toFile().exists(), "dump file not created");
 
         // dump file exists. Now try to load it into a new database.
         // use admin container to create dump
-        try(GenericContainer admin = createAdminContainer())
+        try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
             secondDataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     admin, "data2-", "/data", testOutputFolder );
@@ -110,8 +127,8 @@ public class TestDumpLoad
             admin.start();
         }
 
-        // verify data in 2nd data directory by starting a database and verifying data
-        try(GenericContainer container = createDBContainer())
+        // verify data in 2nd data directory by starting a database and verifying data we populated earlier
+        try(GenericContainer container = createDBContainer( asDefaultUser ))
         {
             HostFileSystemOperations.mountHostFolderAsVolume( container, secondDataDir, "/data" );
             container.start();
