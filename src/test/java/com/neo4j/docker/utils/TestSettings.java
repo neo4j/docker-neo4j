@@ -10,6 +10,7 @@ public class TestSettings
 {
     public static final Neo4jVersion NEO4J_VERSION = Neo4jVersion.fromVersionString( getVersionFromPropertyOrEnv() );
     public static final String IMAGE_ID = getImageFromPropertyOrEnv();
+    public static final String ADMIN_IMAGE_ID = getNeo4jAdminImageFromPropertyOrEnv();
     public static final Path TEST_TMP_FOLDER = Paths.get("local-mounts" );
     public static final Edition EDITION = getEditionFromPropertyOrEnv();
 
@@ -38,6 +39,17 @@ public class TestSettings
             image = System.getenv( "NEO4J_IMAGE" );
         }
         Assert.assertNotNull("Neo4j image has not been specified, either use mvn argument -Dimage or set env NEO4J_IMAGE", image);
+        return image;
+    }
+
+    private static String getNeo4jAdminImageFromPropertyOrEnv()
+    {
+        String image = System.getProperty( "adminimage" );
+        if(image == null)
+        {
+            image = System.getenv( "NEO4JADMIN_IMAGE" );
+        }
+        Assert.assertNotNull("Neo4j image has not been specified, either use mvn argument -Dadminimage or set env NEO4JADMIN_IMAGE", image);
         return image;
     }
 

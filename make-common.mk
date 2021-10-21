@@ -70,8 +70,11 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
 > touch $(@D)/local-package/.sentinel
 > touch $@
 
-tmp/image-neo4j-admin-%/.sentinel: docker-image-src/$(series)/neo4j-admin/Dockerfile in/$(call tarball,%,$(NEO4JVERSION))
+tmp/image-neo4j-admin-%/.sentinel: docker-image-src/$(series)/neo4j-admin/Dockerfile \
+                                    docker-image-src/$(series)/neo4j-admin/docker-entrypoint.sh \
+                                    in/$(call tarball,%,$(NEO4JVERSION))
 > mkdir -p $(@D)
+> cp $(filter %/docker-entrypoint.sh,$^) $(@D)/docker-entrypoint.sh
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
 > <$(filter %/Dockerfile,$^) sed \
     -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \

@@ -20,6 +20,9 @@ RUN apt update \
     && mv "${NEO4J_HOME}"/data /data \
     && chown -R neo4j:neo4j /data \
     && chmod -R 777 /data \
+    && mkdir -p /backup \
+    && chown -R neo4j:neo4j /backup \
+    && chmod -R 777 /backup \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
@@ -27,11 +30,13 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y purge --auto-remove curl
 
-USER neo4j:neo4j
-ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
+ENV PATH "${NEO4J_HOME}"/bin:$PATH
+VOLUME /data /backup
 WORKDIR "${NEO4J_HOME}"
 
-VOLUME /data /backup
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 CMD ["neo4j-admin"]
