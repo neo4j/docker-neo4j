@@ -145,7 +145,7 @@ public class TestDumpLoad
             HostFileSystemOperations.mountHostFolderAsVolume( container, secondDataDir, "/data" );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyDataInContainer( "neo4j", password );
+            dbio.verifyInitialDataInContainer( "neo4j", password );
         }
     }
 }

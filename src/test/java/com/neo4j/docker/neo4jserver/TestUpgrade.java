@@ -81,7 +81,7 @@ public class TestUpgrade
 			container.withEnv( "NEO4J_dbms_allow__upgrade", "true" );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
-			db.verifyDataInContainer( user, password );
+			db.verifyInitialDataInContainer( user, password );
 		}
 	}
 
@@ -125,7 +125,7 @@ public class TestUpgrade
 			container.withEnv( "NEO4J_dbms_allow__upgrade", "true" );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
-			db.verifyDataInContainer( user, password );
+			db.verifyInitialDataInContainer( user, password );
 		}
 	}
 
