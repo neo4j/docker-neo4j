@@ -2,6 +2,7 @@ package com.neo4j.docker.neo4jadmin;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -26,8 +27,10 @@ public class TestBackupRestore
     private static final Logger log = LoggerFactory.getLogger( TestBackupRestore.class );
 
     @BeforeAll
-    static void ensureEnterpriseOnly()
+    static void beforeAll()
     {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 )),
+                                "Neo4j admin image not available before 4.4.0");
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "backup and restore only available in Neo4j Enterprise" );
     }
@@ -143,22 +146,5 @@ public class TestBackupRestore
         // clean up
         adminRestore.stop();
         neo4j.stop();
-    }
-
-    @Test
-    void deleteThis()
-    {
-        boolean asDefaultUser = true;
-        String dbUser = "neo4j";
-        String password = "none";
-        try(GenericContainer neo4j = createDBContainer( asDefaultUser, password ))
-        {
-            neo4j.start();
-            DatabaseIO dbio = new DatabaseIO( neo4j );
-            dbio.putInitialDataIntoContainer( dbUser, password );
-            dbio.verifyInitialDataInContainer( dbUser, password );
-            dbio.runCypherQuery( dbUser, password, "DROP DATABASE neo4j", "system" );
-            dbio.verifyConnectivity( dbUser, password );
-        }
     }
 }
