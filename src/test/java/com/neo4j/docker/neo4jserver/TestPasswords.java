@@ -12,7 +12,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
@@ -53,7 +52,7 @@ public class TestPasswords
 			container.start();
             DatabaseIO db = new DatabaseIO(container);
             db.putInitialDataIntoContainer( "neo4j", "none" );
-			db.verifyDataInContainer( "neo4j", "none" );
+			db.verifyInitialDataInContainer( "neo4j", "none" );
 		}
 	}
 
@@ -128,7 +127,7 @@ public class TestPasswords
             log.info( "starting new container with same /data mount as same user without setting password" );
             secondContainer.start();
             DatabaseIO db = new DatabaseIO(secondContainer);
-            db.verifyDataInContainer( "neo4j", password );
+            db.verifyInitialDataInContainer( "neo4j", password );
         }
     }
 
@@ -165,7 +164,7 @@ public class TestPasswords
             log.info( "starting new container with same /data mount as same user without setting password" );
             secondContainer.start();
             DatabaseIO db = new DatabaseIO(secondContainer);
-            db.verifyDataInContainer( "neo4j", password );
+            db.verifyInitialDataInContainer( "neo4j", password );
         Assertions.assertThrows( org.neo4j.driver.exceptions.AuthenticationException.class,
                 () -> db.verifyConnectivity( "neo4j", wrongPassword) );
         }
@@ -190,7 +189,7 @@ public class TestPasswords
 
             db.changePassword( user, intialPass, resetPass );
             db.putInitialDataIntoContainer( user, resetPass );
-            db.verifyDataInContainer( user, resetPass );
+            db.verifyInitialDataInContainer( user, resetPass );
         }
     }
 }
