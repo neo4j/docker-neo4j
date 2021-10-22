@@ -3,9 +3,12 @@ package com.neo4j.docker.neo4jadmin;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +25,13 @@ import java.util.function.Consumer;
 public class TestDumpLoad
 {
     private static Logger log = LoggerFactory.getLogger( TestDumpLoad.class );
+
+    @BeforeAll
+    static void beforeAll()
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4, 4, 0 )),
+                                "Neo4j admin image not available before 4.4.0");
+    }
 
     private GenericContainer createDBContainer( boolean asDefaultUser, String password )
     {

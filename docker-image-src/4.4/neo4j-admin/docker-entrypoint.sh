@@ -1,10 +1,5 @@
 #!/bin/bash -eu
 
-cmd="$1"
-
-echo "command" ${cmd}
-echo "all entrypoint args:" "${@}"
-
 function running_as_root
 {
     test "$(id -u)" = "0"
@@ -112,5 +107,21 @@ if [ -d /backup ]; then
     check_mounted_folder_writable_with_chown "/backup"
 fi
 
+# ==== MAKE SURE NEO4J CANNOT BE RUN FROM THIS CONTAINER ====
+
+rm ${NEO4J_HOME}/bin/neo4j
+
+if [[ "${1}" == "neo4j" ]]; then
+    correct_image="neo4j:"$(neo4j-admin --version)"-${NEO4J_EDITION}"
+    echo >&2 "
+This is a neo4j-admin only image, and usage of Neo4j server is not supported from here.
+If you wish to start a Neo4j database, use:
+
+docker run ${correct_image}
+    "
+    exit 1
+fi
+
+# ==== START NEO4J-ADMIN COMMAND ====
 
 ${exec_cmd} "${@}"
