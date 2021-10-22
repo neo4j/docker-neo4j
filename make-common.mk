@@ -29,8 +29,7 @@ tmp/.image-id-neo4j-admin-%: tmp/local-context-neo4j-admin-%/.sentinel
 > mkdir -p $(@D)
 > image=test/admin-$$RANDOM
 > docker build --tag=$$image \
-    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
-    $(<D)
+    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" $(<D)
 > echo -n $$image >$@
 
 # tmp/local-context-{community,enterprise} is a local folder containing the
