@@ -222,6 +222,7 @@ public class TestExtendedConf
 					.lines()
 					.collect( Collectors.joining() );
 			// if we cannot set up test conditions properly, abort test but don't register a test failure.
+            log.error( errorMsg );
 			Assumptions.assumeTrue( false,
 									"Could not change owner of test file to 7474. User needs to be in sudoers list. Error:\n" +
 									errorMsg );
