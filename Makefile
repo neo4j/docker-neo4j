@@ -7,6 +7,7 @@ NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
 # the value of variable is passed to the maven test property. For more info see https://maven.apache.org/surefire/maven-surefire-plugin/examples/single-test.html
 # by default this is empty which means all tests will be run
 TESTS?=""
+EXTRA_MAVEN_ARGS?=
 
 all: test
 .PHONY: all
@@ -15,11 +16,11 @@ test: test-enterprise test-community
 .PHONY: test
 
 test-enterprise: build-enterprise
-> mvn test -Dimage=$$(cat tmp/.image-id-enterprise) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
+> mvn test -Dimage=$$(cat tmp/.image-id-enterprise) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS) ${EXTRA_MAVEN_ARGS}
 .PHONY: test-enterprise
 
 test-community: build-community
-> mvn test -Dimage=$$(cat tmp/.image-id-community) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-community) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
+> mvn test -Dimage=$$(cat tmp/.image-id-community) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-community) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS) ${EXTRA_MAVEN_ARGS}
 .PHONY: test-community
 
 # just build the images, don't test or package
