@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -45,6 +46,12 @@ public class TestExtendedConf
 		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,2,1 ) ),
 								"Extended configuration feature not available before 4.2" );
 	}
+
+    @AfterAll
+    public static void clearMountFolders()
+    {
+        HostFileSystemOperations.emptyTestTemporaryFolder();
+    }
 
 	protected GenericContainer createContainer(String password)
 	{
