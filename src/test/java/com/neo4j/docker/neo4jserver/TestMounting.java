@@ -4,6 +4,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,12 @@ import java.util.stream.Stream;
 public class TestMounting
 {
 	private static Logger log = LoggerFactory.getLogger( TestMounting.class );
+
+    @AfterAll
+    public static void clearMountFolders()
+    {
+        HostFileSystemOperations.emptyTestTemporaryFolder();
+    }
 
 	static Stream<Arguments> defaultUserFlagSecurePermissionsFlag()
 	{
