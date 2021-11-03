@@ -2,6 +2,7 @@ include make-common.mk
 
 NEO4J_BASE_IMAGE?="arm64v8/openjdk:11-jdk-slim"
 TAG ?= neo4j
+EXTRA_MAVEN_ARGS?=
 
 package-arm-experimental: TAG:=neo4j/neo4j-arm64-experimental
 package-arm-experimental: tag-arm
@@ -23,8 +24,8 @@ tag-arm: build-arm
 .PHONY: tag-arm
 
 test-arm: build-arm
-> mvn test -Dimage=$$(cat tmp/.image-id-community-arm) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-community) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.neo4jserver.TestBasic
-> mvn test -Dimage=$$(cat tmp/.image-id-enterprise-arm) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.neo4jserver.TestBasic
+> mvn test -Dimage=$$(cat tmp/.image-id-community-arm) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-community) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.neo4jserver.TestBasic ${EXTRA_MAVEN_ARGS}
+> mvn test -Dimage=$$(cat tmp/.image-id-enterprise-arm) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=com.neo4j.docker.neo4jserver.TestBasic ${EXTRA_MAVEN_ARGS}
 .PHONY: test-arm
 
 # neo4j-admin builds don't need tini so we don't need to have an architecture specific target for them
