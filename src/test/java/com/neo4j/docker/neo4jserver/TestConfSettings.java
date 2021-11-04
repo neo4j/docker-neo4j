@@ -4,7 +4,6 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -31,12 +30,6 @@ import java.util.stream.Stream;
 
 public class TestConfSettings {
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
-
-    @AfterAll
-    public static void clearMountFolders()
-    {
-        HostFileSystemOperations.emptyTestTemporaryFolder();
-    }
 
     private GenericContainer createContainer()
     {
