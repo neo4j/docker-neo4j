@@ -1,7 +1,10 @@
 package com.neo4j.docker.neo4jadmin;
 
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,13 @@ public class TestAdminBasic
 {
     private static final Logger log = LoggerFactory.getLogger( TestAdminBasic.class );
 
+    @BeforeAll
+    static void beforeAll()
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4, 4, 0 )),
+                                "Neo4j admin image not available before 4.4.0");
+    }
+    
     @Test
     void testCannotRunNeo4j()
     {
