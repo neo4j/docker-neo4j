@@ -3,7 +3,6 @@ package com.neo4j.docker.neo4jserver;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
@@ -25,12 +24,6 @@ import java.time.Duration;
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
-
-    @AfterAll
-    public static void clearMountFolders()
-    {
-        HostFileSystemOperations.emptyTestTemporaryFolder();
-    }
 
     @Disabled
     @Test

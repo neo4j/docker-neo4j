@@ -6,7 +6,6 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -26,12 +25,6 @@ public class TestUpgrade
 	private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
 	private final String user = "neo4j";
 	private final String password = "quality";
-
-    @AfterAll
-    public static void clearMountFolders()
-    {
-        HostFileSystemOperations.emptyTestTemporaryFolder();
-    }
 
 	private GenericContainer makeContainer(String image)
 	{

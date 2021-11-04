@@ -5,7 +5,6 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,11 +33,6 @@ public class TestBackupRestore
                                 "Neo4j admin image not available before 4.4.0");
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "backup and restore only available in Neo4j Enterprise" );
-    }
-    @AfterAll
-    public static void clearMountFolders()
-    {
-        HostFileSystemOperations.emptyTestTemporaryFolder();
     }
 
     private GenericContainer createDBContainer( boolean asDefaultUser, String password )

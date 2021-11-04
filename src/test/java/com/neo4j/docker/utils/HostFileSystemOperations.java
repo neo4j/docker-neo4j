@@ -1,27 +1,19 @@
 package com.neo4j.docker.utils;
 
-import com.github.dockerjava.api.command.CreateContainerCmd;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.Random;
 
 public class HostFileSystemOperations
 {
     private static Logger log = LoggerFactory.getLogger( HostFileSystemOperations.class);
     private static Random rng = new Random(  );
-
 
 	public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
 														 String containerMountPoint ) throws IOException
@@ -78,29 +70,5 @@ public class HostFileSystemOperations
         }
 
         return hostFolder;
-    }
-
-    public static void emptyTestTemporaryFolder()
-    {
-        Path mountPoint = Paths.get("/", "deleteme");
-        // using debian image to avoid an entrypoint script introducing weird ownership and permission problems
-        GenericContainer container = new GenericContainer<>("debian:buster-slim")
-                .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
-                                                   .withTimeout( Duration.ofSeconds( 90 ) ) )
-                .withLogConsumer( new Slf4jLogConsumer( log ) )
-                .withCommand( "find", mountPoint.toString(), "-not", "-name", mountPoint.getFileName().toString(), "-delete" );
-        mountHostFolderAsVolume( container, TestSettings.TEST_TMP_FOLDER, mountPoint.toString() );
-        try
-        {
-            container.start();
-        }
-        catch(Exception e)
-        {
-            log.error( "couldn't delete temporary folder", e );
-        }
-        finally
-        {
-            container.stop();
-        }
     }
 }
