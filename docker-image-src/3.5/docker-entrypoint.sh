@@ -452,7 +452,7 @@ fi
 
 add_docker_default_to_conf "dbms.tx_log.rotation.retention_policy" "100M size" "${NEO4J_HOME}"
 add_docker_default_to_conf "dbms.memory.pagecache.size" "512M" "${NEO4J_HOME}"
-add_docker_default_to_conf "dbms.default_listen_address" "0.0.0.0" "${NEO4J_HOME}"
+add_docker_default_to_conf "dbms.connector.default_listen_address" "0.0.0.0" "${NEO4J_HOME}"
 add_docker_default_to_conf "dbms.connector.https.listen_address" "0.0.0.0:7473" "${NEO4J_HOME}"
 add_docker_default_to_conf "dbms.connector.http.listen_address" "0.0.0.0:7474" "${NEO4J_HOME}"
 add_docker_default_to_conf "dbms.connector.bolt.listen_address" "0.0.0.0:7687" "${NEO4J_HOME}"
