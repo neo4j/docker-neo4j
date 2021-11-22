@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -59,6 +60,11 @@ public class TestConfSettings {
 
     private void assertConfigurationPresentInDebugLog( Path debugLog, String setting, String value, boolean shouldBeFound ) throws IOException
     {
+        assertConfigurationPresentInDebugLog( debugLog, setting, new String[]{value}, shouldBeFound );
+    }
+
+    private void assertConfigurationPresentInDebugLog( Path debugLog, String setting, String[] eitherOfValues, boolean shouldBeFound ) throws IOException
+    {
         // searches the debug log for the given string, returns true if present
         Stream<String> lines = Files.lines(debugLog);
         String actualSetting = lines.filter(s -> s.contains( setting )).findFirst().orElse( "" );
@@ -66,8 +72,8 @@ public class TestConfSettings {
         if(shouldBeFound)
         {
             Assertions.assertTrue( !actualSetting.isEmpty(), setting+" was never set" );
-            Assertions.assertTrue( actualSetting.contains( value ),
-                                   setting +" is set to the wrong value. Expected: "+value+" Actual: " + actualSetting );
+            Assertions.assertTrue( Arrays.stream( eitherOfValues ).anyMatch( actualSetting::contains ),
+                                   setting +" is set to the wrong value. Expected either of: "+ Arrays.toString( eitherOfValues ) +" Actual: " + actualSetting );
         }
         else
         {
@@ -288,7 +294,7 @@ public class TestConfSettings {
             container.start();
         }
 
-        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.pagecache.size", "512m",true );
+        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.pagecache.size", new String[]{"512m", "512.00MiB"}, true );
     }
 
     @Test
