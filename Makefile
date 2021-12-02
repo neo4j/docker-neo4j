@@ -42,12 +42,12 @@ tmp/devenv-%.env:  tmp/.image-id-% tmp/.image-id-neo4j-admin-%
 package: package-community package-enterprise
 .PHONY: package
 
-package-community: tmp/.image-id-community tmp/.image-id-neo4j-admin-community out/community/.sentinel
+package-community: tmp/.image-id-community tmp/.image-id-neo4j-admin-community out/community/.sentinel out/neo4j-admin-community/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4JVERSION)
 > docker save neo4j:$(NEO4JVERSION) > out/neo4j-community-$(NEO4JVERSION)-docker-loadable.tar
 
-package-enterprise: tmp/.image-id-enterprise tmp/.image-id-neo4j-admin-enterprise out/enterprise/.sentinel
+package-enterprise: tmp/.image-id-enterprise tmp/.image-id-neo4j-admin-enterprise out/enterprise/.sentinel out/neo4j-admin-enterprise/.sentinel
 > mkdir -p out
 > docker tag $$(cat $<) neo4j:$(NEO4JVERSION)-enterprise
 > docker save neo4j:$(NEO4JVERSION)-enterprise > out/neo4j-enterprise-$(NEO4JVERSION)-docker-loadable.tar
