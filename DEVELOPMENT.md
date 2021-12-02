@@ -70,7 +70,6 @@ $ ls $NEO4J_DOCKER_ROOT/in
 $ NEO4JVERSION=4.0.0-alpha05 make clean build
 ``` 
 
-
 # Running the Tests
 
 The tests are written in java, and require Maven plus jdk 11 for Neo4j version 4.0 onwards or jdk 8 for earlier Neo4j versions.
@@ -86,6 +85,24 @@ These can be passed as an environment variable or a command line parameter when 
 | `NEO4J_EDITION` | `-Dedition`     | Either `community` or `enterprise` depending on the image. |
 
 <!-- prettified with http://www.tablesgenerator.com/markdown_tables -->
+
+
+### Running with podman
+
+Tests in this module are using testcontainers. Framework expects you to have docker available on your system.
+And there are some issues like described here: https://github.com/testcontainers/testcontainers-java/issues/2088 (You are welcome to follow links to see more details)
+if you do not.
+
+TLDR on what you need to do to be able to use podman:
+
+1. Make sure you have podman service running. For example: ```podman system service --time=0 unix:///tmp/podman.sock```
+
+2. Add those environment variables:
+```
+DOCKER_HOST=unix:///tmp/podman.sock;
+TESTCONTAINERS_RYUK_DISABLED=true;
+TESTCONTAINERS_CHECKS_DISABLE=true 
+```
 
 ## Using Maven
 The Makefile can run the entire test suite.
