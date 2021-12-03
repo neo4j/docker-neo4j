@@ -25,15 +25,49 @@ out/%/.sentinel: tmp/image-%/.sentinel
 
 ## building the image ##
 
+build: build-community build-enterprise
+.PHONY: build
+
+build-community: tmp/.image-id-community tmp/.image-id-neo4j-admin-community tmp/devenv-community.env
+.PHONY: build-community
+
+build-enterprise: tmp/.image-id-enterprise tmp/.image-id-neo4j-admin-enterprise tmp/devenv-enterprise.env
+.PHONY: build-enterprise
+
+tmp/devenv-%.env:  tmp/.image-id-% tmp/.image-id-neo4j-admin-%
+> echo "NEO4JVERSION=$(NEO4JVERSION)" > ${@}
+> echo "NEO4J_IMAGE=$$(cat tmp/.image-id-${*})" >> ${@}
+> echo "NEO4JADMIN_IMAGE=$$(cat tmp/.image-id-neo4j-admin-${*})" >> ${@}
+> echo "NEO4J_EDITION=${*}" >> ${@}
+
+# copy the releaseable version of the image to the output folder.
+out/%/.sentinel: tmp/image-%/.sentinel
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> touch $@
+
+# create image from local build context
+tmp/.image-id-%: tmp/local-context-%/.sentinel
+> mkdir -p $(@D)
+> image=test/$$RANDOM
+> docker build --tag=$$image \
+    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
+    $(<D)
+> echo -n $$image >$@
+
 tmp/.image-id-neo4j-admin-%: tmp/local-context-neo4j-admin-%/.sentinel
 > mkdir -p $(@D)
 > image=test/admin-$$RANDOM
 > docker build --tag=$$image \
-    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" $(<D)
+    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
+    $(<D)
 > echo -n $$image >$@
+
+## local build context ##
 
 # tmp/local-context-{community,enterprise} is a local folder containing the
 # Dockerfile/entrypoint/Neo4j/etc required to build a complete image locally.
+
 tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION)) tmp/neo4jlabs-plugins.json
 > rm -rf $(@D)
 > mkdir -p $(@D)
@@ -48,6 +82,12 @@ tmp/local-context-neo4j-admin-%/.sentinel: tmp/image-neo4j-admin-%/.sentinel in/
 > cp -r $(<D)/* $(@D)
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
 > touch $@
+
+tmp/neo4jlabs-plugins.json: ./neo4jlabs-plugins.json
+> mkdir -p $(@D)
+> cp $< $@
+
+## create Dockerfiles ##
 
 # tmp/image-{community,enterprise} contains the Dockerfile, docker-entrypoint.sh and plugins.json
 # with all the variables (eg tini) filled in, but *NO Neo4j tar*. This is what gets released to dockerhub.
@@ -85,10 +125,6 @@ tmp/image-neo4j-admin-%/.sentinel: docker-image-src/$(series)/neo4j-admin/Docker
 > mkdir -p $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
-
-tmp/neo4jlabs-plugins.json: ./neo4jlabs-plugins.json
-> mkdir -p $(@D)
-> cp $< $@
 
 fetch_tarball = curl --fail --silent --show-error --location --remote-name \
     $(dist_site)/$(call tarball,$(1),$(NEO4JVERSION))
