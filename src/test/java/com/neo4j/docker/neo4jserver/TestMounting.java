@@ -22,7 +22,9 @@ import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -240,9 +242,13 @@ public class TestMounting
 	void canMountAllTheThings_fileMounts(boolean asCurrentUser) throws Exception
 	{
 		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "mount-everything-" );
+
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
+			var configMountPath = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
+			Path confFile = Paths.get( "src", "test", "resources", "confs", "MountConf.conf" );
+			Files.copy( confFile, configMountPath.resolve( "neo4j.conf" ) );
+
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data", "/data", testOutputFolder );
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import", "/import",
 																	   testOutputFolder );
@@ -268,7 +274,7 @@ public class TestMounting
 		{
 			container.withCreateContainerCmdModifier(
 					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
-							Bind.parse("conf-"+id+":/conf"),
+							Bind.parse( "conf-" + id + ":/conf" ), // not sure what todo here?
 							Bind.parse("data-"+id+":/data"),
 							Bind.parse("import-"+id+":/import"),
 							Bind.parse("logs-"+id+":/logs"),
