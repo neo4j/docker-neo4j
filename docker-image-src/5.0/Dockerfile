@@ -5,8 +5,6 @@ ENV NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
     NEO4J_HOME="/var/lib/neo4j"
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
-ARG TINI_SHA256="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"
-ARG TINI_URI="https://github.com/krallin/tini/releases/download/v0.18.0/tini"
 
 RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
@@ -14,9 +12,6 @@ COPY ./local-package/* /tmp/
 
 RUN apt update \
     && apt install -y curl wget gosu jq \
-    && curl -L --fail --silent --show-error ${TINI_URI} > /sbin/tini \
-    && echo "${TINI_SHA256}  /sbin/tini" | sha256sum -c --strict --quiet \
-    && chmod +x /sbin/tini \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -33,9 +28,26 @@ RUN apt update \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
+    && set -eux; \
+	dpkgArch="$(dpkg --print-architecture)"; \
+	case "${dpkgArch##*-}" in \
+		'amd64') \
+            tinisha="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"; \
+            tiniurl="https://github.com/krallin/tini/releases/download/v0.18.0/tini"; \
+			;; \
+		'arm64') \
+            tinisha="7c5463f55393985ee22357d976758aaaecd08defb3c5294d353732018169b019"; \
+            tiniurl="https://github.com/krallin/tini/releases/download/v0.18.0/tini-arm64"; \
+			;; \
+		*) echo >&2 "Neo4j does not currently have a docker image for architecture $dpkgArch"; exit 1 ;; \
+	esac \
+    && curl -L --fail --silent --show-error ${tiniurl} > /sbin/tini \
+    && echo "${tinisha}  /sbin/tini" | sha256sum -c --strict --quiet \
+    && chmod +x /sbin/tini \
+    && apt-get -y purge --auto-remove curl \
     && rm -rf /tmp/* \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y purge --auto-remove curl
+    && rm -rf /var/lib/apt/lists/*
+
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
