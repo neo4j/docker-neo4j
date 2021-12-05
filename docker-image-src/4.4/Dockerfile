@@ -28,11 +28,7 @@ RUN apt update \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
-    && rm -rf /tmp/* \
-    && rm -rf /var/lib/apt/lists/*
-
-# do architecture specific installations
-RUN set -eux; \
+    && set -eux; \
 	dpkgArch="$(dpkg --print-architecture)"; \
 	case "${dpkgArch##*-}" in \
 		'amd64') \
@@ -48,7 +44,10 @@ RUN set -eux; \
     && curl -L --fail --silent --show-error ${tiniurl} > /sbin/tini \
     && echo "${tinisha}  /sbin/tini" | sha256sum -c --strict --quiet \
     && chmod +x /sbin/tini \
-    && apt-get -y purge --auto-remove curl
+    && apt-get -y purge --auto-remove curl \
+    && rm -rf /tmp/* \
+    && rm -rf /var/lib/apt/lists/*
+
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
