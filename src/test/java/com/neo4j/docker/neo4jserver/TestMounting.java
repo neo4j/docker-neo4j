@@ -25,7 +25,10 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.UserPrincipal;
 import java.time.Duration;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -108,8 +111,10 @@ public class TestMounting
     @ValueSource(booleans = {true, false})
     void canDumpConfig(boolean asCurrentUser) throws Exception
     {
-        File conf;
-        String assertMsg, mountPrefix;
+        File confFile;
+        Path confMount;
+        String assertMsg;
+        String mountPrefix;
         if(asCurrentUser)
         {
             assertMsg = "Conf file was not successfully dumped when running container as current user";
@@ -124,9 +129,9 @@ public class TestMounting
         try(GenericContainer container = setupBasicContainer(asCurrentUser, false))
         {
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     container, mountPrefix,"/conf" );
-            conf = confMount.resolve( "neo4j.conf" ).toFile();
+            confFile = confMount.resolve( "neo4j.conf" ).toFile();
 
             //Start the container
             container.setWaitStrategy(
@@ -138,7 +143,14 @@ public class TestMounting
         }
 
         // verify conf file was written
-        Assertions.assertTrue( conf.exists(), assertMsg );
+        Assertions.assertTrue( confFile.exists(), assertMsg );
+        // verify conf folder does not have new owner if not running as root
+        if(asCurrentUser)
+        {
+            int fileUID = (Integer) Files.getAttribute( confFile.toPath(), "unix:uid" );
+            int expectedUID = Integer.parseInt( SetContainerUser.getNonRootUserString().split( ":" )[0] );
+            Assertions.assertEquals( expectedUID, fileUID, "Owner of dumped conf file is not the currently running user" );
+        }
     }
 
     @Test
