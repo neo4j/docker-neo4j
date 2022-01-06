@@ -13,7 +13,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -21,6 +23,7 @@ import com.neo4j.docker.utils.TestSettings;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -101,28 +104,60 @@ public class TestMounting
 	}
 
 
-	@Test
-	void testDumpConfig( ) throws Exception
-	{
-		try(GenericContainer container = setupBasicContainer( true, false ))
-		{
-			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-					container,
-					"dumpconfig-conf-",
-					"/conf" );
-			container.setWaitStrategy(
-					Wait.forLogMessage( ".*Config Dumped.*", 1 )
-						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-			container.withCommand( "dump-config" );
-			container.start();
+    @ParameterizedTest(name = "as current user={0}")
+    @ValueSource(booleans = {true, false})
+    void canDumpConfig(boolean asCurrentUser) throws Exception
+    {
+        File conf;
+        String assertMsg, mountPrefix;
+        if(asCurrentUser)
+        {
+            assertMsg = "Conf file was not successfully dumped when running container as current user";
+            mountPrefix = "candumpconf-user-";
+        }
+        else
+        {
+            assertMsg = "Conf file was not successfully dumped when running container as root";
+            mountPrefix = "candumpconf-root-";
+        }
 
-			Path expectedConfDumpFile = confMount.resolve( "neo4j.conf" );
-			Assertions.assertTrue( expectedConfDumpFile.toFile().exists(),
-								   "dump-config did not dump the config file to " + confMount.toString() );
-		}
-	}
+        try(GenericContainer container = setupBasicContainer(asCurrentUser, false))
+        {
+            //Mount /conf
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container, mountPrefix,"/conf" );
+            conf = confMount.resolve( "neo4j.conf" ).toFile();
 
+            //Start the container
+            container.setWaitStrategy(
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
+                        .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+            container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            container.setCommand( "dump-config" );
+            container.start();
+        }
+
+        // verify conf file was written
+        Assertions.assertTrue( conf.exists(), assertMsg );
+    }
+
+    @Test
+    void canDumpConfig_errorsWithoutConfMount() throws Exception
+    {
+        try(GenericContainer container = setupBasicContainer( false, false ))
+        {
+            container.setWaitStrategy(
+                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
+                        .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+            container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            container.setCommand( "dump-config" );
+            Assertions.assertThrows( ContainerLaunchException.class,
+                                     ()->container.start(),
+                                     "Did not error when dump config requested without mounted /conf folder");
+            String stderr = container.getLogs( OutputFrame.OutputType.STDERR);
+            Assertions.assertTrue( stderr.endsWith( "You must mount a folder to /conf so that the configuration file(s) can be dumped to there.\n" ) );
+        }
+    }
 
 	@ParameterizedTest(name = "asUser={0}, secureFlag={1}")
 	@MethodSource( "defaultUserFlagSecurePermissionsFlag" )

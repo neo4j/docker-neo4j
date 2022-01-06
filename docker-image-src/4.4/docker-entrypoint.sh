@@ -534,9 +534,11 @@ fi
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
 if [ "${cmd}" == "dump-config" ]; then
-    if ! is_writable "/conf"; then
-        print_permissions_advice_and_fail "/conf"
+    if [ ! -d "/conf" ]; then
+        echo >&2 "You must mount a folder to /conf so that the configuration file(s) can be dumped to there."
+        exit 1
     fi
+    check_mounted_folder_writable_with_chown "/conf"
     cp --recursive "${NEO4J_HOME}"/conf/* /conf
     echo "Config Dumped"
     exit 0
