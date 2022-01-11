@@ -189,7 +189,7 @@ function load_plugin_from_github
   # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
   echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
   local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
-  local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output ".[] | select(.neo4j==\"${_neo4j_version}\") | .jar")"
+  local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"  
   if [[ -z "${_plugin_jar_url}" ]]; then
     echo >&2 "Error: No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
     echo >&2 "${_versions_json}"
