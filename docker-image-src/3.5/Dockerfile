@@ -3,7 +3,7 @@ FROM openjdk:8-jre-slim
 ENV NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
-    NEO4J_HOME="/var/lib/neo4j" \
+    NEO4J_HOME="/var/lib/neo4j"
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
 RUN addgroup --system neo4j && adduser --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
