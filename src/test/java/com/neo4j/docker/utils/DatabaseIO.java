@@ -101,8 +101,8 @@ public class DatabaseIO
 
 	public List<Record> runCypherQuery( String user, String password, String cypher)
     {
-        // we don't just do runCypherQuery( user, password, cypher, "neo4j") because
-        // it breaks the upgrade tests from 3.5.x
+        // we don't just do runCypherQuery( user, password, cypher, "neo4j")
+        // because it breaks the upgrade tests from 3.5.x
         List<Record> records;
 		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
 		try ( Session session = driver.session())

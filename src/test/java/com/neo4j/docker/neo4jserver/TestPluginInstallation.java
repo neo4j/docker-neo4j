@@ -155,10 +155,10 @@ public class TestPluginInstallation
         try ( Driver coreDriver = GraphDatabase.driver( boltAddress, AuthTokens.basic( "neo4j", "neo" ) ) )
         {
             Session session = coreDriver.session();
-            // Check that the config remains as set by our env var and is not overriden by the plugin defaults
+            // Check that the config remains as set by our env var and is not overridden by the plugin defaults
             Result res = session.run ( "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value" );
             Record record = res.single();
-            assertEquals( "foo", record.get( "value" ).asString(), "neo4j config should not be overriden by plugin" );
+            assertEquals( "foo", record.get( "value" ).asString(), "neo4j config should not be overridden by plugin" );
             assertFalse( res.hasNext(), "Config lookup should only return a single result" );
         }
         finally
