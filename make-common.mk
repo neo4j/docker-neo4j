@@ -51,7 +51,7 @@ tmp/.image-id-%: tmp/local-context-%/.sentinel
 > mkdir -p $(@D)
 > image=test/$$RANDOM
 > docker build --tag=$$image \
-    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
+    --build-arg="NEO4J_URI=file:///startup/$(call tarball,$*,$(NEO4JVERSION))" \
     $(<D)
 > echo -n $$image >$@
 
@@ -59,7 +59,7 @@ tmp/.image-id-neo4j-admin-%: tmp/local-context-neo4j-admin-%/.sentinel
 > mkdir -p $(@D)
 > image=test/admin-$$RANDOM
 > docker build --tag=$$image \
-    --build-arg="NEO4J_URI=file:///tmp/$(call tarball,$*,$(NEO4JVERSION))" \
+    --build-arg="NEO4J_URI=file:///startup/$(call tarball,$*,$(NEO4JVERSION))" \
     $(<D)
 > echo -n $$image >$@
 
@@ -106,6 +106,8 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
 > cp $(filter %.json,$^) $(@D)/local-package
+> cp -r $(<D)/* $(@D)/local-package
+> rm -r $(@D)/local-package/neo4j-admin
 > touch $(@D)/local-package/.sentinel
 > touch $@
 

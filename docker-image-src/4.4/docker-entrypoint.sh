@@ -181,7 +181,7 @@ function load_plugin_from_github
   if [ -d /plugins ]; then
     local _plugins_dir="/plugins"
   fi
-  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /neo4jlabs-plugins.json )"
+  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /startup/neo4jlabs-plugins.json )"
   # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
   local _destination="${_plugins_dir}/${_plugin_name}.jar"
   local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
@@ -189,10 +189,9 @@ function load_plugin_from_github
   # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
   echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
   local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
-  local _plugin_jar_url="$(echo "${_versions_json}" | jq --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"  
+  local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
   if [[ -z "${_plugin_jar_url}" ]]; then
     echo >&2 "Error: No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
-    echo >&2 "${_versions_json}"
     exit 1
   fi
   echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
@@ -214,7 +213,7 @@ function apply_plugin_default_configuration
 
   local _property _value
   echo "Applying default values for plugin ${_plugin_name} to neo4j.conf"
-  for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /neo4jlabs-plugins.json); do
+  for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /startup/neo4jlabs-plugins.json); do
     _property="$(jq --raw-output '.key' <<< "${_entry}")"
     _value="$(jq --raw-output '.value' <<< "${_entry}")"
 
@@ -238,7 +237,7 @@ function install_neo4j_labs_plugins
   local _old_config="$(mktemp)"
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
-    local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /neo4jlabs-plugins.json )"
+    local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
     if [ "${_location}" != "null" ]; then
         load_plugin_from_location "${plugin_name}" "${_location}"
     else
