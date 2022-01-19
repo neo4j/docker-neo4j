@@ -30,14 +30,9 @@ public class DatabaseIO
 	public DatabaseIO( GenericContainer container )
 	{
 		this.container = container;
-//		this.boltUri = getBoltURIFromContainer( container );
         this.boltUri = "bolt://"+container.getContainerIpAddress()+":"+container.getMappedPort( 7687 );
 	}
 
-//	public static String getBoltURIFromContainer( GenericContainer container )
-//	{
-//		return "bolt://"+container.getContainerIpAddress()+":"+container.getMappedPort( 7687 );
-//	}
 
 	public void putInitialDataIntoContainer( String user, String password )
 	{
