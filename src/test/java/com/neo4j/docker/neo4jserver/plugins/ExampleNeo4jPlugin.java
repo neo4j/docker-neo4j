@@ -39,8 +39,9 @@ public class ExampleNeo4jPlugin
     // A Neo4j procedure that always returns fixed values
     @Procedure
     public Stream<PrimitiveOutput> defaultValues( @Name( value = "string", defaultValue = "a string" ) String string,
-            @Name( value = "integer", defaultValue = "42" ) long integer, @Name( value = "float", defaultValue = "3.14" ) double aFloat,
-            @Name( value = "boolean", defaultValue = "true" ) boolean aBoolean )
+                                                  @Name( value = "integer", defaultValue = "42" ) long integer,
+                                                  @Name( value = "float", defaultValue = "3.14" ) double aFloat,
+                                                  @Name( value = "boolean", defaultValue = "true" ) boolean aBoolean )
     {
         return Stream.of( new PrimitiveOutput( string, integer, aFloat, aBoolean ) );
     }

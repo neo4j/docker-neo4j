@@ -67,9 +67,19 @@ public class Neo4jVersion
         boolean isNewer = this.isNewerThan( that );
         if(!isNewer)
         {
-            return major == that.major && minor == that.minor && patch == that.patch;
+            return isEqual(that);
         }
-        else return isNewer;
+        else return true;
+    }
+
+    public boolean isEqual(Neo4jVersion that)
+    {
+        return (major == that.major) && (minor == that.minor) && (patch == that.patch);
+    }
+
+    public String getBranch()
+    {
+        return String.format( "%d.%d", major, minor );
     }
 
     @Override
@@ -78,19 +88,18 @@ public class Neo4jVersion
         return String.format( "%d.%d.%d%s", major, minor, patch, label );
     }
 
-//    @Override
-//    public boolean equals( Object o )
-//    {
-//        if ( this == o )
-//        {
-//            return true;
-//        }
-//        if ( o == null || getClass() != o.getClass() )
-//        {
-//            return false;
-//        }
-//
-//        Neo4jVersion that = (Neo4jVersion) o;
-//        return major == that.major && minor == that.minor && patch == that.patch && label.equals( that.label );
-//    }
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        return isEqual((Neo4jVersion) o);
+    }
 }
