@@ -13,6 +13,7 @@ import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -21,8 +22,11 @@ import org.testcontainers.shaded.com.google.common.io.Files;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.neo4j.driver.Record;
@@ -152,7 +156,7 @@ public class TestPluginInstallation
     }
 
     @Test
-    void testSemanticVersioningPluginSelection(@TempDir Path pluginsDir) throws Exception
+    void testSemanticVersioningPlugin_catchesMatchWithX(@TempDir Path pluginsDir) throws Exception
     {
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x");
         setupTestPlugin( pluginsDir, versionsJson );
@@ -164,7 +168,89 @@ public class TestPluginInstallation
         }
     }
 
+    @Test
+    void testSemanticVersioningPlugin_catchesMatchWithStar(@TempDir Path pluginsDir) throws Exception
+    {
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".*");
+        setupTestPlugin( pluginsDir, versionsJson );
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            verifyTestPluginLoaded(db);
+        }
+    }
 
+    @Test
+    void testSemanticVersioningLogic() throws Exception
+    {
+        String major = Integer.toString(NEO4J_VERSION.major);
+        String minor = Integer.toString(NEO4J_VERSION.minor);
+
+        // testing common neo4j name variants
+        List<String> neo4jVersions = new ArrayList<>() {{
+            add(NEO4J_VERSION.toString());
+            add(NEO4J_VERSION.toString()+"-drop01.1");
+            add(NEO4J_VERSION.toString()+"-drop01");
+            add(NEO4J_VERSION.toString()+"-beta04");
+        }};
+
+        List<String> matchingCases = new ArrayList<>() {{
+            add( NEO4J_VERSION.toString() );
+            add( major+'.'+minor+".x" );
+            add( major+'.'+minor+".*" );
+        }};
+
+        List<String> nonMatchingCases = new ArrayList<>() {{
+            add( (NEO4J_VERSION.major+1)+'.'+minor+".x" );
+            add( (NEO4J_VERSION.major-1)+'.'+minor+".x" );
+            add( major+'.'+(NEO4J_VERSION.minor+1)+".x" );
+            add( major+'.'+(NEO4J_VERSION.minor-1)+".x" );
+            add( (NEO4J_VERSION.major+1)+'.'+minor+".*" );
+            add( (NEO4J_VERSION.major-1)+'.'+minor+".*" );
+            add( major+'.'+(NEO4J_VERSION.minor+1)+".*" );
+            add( major+'.'+(NEO4J_VERSION.minor-1)+".*" );
+        }};
+
+        // Asserting every test case means that if there's a failure, all further tests won't run.
+        // Instead we're running all tests and saving any failed cases for reporting at the end of the test.
+        List<String> failedTests = new ArrayList<>();
+
+
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.withEnv( "NEO4JLABS_PLUGINS", "" ); // don't need the _testing plugin for this
+            container.start();
+
+            String semverQuery = "echo \"{\\\"neo4j\\\":\\\"%s\\\"}\" | " +
+                                 "jq -L/startup --raw-output \"import \\\"semver\\\" as lib; " +
+                                 ".neo4j | lib::semver(\\\"%s\\\")\"";
+            for(String neoVer : neo4jVersions)
+            {
+                for(String ver : matchingCases)
+                {
+                    Container.ExecResult out = container.execInContainer( "sh", "-c", String.format( semverQuery, ver, neoVer) );
+                    if(! out.getStdout().trim().equals( "true" ) )
+                    {
+                        failedTests.add( String.format( "%s should match %s but did not", ver, neoVer) );
+                    }
+                }
+                for(String ver : nonMatchingCases)
+                {
+                    Container.ExecResult out = container.execInContainer( "sh", "-c", String.format( semverQuery, ver, neoVer) );
+                    if(! out.getStdout().trim().equals( "false" ) )
+                    {
+                        failedTests.add( String.format( "%s should NOT match %s but did", ver, neoVer) );
+                    }
+                }
+            }
+            if(failedTests.size() > 0)
+            {
+                Assertions.fail(failedTests.stream().collect( Collectors.joining("\n")));
+            }
+        }
+
+    }
 
     private class VersionsJsonEntry
     {
