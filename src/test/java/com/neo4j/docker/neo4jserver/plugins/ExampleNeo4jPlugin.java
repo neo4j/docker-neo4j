@@ -1,7 +1,6 @@
 package com.neo4j.docker.neo4jserver.plugins;
 
 import java.util.stream.Stream;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
@@ -29,6 +28,18 @@ public class ExampleNeo4jPlugin
             this.aBoolean = aBoolean;
         }
     }
+//    @ServiceProvider
+//    public static class ExampleConfigurationSetting implements SettingsDeclaration
+//    {
+//        public static final String CONF_NAME = "com.neo4j.docker.neo4jserver.plugins.loaded_verison";
+//
+//        @Description("Unique setting to identify which semver field was matched")
+//        public static final Setting<String> loadedVersionValue = SettingImpl.newBuilder(
+//                CONF_NAME,
+//                SettingValueParsers.STRING,
+//                "unset"
+//        ).build();
+//    }
 
     @Context
     public GraphDatabaseService db;
