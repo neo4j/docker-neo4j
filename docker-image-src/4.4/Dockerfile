@@ -27,7 +27,6 @@ RUN apt update \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
-    && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
     && apt-get -y purge --auto-remove curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,5 +39,5 @@ VOLUME /data /logs
 
 EXPOSE 7474 7473 7687
 
-ENTRYPOINT ["tini", "-g", "--", "/docker-entrypoint.sh"]
+ENTRYPOINT ["tini", "-g", "--", "/startup/docker-entrypoint.sh"]
 CMD ["neo4j"]
