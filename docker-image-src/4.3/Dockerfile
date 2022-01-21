@@ -8,7 +8,7 @@ ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
 RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
-COPY ./local-package/* /tmp/
+COPY ./local-package/* /startup/
 
 RUN apt update \
     && apt install -y curl wget gosu jq tini \
@@ -27,10 +27,9 @@ RUN apt update \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
-    && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
-    && rm -rf /tmp/* \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y purge --auto-remove curl
+    && apt-get -y purge --auto-remove curl \
+    && rm -rf /var/lib/apt/lists/*
+
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
@@ -38,9 +37,7 @@ WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
 EXPOSE 7474 7473 7687
 
-ENTRYPOINT ["tini", "-g", "--", "/docker-entrypoint.sh"]
+ENTRYPOINT ["tini", "-g", "--", "/startup/docker-entrypoint.sh"]
 CMD ["neo4j"]

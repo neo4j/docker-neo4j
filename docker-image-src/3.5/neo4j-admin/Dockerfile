@@ -8,7 +8,7 @@ ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
 RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
-COPY ./local-package/* /tmp/
+COPY ./local-package/* /startup/
 
 RUN apt update \
     && apt install -y curl gosu \
