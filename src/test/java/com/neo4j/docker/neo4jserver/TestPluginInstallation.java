@@ -186,20 +186,20 @@ public class TestPluginInstallation
         String minor = Integer.toString(NEO4J_VERSION.minor);
 
         // testing common neo4j name variants
-        List<String> neo4jVersions = new ArrayList<>() {{
+        List<String> neo4jVersions = new ArrayList<String>() {{
             add(NEO4J_VERSION.toString());
             add(NEO4J_VERSION.toString()+"-drop01.1");
             add(NEO4J_VERSION.toString()+"-drop01");
             add(NEO4J_VERSION.toString()+"-beta04");
         }};
 
-        List<String> matchingCases = new ArrayList<>() {{
+        List<String> matchingCases = new ArrayList<String>() {{
             add( NEO4J_VERSION.toString() );
             add( major+'.'+minor+".x" );
             add( major+'.'+minor+".*" );
         }};
 
-        List<String> nonMatchingCases = new ArrayList<>() {{
+        List<String> nonMatchingCases = new ArrayList<String>() {{
             add( (NEO4J_VERSION.major+1)+'.'+minor+".x" );
             add( (NEO4J_VERSION.major-1)+'.'+minor+".x" );
             add( major+'.'+(NEO4J_VERSION.minor+1)+".x" );
@@ -212,7 +212,7 @@ public class TestPluginInstallation
 
         // Asserting every test case means that if there's a failure, all further tests won't run.
         // Instead we're running all tests and saving any failed cases for reporting at the end of the test.
-        List<String> failedTests = new ArrayList<>();
+        List<String> failedTests = new ArrayList<String>();
 
 
         try(GenericContainer container = createContainerWithTestingPlugin())
