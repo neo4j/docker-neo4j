@@ -13,6 +13,7 @@
         <neo4j.version>${env.NEO4JVERSION}</neo4j.version>
         <!-- set java.version to either 1.8 or 11 but don't commit with it set to 11 -->
         <java.version>1.8</java.version>
+        <testcontainers.version>1.16.3</testcontainers.version>
 	</properties>
 
 	<build>
@@ -88,19 +89,19 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>1.16.0</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>1.16.0</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>4.0.0</version>
+            <version>4.3.6</version>
             <scope>test</scope>
         </dependency>
         <!--  Gson: Java to Json conversion -->
