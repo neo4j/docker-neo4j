@@ -1,5 +1,7 @@
 package com.neo4j.docker.neo4jserver;
 
+import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -9,8 +11,6 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.TestSettings;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 

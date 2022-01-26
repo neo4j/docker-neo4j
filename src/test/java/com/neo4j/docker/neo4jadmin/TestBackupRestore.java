@@ -97,7 +97,7 @@ public class TestBackupRestore
 
     private void testCanBackupAndRestore(boolean asDefaultUser, String password) throws Exception
     {
-        String dbUser = "neo4j";
+        final String dbUser = "neo4j";
         Path testOutputFolder = HostFileSystemOperations.createTempFolder( "backupRestore-" );
 
         // BACKUP
@@ -111,10 +111,11 @@ public class TestBackupRestore
         dbio.verifyInitialDataInContainer( dbUser, password );
 
         // start admin container to initiate backup
+        String neoDBAddress = neo4j.getHost()+":"+neo4j.getMappedPort( 6362 );
         GenericContainer adminBackup = createAdminContainer( asDefaultUser )
-                .withNetworkMode( "container:"+neo4j.getContainerId() )
+                .withNetworkMode( "host" )
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup complete successful.*" ) )
-                .withCommand( "neo4j-admin", "backup", "--database=neo4j", "--backup-dir=/backup");
+                .withCommand( "neo4j-admin", "backup", "--database=neo4j", "--backup-dir=/backup", "--from="+neoDBAddress);
 
         Path backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                 adminBackup, "backup-", "/backup", testOutputFolder );
