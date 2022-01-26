@@ -44,7 +44,7 @@ public class TestMounting
 		// "asUser={0}, secureFlag={1}"
 		// expected behaviour is that if you set --user flag, your data should be read/writable
 		// if you don't set --user flag then read/writability should be controlled by the secure file permissions flag
-		// the asUser=true, secureflag=false combination is tested separately because the container should fail to start.
+		// the asCurrentUser=false, secureflag=true combination is tested separately because the container should fail to start.
 		return Stream.of(
 				Arguments.arguments( false, false ),
 				Arguments.arguments(  true, false ),
@@ -249,10 +249,9 @@ public class TestMounting
 					"nopermissioninsecuremode-data-",
 					"/data" );
 
-			// currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
-			// container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
-			container.setWaitStrategy( Wait.forListeningPort()
-										   .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
+			 // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
+			 container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 )
+                                            .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
 			Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
 									 () -> container.start(),
 									 "Neo4j should not start in secure mode if data folder is unwritable" );
@@ -273,9 +272,8 @@ public class TestMounting
 					"/logs" );
 
 			// currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
-			// container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
-			container.setWaitStrategy( Wait.forListeningPort()
-										   .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
+			 container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 )
+                                            .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
 			Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
 									 () -> container.start(),
 									 "Neo4j should not start in secure mode if logs folder is unwritable" );
