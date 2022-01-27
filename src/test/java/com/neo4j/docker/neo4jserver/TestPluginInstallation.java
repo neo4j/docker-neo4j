@@ -8,7 +8,6 @@ import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,13 +74,13 @@ public class TestPluginInstallation
         return outputJsonFile;
     }
 
-    private void setupTestPluginSingleVersionOption(Path pluginsDir ) throws Exception
+    private void setupTestPluginSingleVersionOption( Path pluginsDir ) throws Exception
     {
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( pluginsDir, versionsJson );
     }
 
-    private void setupTestPlugin(Path pluginsDir, File versionsJson ) throws Exception
+    private void setupTestPlugin( Path pluginsDir, File versionsJson ) throws Exception
     {
        File myPluginJar = pluginsDir.resolve( PLUGIN_JAR ).toFile();
         new JarBuilder().createJarFor( myPluginJar, ExampleNeo4jPlugin.class, ExampleNeo4jPlugin.PrimitiveOutput.class );
@@ -118,8 +117,9 @@ public class TestPluginInstallation
 
     @Test
     @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
-    public void testPlugin(@TempDir Path pluginsDir) throws Exception
+    public void testPlugin() throws Exception
     {
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-" );
         setupTestPluginSingleVersionOption(pluginsDir);
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
@@ -131,8 +131,9 @@ public class TestPluginInstallation
 
     @Test
     @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
-    public void testPluginConfigurationDoesNotOverrideUserSetValues(@TempDir Path pluginsDir) throws Exception
+    public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
     {
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-noOverride-" );
         setupTestPluginSingleVersionOption(pluginsDir);
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
@@ -154,8 +155,9 @@ public class TestPluginInstallation
     }
 
     @Test
-    void testSemanticVersioningPlugin_catchesMatchWithX(@TempDir Path pluginsDir) throws Exception
+    void testSemanticVersioningPlugin_catchesMatchWithX() throws Exception
     {
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-semverMatchesX-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x");
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
@@ -167,8 +169,9 @@ public class TestPluginInstallation
     }
 
     @Test
-    void testSemanticVersioningPlugin_catchesMatchWithStar(@TempDir Path pluginsDir) throws Exception
+    void testSemanticVersioningPlugin_catchesMatchWithStar() throws Exception
     {
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-semverMatchesStar-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".*");
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
