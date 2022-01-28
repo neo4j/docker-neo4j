@@ -6,6 +6,8 @@ import com.neo4j.docker.utils.*;
 import com.neo4j.docker.neo4jserver.plugins.JarBuilder;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
@@ -42,6 +44,18 @@ public class TestPluginInstallation
     @Rule
     public HttpServerRule httpServer = new HttpServerRule();
 
+    @BeforeAll
+    public static void ensureNotARMArchitecture()
+    {
+        // These tests make use of a TestContainers feature that means that if you serve something locally on the
+        // host machine, it is accessible from a container at the address http://host.testcontainers.internal
+        // This feature does not seem to work on ARM64 machines. I've created a bug report here 27/01/2022:
+        // https://github.com/testcontainers/testcontainers-java/issues/4956
+        //
+        // For now, we skip these tests on ARM until there is a fix or workaround.
+        Assumptions.assumeTrue( System.getProperty("os.arch").equals( "amd64" ),
+                                "Plugin tests can only run on amd64 machines at the moment" );
+    }
 
     private GenericContainer createContainerWithTestingPlugin()
     {
@@ -181,6 +195,33 @@ public class TestPluginInstallation
             verifyTestPluginLoaded(db);
         }
     }
+
+    @Test
+    void doNotCommit() throws Exception
+    {
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "httpborked-" );
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".*");
+        setupTestPlugin( pluginsDir, versionsJson );
+
+        try(GenericContainer c = new GenericContainer<>("curlimages/curl:latest"))
+        {
+//            c.withCommand( "http://host.testcontainers.internal:3000/versions.json" )
+            c.withCommand( "curl", "https://debian.neo4j.com/neotechnology.gpg.key" )
+                .withLogConsumer( new Slf4jLogConsumer( log ) );
+            c.start();
+            log.info( c.getLogs() );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
     @Test
     void testSemanticVersioningLogic() throws Exception
