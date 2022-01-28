@@ -6,6 +6,8 @@ import com.neo4j.docker.utils.*;
 import com.neo4j.docker.neo4jserver.plugins.JarBuilder;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
@@ -42,6 +44,18 @@ public class TestPluginInstallation
     @Rule
     public HttpServerRule httpServer = new HttpServerRule();
 
+    @BeforeAll
+    public static void ensureNotARMArchitecture()
+    {
+        // These tests make use of a TestContainers feature that means that if you serve something locally on the
+        // host machine, it is accessible from a container at the address http://host.testcontainers.internal
+        // This feature does not seem to work on ARM64 machines. I've created a bug report here 27/01/2022:
+        // https://github.com/testcontainers/testcontainers-java/issues/4956
+        //
+        // For now, we skip these tests on ARM until there is a fix or workaround.
+        Assumptions.assumeTrue( System.getProperty("os.arch").equals( "amd64" ),
+                                "Plugin tests can only run on amd64 machines at the moment" );
+    }
 
     private GenericContainer createContainerWithTestingPlugin()
     {
@@ -72,12 +86,6 @@ public class TestPluginInstallation
         File outputJsonFile = destinationFolder.resolve( "versions.json" ).toFile();
         Files.write( jsonStr, outputJsonFile, StandardCharsets.UTF_8 );
         return outputJsonFile;
-    }
-
-    private void setupTestPluginSingleVersionOption( Path pluginsDir ) throws Exception
-    {
-        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
-        setupTestPlugin( pluginsDir, versionsJson );
     }
 
     private void setupTestPlugin( Path pluginsDir, File versionsJson ) throws Exception
@@ -120,7 +128,8 @@ public class TestPluginInstallation
     public void testPlugin() throws Exception
     {
         Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-" );
-        setupTestPluginSingleVersionOption(pluginsDir);
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
+        setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             container.start();
@@ -134,7 +143,8 @@ public class TestPluginInstallation
     public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
     {
         Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-noOverride-" );
-        setupTestPluginSingleVersionOption(pluginsDir);
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
+        setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             // When we set a config value explicitly
@@ -181,6 +191,7 @@ public class TestPluginInstallation
             verifyTestPluginLoaded(db);
         }
     }
+
 
     @Test
     void testSemanticVersioningLogic() throws Exception
