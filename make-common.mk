@@ -101,8 +101,7 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
 > cp docker-image-src/common/* $(@D)/local-package
-> cp -r $(<D)/* $(@D)/local-package
-> rm -r $(@D)/local-package/neo4j-admin
+> cp $(filter %.sh,$^) $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
 
