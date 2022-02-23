@@ -103,8 +103,8 @@ if [ -d /data ]; then
         check_mounted_folder_writable_with_chown "/data/transactions"
     fi
 fi
-if [ -d /backup ]; then
-    check_mounted_folder_writable_with_chown "/backup"
+if [ -d /backups ]; then
+    check_mounted_folder_writable_with_chown "/backups"
 fi
 
 # ==== MAKE SURE NEO4J CANNOT BE RUN FROM THIS CONTAINER ====

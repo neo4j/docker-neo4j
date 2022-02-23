@@ -11,7 +11,7 @@ RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-creat
 COPY ./local-package/* /startup/
 
 RUN apt update \
-    && apt install -y curl gosu \
+    && apt install -y curl gosu procps \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -20,9 +20,9 @@ RUN apt update \
     && mv "${NEO4J_HOME}"/data /data \
     && chown -R neo4j:neo4j /data \
     && chmod -R 777 /data \
-    && mkdir -p /backup \
-    && chown -R neo4j:neo4j /backup \
-    && chmod -R 777 /backup \
+    && mkdir -p /backups \
+    && chown -R neo4j:neo4j /backups \
+    && chmod -R 777 /backups \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
@@ -32,7 +32,7 @@ RUN apt update \
 
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
-VOLUME /data /backup
+VOLUME /data /backups
 WORKDIR "${NEO4J_HOME}"
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh

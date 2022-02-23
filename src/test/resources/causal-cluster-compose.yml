@@ -56,9 +56,11 @@ services:
     image: "%%IMAGE%%"
     volumes:
       - "%%LOGS_DIR%%/core3:/logs"
+      - "%%LOGS_DIR%%/core3/backups:/backups"
     networks:
       - lan
     ports:
+      - 6362
       - 7474
       - 7687
     environment:
