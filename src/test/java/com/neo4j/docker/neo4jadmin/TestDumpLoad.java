@@ -132,8 +132,8 @@ public class TestDumpLoad
         {
             HostFileSystemOperations.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
             backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    admin, "dump-", "/backup", testOutputFolder );
-            admin.withCommand( "neo4j-admin", "dump", "--database=neo4j", "--to=/backup/neo4j.dump" );
+                    admin, "dump-", "/backups", testOutputFolder );
+            admin.withCommand( "neo4j-admin", "dump", "--database=neo4j", "--to=/backups/neo4j.dump" );
             admin.start();
         }
         Assertions.assertTrue( backupDir.resolve( "neo4j.dump" ).toFile().exists(), "dump file not created");
@@ -144,8 +144,8 @@ public class TestDumpLoad
         {
             secondDataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     admin, "data2-", "/data", testOutputFolder );
-            HostFileSystemOperations.mountHostFolderAsVolume( admin, backupDir, "/backup" );
-            admin.withCommand( "neo4j-admin", "load", "--database=neo4j", "--from=/backup/neo4j.dump" );
+            HostFileSystemOperations.mountHostFolderAsVolume( admin, backupDir, "/backups" );
+            admin.withCommand( "neo4j-admin", "load", "--database=neo4j", "--from=/backups/neo4j.dump" );
             admin.start();
         }
 
