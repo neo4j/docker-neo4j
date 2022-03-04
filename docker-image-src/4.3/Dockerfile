@@ -27,6 +27,7 @@ RUN apt update \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
+    && ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh \
     && apt-get -y purge --auto-remove curl \
     && rm -rf /var/lib/apt/lists/*
 
