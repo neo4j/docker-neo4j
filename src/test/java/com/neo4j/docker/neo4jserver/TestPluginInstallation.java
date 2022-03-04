@@ -101,7 +101,7 @@ public class TestPluginInstallation
     {
         // when we check the list of installed procedures...
         List<Record> procedures = db.runCypherQuery(DB_USER, DB_PASSWORD,
-                "CALL dbms.procedures() YIELD name, signature RETURN name, signature");
+                "SHOW PROCEDURES YIELD name, signature RETURN name, signature");
         // Then the procedure from the test plugin should be listed
         Assertions.assertTrue( procedures.stream()
                                 .anyMatch(x -> x.get( "name" ).asString()
