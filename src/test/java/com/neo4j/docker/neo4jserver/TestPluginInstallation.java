@@ -100,8 +100,10 @@ public class TestPluginInstallation
     private void verifyTestPluginLoaded(DatabaseIO db)
     {
         // when we check the list of installed procedures...
-        List<Record> procedures = db.runCypherQuery(DB_USER, DB_PASSWORD,
-                "SHOW PROCEDURES YIELD name, signature RETURN name, signature");
+        String listProceduresCypherQuery = NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4, 3, 0 ) ) ?
+                                           "SHOW PROCEDURES YIELD name, signature RETURN name, signature" :
+                                           "CALL dbms.procedures() YIELD name, signature RETURN name, signature";
+        List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD, listProceduresCypherQuery );
         // Then the procedure from the test plugin should be listed
         Assertions.assertTrue( procedures.stream()
                                 .anyMatch(x -> x.get( "name" ).asString()
