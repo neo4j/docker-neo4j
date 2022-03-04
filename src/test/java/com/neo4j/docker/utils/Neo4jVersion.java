@@ -6,10 +6,8 @@ import java.util.regex.Pattern;
 
 public class Neo4jVersion
 {
-    //public static final Neo4jVersion EXPECTED_NEO4J_VERSION = Neo4jVersion.fromVersionString( System.getenv( "NEO4J_VERSION" ) );
-    //public static final Neo4jVersion LATEST_2X_VERSION = new Neo4jVersion(2,3,12);
-    //public static final Neo4jVersion LATEST_32_VERSION = new Neo4jVersion(3,2,14);
     public static final Neo4jVersion NEO4J_VERSION_400 = new Neo4jVersion(4,0,0);
+    public static final Neo4jVersion NEO4J_VERSION_500 = new Neo4jVersion(5,0,0);
 
     public final int major;
     public final int minor;
