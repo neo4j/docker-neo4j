@@ -1,5 +1,6 @@
 package com.neo4j.docker.neo4jserver;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.google.gson.Gson;
 import com.neo4j.docker.neo4jserver.plugins.ExampleNeo4jPlugin;
 import com.neo4j.docker.utils.*;
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.neo4j.driver.Record;
@@ -191,6 +193,26 @@ public class TestPluginInstallation
             verifyTestPluginLoaded(db);
         }
     }
+
+    @Test
+    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
+    public void testPlugin_originalEntrypointLocation() throws Exception
+    {
+        Assumptions.assumeFalse( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                                 "/docker-entrypoint.sh is permanently moved from 5.0 onwards");
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-oldEntrypoint-" );
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x" );
+        setupTestPlugin( pluginsDir, versionsJson );
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.withCreateContainerCmdModifier(
+                    (Consumer<CreateContainerCmd>) cmd -> cmd.withEntrypoint( "/docker-entrypoint.sh", "neo4j" ) );
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            verifyTestPluginLoaded(db);
+        }
+    }
+
 
 
     @Test
