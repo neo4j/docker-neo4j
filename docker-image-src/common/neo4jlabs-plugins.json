@@ -37,7 +37,7 @@
     }
   },
   "graph-data-science": {
-    "versions": "https://s3-eu-west-1.amazonaws.com/com.neo4j.graphalgorithms.dist/graph-data-science/versions.json",
+    "versions": "https://graphdatascience.ninja/versions.json",
     "properties": {
       "dbms.security.procedures.unrestricted": "gds.*"
     }
