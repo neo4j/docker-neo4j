@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve
 title: ''
 labels: ''
-assignees: jennyowen, bfeshti
+assignees: jennyowen
 
 ---
 
@@ -21,4 +21,4 @@ To help us understand your issue, please specify important details, primarily:
 - The output of the `docker version` command
 - Operating system: (for example Windows 95/Ubuntu 16.04)
 
-Additionally, include (as appropriate) log-files, stacktraces, and other debug output.
+Additionally, include (as appropriate) error messages, log-files, stacktraces, and other debug output.
