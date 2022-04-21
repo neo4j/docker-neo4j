@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -298,37 +299,37 @@ public class TestConfSettings {
     }
 
     @Test
-    void testEnterpriseOnlyDefaultsConfigsAreSet () throws Exception
+    void testEnterpriseOnlyDefaultsConfigsAreSet() throws Exception
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                               "This is testing only ENTERPRISE EDITION configs");
+                "This is testing only ENTERPRISE EDITION configs");
 
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
         {
             //Mount /logs
             Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-            		container,
-					"enterpriseonlysettings-logs-",
-					"/logs" );
+                    container,
+                    "enterpriseonlysettings-logs-",
+                    "/logs" );
             SetContainerUser.nonRootUser( container );
             //Start the container
             container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
             container.start();
-            //Read debug.log to check that causal_clustering confs are set successfully
+            //Read debug.log to check that cluster confs are set successfully
             String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
 
+            String clusterSettingPrefix = getClusterSettingNamespace();
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                                                  "causal_clustering.transaction_advertised_address",
-                                                  expectedTxAddress,
-                                                  true );
+                    clusterSettingPrefix + ".transaction_advertised_address", expectedTxAddress,
+                    true );
         }
     }
 
     @Test
-    void testEnterpriseOnlyDefaultsDontOverrideConfFile () throws Exception
+    void testEnterpriseOnlyDefaultsDontOverrideConfFile() throws Exception
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                               "This is testing only ENTERPRISE EDITION configs");
+                "This is testing only ENTERPRISE EDITION configs");
 
         try(GenericContainer container = createContainer())
         {
@@ -343,20 +344,22 @@ public class TestConfSettings {
                     "logs-",
                     "/logs",
                     testOutputFolder );
-            // mount a configuration file with enterprise only sttings already set
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "EnterpriseOnlyNotOverwritten.conf");
+            // mount a configuration file with enterprise only settings already set
+            String confFileName = TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) ? "EnterpriseOnlyNotOverwritten.conf"
+                                                                                                                : "EnterpriseOnlyNotOverwrittenOld.conf";
+            Path confFile = Paths.get( "src", "test", "resources", "confs", confFileName);
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
 
             //Start the container
             SetContainerUser.nonRootUser( container );
             container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
             container.start();
-            //Read debug.log to check that causal_clustering confs are set successfully
+            //Read debug.log to check that cluster confs are set successfully
 
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                                                  "causal_clustering.transaction_advertised_address",
-                                                  "localhost:6060",
-                                                  true );
+                    getClusterSettingNamespace() + ".transaction_advertised_address",
+                    "localhost:6060",
+                    true );
         }
     }
 
@@ -365,6 +368,7 @@ public class TestConfSettings {
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                "This is testing only COMMUNITY EDITION configs");
+
         Path debugLog;
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
         {
@@ -380,8 +384,8 @@ public class TestConfSettings {
             container.start();
         }
 
-        //Read debug.log to check that causal_clustering confs are not present
-        assertConfigurationPresentInDebugLog( debugLog, "causal_clustering.transaction_listen_address",
+        //Read debug.log to check that cluster confs are not present
+        assertConfigurationPresentInDebugLog( debugLog, getClusterSettingNamespace() + ".transaction_listen_address",
                                               "*",
                                               false );
     }
@@ -449,5 +453,11 @@ public class TestConfSettings {
         Assertions.assertEquals("*",
                 configurations.get("dbms.security.procedures.unrestricted"),
                 "Configuration value should be *. If it's not docker-entrypoint.sh probably evaluated it as a glob expression.");
+    }
+
+    @NotNull
+    private String getClusterSettingNamespace()
+    {
+        return TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) ? "cluster" : "causal_clustering";
     }
 }
