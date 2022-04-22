@@ -490,9 +490,9 @@ add_docker_default_to_conf "dbms.default_listen_address" "0.0.0.0" "${NEO4J_HOME
 # set enterprise only docker defaults
 if [ "${NEO4J_EDITION}" == "enterprise" ];
 then
-    add_docker_default_to_conf "causal_clustering.discovery_advertised_address" "$(hostname):5000" "${NEO4J_HOME}"
-    add_docker_default_to_conf "causal_clustering.transaction_advertised_address" "$(hostname):6000" "${NEO4J_HOME}"
-    add_docker_default_to_conf "causal_clustering.raft_advertised_address" "$(hostname):7000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "cluster.discovery_advertised_address" "$(hostname):5000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "cluster.transaction_advertised_address" "$(hostname):6000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "cluster.raft_advertised_address" "$(hostname):7000" "${NEO4J_HOME}"
 fi
 
 ## == ENVIRONMENT VARIABLE CONFIGURATIONS ===
