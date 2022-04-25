@@ -42,6 +42,25 @@ public class TestConfSettings {
                 .withLogConsumer(new Slf4jLogConsumer(log));
     }
 
+    private GenericContainer makeContainerDumpConfig(GenericContainer container)
+    {
+        container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped.*", 1 )
+                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+        container.setCommand("dump-config");
+        // what is StartupCheckStrategy you wonder. Well, let me tell you a story.
+        // There was a time all these tests were failing because the config file was being dumped
+        // and the container closed so quickly. So quickly that it exposed a race condition between the container
+        // and the TestContainers library. The container could start and finish before the container library
+        // got around to checking if the container had started.
+        // The default "Has the container started" check strategy is to see if the container is running.
+        // But our container wasn't running because it was so quick it had already finished! The check failed and we had flaky tests :(
+        // This strategy here will check to see if the container is running OR if it exited with status code 0.
+        // It seems to do what we need... FOR NOW??
+        container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+        SetContainerUser.nonRootUser( container );
+        return container;
+    }
+
     private Map<String, String> parseConfFile(File conf) throws FileNotFoundException
     {
         Map<String, String> configurations = new HashMap<>();
@@ -114,19 +133,14 @@ public class TestConfSettings {
                 .withEnv("NEO4J_dbms_memory_heap_initial__size", "2000m")
                 .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
                 .withEnv( "NEO4J_dbms_directories_logs", "/notdefaultlogs" )
-                .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" )
-				.withCommand("dump-config") )
+                .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" ) )
 		{
 			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
 					"overriddenbyenv-conf-",
 					"/conf" );
 			conf = confMount.resolve( "neo4j.conf" ).toFile();
-			container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
-						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-            SetContainerUser.nonRootUser( container );
+			makeContainerDumpConfig( container );
             container.start();
         }
 
@@ -209,21 +223,8 @@ public class TestConfSettings {
             //Create ConfsReplaced.conf file
             Path confFile = Paths.get( "src", "test", "resources", "confs", "ConfsReplaced.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            makeContainerDumpConfig( container );
             //Start the container
-            container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
-						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-            // what is StartupCheckStrategy you wonder. Well, let me tell you a story.
-			// There was a time all these tests were failing because the config file was being dumped
-			// and the container closed so quickly. So quickly that it exposed a race condition between the container
-			// and the TestContainers library. The container could start and finish before the container library
-			// got around to checking if the container had started.
-			// The default "Has the container started" check strategy is to see if the container is running.
-			// But our container wasn't running because it was so quick it had already finished! The check failed and we had flaky tests :(
-			// This strategy here will check to see if the container is running OR if it exited with status code 0.
-			// It seems to do what we need... FOR NOW??
-			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-            container.setCommand( "dump-config" );
             container.start();
         }
         //Read the config file to check if the config is set correctly
@@ -251,12 +252,7 @@ public class TestConfSettings {
             //Create ConfsNotOverriden.conf file
             Path confFile = Paths.get( "src", "test", "resources", "confs", "ConfsNotOverriden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
-            //Start the container
-            container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
-						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-            container.setCommand( "dump-config" );
+            makeContainerDumpConfig( container );
             container.start();
         }
 
@@ -369,7 +365,7 @@ public class TestConfSettings {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                 "Test only valid with community edition");
 
-        try ( GenericContainer container = createContainer().withCommand("dump-config") )
+        try ( GenericContainer container = createContainer() )
         {
             Path testOutputFolder = HostFileSystemOperations.createTempFolder( "metrics-mounting-" );
             HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
@@ -380,6 +376,7 @@ public class TestConfSettings {
                                                                                         "conf-",
                                                                                         "/conf",
                                                                                         testOutputFolder );
+            makeContainerDumpConfig( container );
             container.start();
 
             File conf = confMount.resolve( "neo4j.conf" ).toFile();
@@ -463,14 +460,7 @@ public class TestConfSettings {
 					container,
 					"shellexpansionavoided-conf-",
 					"/conf" );
-
-            SetContainerUser.nonRootUser( container );
-            //Start the container
-            container.setWaitStrategy(
-                    Wait.forLogMessage( ".*Config Dumped.*", 1 )
-						.withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-            container.setCommand( "dump-config" );
+            makeContainerDumpConfig( container );
             container.start();
         }
         File conf = confMount.resolve( "neo4j.conf" ).toFile();
