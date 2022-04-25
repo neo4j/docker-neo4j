@@ -423,10 +423,12 @@ if [ -d /import ]; then
 fi
 
 if [ -d /metrics ]; then
-    if secure_mode_enabled; then
-        check_mounted_folder_readable "/metrics"
+    if [ "${NEO4J_EDITION}" == "enterprise" ]; then
+        if secure_mode_enabled; then
+            check_mounted_folder_readable "/metrics"
+        fi
+        : ${NEO4J_dbms_directories_metrics:="/metrics"}
     fi
-    : ${NEO4J_dbms_directories_metrics:="/metrics"}
 fi
 
 if [ -d /logs ]; then

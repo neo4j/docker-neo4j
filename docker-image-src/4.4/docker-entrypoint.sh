@@ -452,8 +452,12 @@ if [ -d /import ]; then
 fi
 
 if [ -d /metrics ]; then
-    check_mounted_folder_writable_with_chown "/metrics"
-    : ${NEO4J_dbms_directories_metrics:="/metrics"}
+    # metrics is enterprise only
+    if [ "${NEO4J_EDITION}" == "enterprise" ];
+    then
+        check_mounted_folder_writable_with_chown "/metrics"
+        : ${NEO4J_dbms_directories_metrics:="/metrics"}
+    fi
 fi
 
 if [ -d /logs ]; then
