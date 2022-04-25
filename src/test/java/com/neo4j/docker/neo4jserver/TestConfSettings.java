@@ -364,6 +364,32 @@ public class TestConfSettings {
     }
 
     @Test
+    void testMountingMetricsFolderShouldNotSetConfInCommunity() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
+                                "Test only valid with community edition");
+
+        try ( GenericContainer container = createContainer().withCommand("dump-config") )
+        {
+            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "metrics-mounting-" );
+            HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+                                                                       "metrics-",
+                                                                       "/metrics",
+                                                                       testOutputFolder );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+                                                                                        "conf-",
+                                                                                        "/conf",
+                                                                                        testOutputFolder );
+            container.start();
+
+            File conf = confMount.resolve( "neo4j.conf" ).toFile();
+            Map<String, String> configurations = parseConfFile(conf);
+            Assertions.assertFalse(configurations.containsKey("dbms.directories.metrics"),
+                                   "should not be setting any metrics configurations in community edition");
+        }
+    }
+
+    @Test
     void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
