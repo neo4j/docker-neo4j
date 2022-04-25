@@ -289,13 +289,10 @@ public class TestMounting
 		{
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data", "/data", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import", "/import",
-																	   testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import", "/import", testOutputFolder );
 			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs", "/logs", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "metrics", "/metrics",
-																	   testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "plugins", "/plugins",
-																	   testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "metrics", "/metrics", testOutputFolder );
+			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
 			// do some database writes so that we try writing to writable folders.
