@@ -309,9 +309,9 @@ function set_initial_password
             # Will exit with error if users already exist (and print a message explaining that)
             # we probably don't want the message though, since it throws an error message on restarting the container.
             if [ "${do_reset}" == "true" ]; then
-                ${neo4j_admin_cmd} set-initial-password "${password}" --require-password-change $(expand_commands_optionally) 2>/dev/null || true
+                ${neo4j_admin_cmd} dbms set-initial-password "${password}" --require-password-change $(expand_commands_optionally) 2>/dev/null || true
             else
-                ${neo4j_admin_cmd} set-initial-password "${password}" $(expand_commands_optionally) 2>/dev/null || true
+                ${neo4j_admin_cmd} dbms set-initial-password "${password}" $(expand_commands_optionally) 2>/dev/null || true
             fi
         elif [ -n "${_neo4j_auth:-}" ]; then
             echo "$_neo4j_auth is invalid"
