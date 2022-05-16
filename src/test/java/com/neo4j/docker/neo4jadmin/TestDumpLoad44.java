@@ -22,15 +22,17 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-public class TestDumpLoad
+public class TestDumpLoad44
 {
-    private static Logger log = LoggerFactory.getLogger( TestDumpLoad.class );
+    private static Logger log = LoggerFactory.getLogger( TestDumpLoad44.class );
 
     @BeforeAll
     static void beforeAll()
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                                "These tests only apply to neo4j-admin images of 5.0 and greater");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4, 4, 0 )),
+                                "Neo4j admin image not available before 4.4.0");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
+                                "These Neo4j admin tests are only for 4.4");
     }
 
     private GenericContainer createDBContainer( boolean asDefaultUser, String password )
@@ -133,7 +135,7 @@ public class TestDumpLoad
             HostFileSystemOperations.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
             backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     admin, "dump-", "/backups", testOutputFolder );
-            admin.withCommand( "neo4j-admin", "database", "dump", "--database=neo4j", "--to=/backups/neo4j.dump" );
+            admin.withCommand( "neo4j-admin", "dump", "--database=neo4j", "--to=/backups/neo4j.dump" );
             admin.start();
         }
         Assertions.assertTrue( backupDir.resolve( "neo4j.dump" ).toFile().exists(), "dump file not created");
@@ -145,7 +147,7 @@ public class TestDumpLoad
             secondDataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     admin, "data2-", "/data", testOutputFolder );
             HostFileSystemOperations.mountHostFolderAsVolume( admin, backupDir, "/backups" );
-            admin.withCommand( "neo4j-admin", "database", "load", "--database=neo4j", "--from=/backups/neo4j.dump" );
+            admin.withCommand( "neo4j-admin", "load", "--database=neo4j", "--from=/backups/neo4j.dump" );
             admin.start();
         }
 
