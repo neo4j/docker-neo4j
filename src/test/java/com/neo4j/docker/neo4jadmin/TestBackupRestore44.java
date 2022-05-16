@@ -20,17 +20,19 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import java.nio.file.Path;
 import java.time.Duration;
 
-public class TestBackupRestore
+public class TestBackupRestore44
 {
     // with authentication
     // with non-default user
-    private static final Logger log = LoggerFactory.getLogger( TestBackupRestore.class );
+    private static final Logger log = LoggerFactory.getLogger( TestBackupRestore44.class );
 
     @BeforeAll
     static void beforeAll()
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                                "These tests only apply to neo4j-admin images of 5.0 and greater");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 )),
+                                "Neo4j admin image not available before 4.4.0");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
+                                "These Neo4j admin tests are only for 4.4");
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "backup and restore only available in Neo4j Enterprise" );
     }
@@ -115,7 +117,7 @@ public class TestBackupRestore
         GenericContainer adminBackup = createAdminContainer( asDefaultUser )
                 .withNetworkMode( "host" )
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup complete successful.*" ) )
-                .withCommand( "neo4j-admin", "database", "backup", "--database=neo4j", "--backup-dir=/backups", "--from="+neoDBAddress);
+                .withCommand( "neo4j-admin", "backup", "--database=neo4j", "--backup-dir=/backups", "--from="+neoDBAddress);
 
         Path backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                 adminBackup, "backup-", "/backups", testOutputFolder );
@@ -135,7 +137,7 @@ public class TestBackupRestore
         dbio.runCypherQuery( dbUser, password, "STOP DATABASE neo4j", "system" );
         GenericContainer adminRestore = createAdminContainer( asDefaultUser )
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^.*restoreStatus=successful.*" ) )
-                .withCommand( "neo4j-admin", "database", "restore", "--database=neo4j", "--from=/backups/neo4j", "--force");
+                .withCommand( "neo4j-admin", "restore", "--database=neo4j", "--from=/backups/neo4j", "--force");
         HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
         HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
         adminRestore.start();
