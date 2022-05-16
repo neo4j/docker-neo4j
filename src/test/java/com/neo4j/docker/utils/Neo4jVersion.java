@@ -60,6 +60,11 @@ public class Neo4jVersion
         // Not comparing the alpha/beta label because it's still the *same* major minor patch version and a very unlikely upgrade path
     }
 
+    public boolean isOlderThan( Neo4jVersion that )
+    {
+        return !isAtLeastVersion( that );
+    }
+
     public boolean isAtLeastVersion( Neo4jVersion that )
     {
         boolean isNewer = this.isNewerThan( that );
