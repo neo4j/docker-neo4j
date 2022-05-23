@@ -43,12 +43,15 @@ test/13909
 
 ## Building ARM64 based images
 
-There is a separate make script for building ARM64 based images. 
+From Neo4j 4.4.0 onwards, the Neo4j image should be buildable on any architecture using the same build commands as [Building the Image](#building-the-image).
+
+For earlier versions of Neo4j, you may need to set the variable `NEO4J_BASE_IMAGE` to your architecture specific version of `openjdk:11-jdk-slim` (or `openjdk:8-jdk-slim` for versions before 4.0.0).
 
 Like with `amd64` images, you must still specify the **full** Neo4j version including major, minor and patch numbers. For example:
 
 ```bash
-NEO4JVERSION=3.5.11 make -f make-arm64.mk clean tag-arm
+NEO4J_BASE_IMAGE=arm64v8/openjdk:11-jdk-slim
+NEO4JVERSION=4.3.7 make clean build
 ```
 
 
@@ -89,9 +92,8 @@ These can be passed as an environment variable or a command line parameter when 
 
 ### Running with podman
 
-Tests in this module are using testcontainers. Framework expects you to have docker available on your system.
-And there are some issues like described here: https://github.com/testcontainers/testcontainers-java/issues/2088 (You are welcome to follow links to see more details)
-if you do not.
+Tests in this module are using testcontainers. The framework expects you to have docker available on your system.
+And there are some issues like described here: https://github.com/testcontainers/testcontainers-java/issues/2088 
 
 TLDR on what you need to do to be able to use podman:
 
@@ -115,8 +117,8 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
 
 ## In Intellij
 
-1. Make sure the project SDK is java 11 or java 8 as necessary.
-1. Edit the [pom.xml file](../master/pom.xml) to replace  `${env.NEO4JVERSION}` with the `NEO4JVERSION` you used to build the image.
+1. Make sure the project SDK is java 17, 11 or 8 as necessary.
+2. Edit the [pom.xml file](../master/pom.xml) to replace  `${env.NEO4JVERSION}` with the `NEO4JVERSION` you used to build the image.
 *(Yes this is terrible, and we need to think of an alternative to this)*. 
 
     For example:
@@ -127,16 +129,16 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
     ```xml
     <neo4j.version>4.0.0-alpha05</neo4j.version>
     ```
-1. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
-2. Under Run Configurations edit the Template JUnit configuration:
+3. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
+5. Under Run Configurations edit the Template JUnit configuration:
    1. Select the "EnvFile" tab
    2. Make sure "Enable EnvFile" is checked.
    3. Click the `+` then click to add a `.env` file.
-   4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test.
+   4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
    5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
 
 
-### If the Neo4j Version is not Publicly Available
+### If building an image from your local Neo4j repository
 
 1. Clone the Neo4j github repository and checkout the branch you want. 
 2. Make sure `java --version` returns java 11 if you're building Neo4j 4.0+, or java 8 if building an earlier branch.
