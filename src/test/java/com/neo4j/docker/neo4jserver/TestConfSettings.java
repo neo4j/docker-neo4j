@@ -30,6 +30,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class TestConfSettings {
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
 
@@ -124,7 +126,7 @@ public class TestConfSettings {
     @Test
     void testEnvVarsOverrideDefaultConfigurations() throws Exception
     {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 0, 0)),
+        assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 0, 0)),
                                "No neo4j-admin in 2.3: skipping neo4j-admin-conf-override test");
 
         File conf;
@@ -177,6 +179,7 @@ public class TestConfSettings {
     @Test
     void testReadsTheConfFile() throws Exception
     {
+        assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ), "These tests only apply to neo4j images before 5.0" );
         Path debugLog;
 
         try(GenericContainer container = createContainer())
@@ -205,6 +208,41 @@ public class TestConfSettings {
 
         //Check if the container reads the conf file
         assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.heap.max_size", "512", true );
+    }
+
+    @Test
+    void testReadsTheConfFile5_0() throws Exception
+    {
+        assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                "These tests only apply to neo4j images 5.0 and after" );
+        Path debugLog;
+
+        try(GenericContainer container = createContainer())
+        {
+            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "confIsRead-" );
+            //Mount /conf
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "conf-",
+                    "/conf",
+                    testOutputFolder);
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "logs-",
+                    "/logs",
+                    testOutputFolder);
+            debugLog = logMount.resolve("debug.log");
+            SetContainerUser.nonRootUser( container );
+            //Create ReadConf.conf file with the custom env variables
+            Path confFile = Paths.get( "src", "test", "resources", "confs", "ReadConf5_0.conf" );
+            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            //Start the container
+            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            container.start();
+        }
+
+        //Check if the container reads the conf file
+        assertConfigurationPresentInDebugLog( debugLog, "server.memory.heap.max_size", "512", true );
     }
 
     @Test
@@ -267,6 +305,7 @@ public class TestConfSettings {
     @Test
     void testEnvVarsOverride() throws Exception
     {
+        assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ), "These tests only apply to neo4j images before 5.0" );
         Path debugLog;
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
         {
@@ -295,9 +334,40 @@ public class TestConfSettings {
     }
 
     @Test
+    void testEnvVarsOverride5_0() throws Exception
+    {
+        assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ), "These tests only apply to neo4j images 5.0 and after" );
+        Path debugLog;
+        try(GenericContainer container = createContainer().withEnv("NEO4J_server_memory_pagecache_size", "512m"))
+        {
+            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "envoverrideworks-" );
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "conf-",
+                    "/conf",
+                    testOutputFolder );
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "logs-",
+                    "/logs",
+                    testOutputFolder );
+            debugLog = logMount.resolve( "debug.log" );
+            SetContainerUser.nonRootUser( container );
+            //Create EnvVarsOverride.conf file
+            Path confFile = Paths.get( "src", "test", "resources", "confs", "EnvVarsOverride.conf" );
+            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            //Start the container
+            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            container.start();
+        }
+
+        assertConfigurationPresentInDebugLog( debugLog, "server.memory.pagecache.size", new String[]{"512m", "512.00MiB"}, true );
+    }
+
+    @Test
     void testEnterpriseOnlyDefaultsConfigsAreSet() throws Exception
     {
-        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+        assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                 "This is testing only ENTERPRISE EDITION configs");
 
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
@@ -324,7 +394,7 @@ public class TestConfSettings {
     @Test
     void testEnterpriseOnlyDefaultsDontOverrideConfFile() throws Exception
     {
-        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+        assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                 "This is testing only ENTERPRISE EDITION configs");
 
         try(GenericContainer container = createContainer())
@@ -362,7 +432,7 @@ public class TestConfSettings {
     @Test
     void testMountingMetricsFolderShouldNotSetConfInCommunity() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
+        assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                 "Test only valid with community edition");
 
         try ( GenericContainer container = createContainer() )
@@ -389,7 +459,7 @@ public class TestConfSettings {
     @Test
     void testCommunityDoesNotHaveEnterpriseConfigs() throws Exception
     {
-        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
+        assumeTrue(TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                "This is testing only COMMUNITY EDITION configs");
 
         Path debugLog;
@@ -451,7 +521,7 @@ public class TestConfSettings {
     @Test
     void testShellExpansionAvoided() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test only applicable to 4.0 and beyond." );
+        assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test only applicable to 4.0 and beyond." );
 
         Path confMount;
         try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_security_procedures_unrestricted", "*"))
