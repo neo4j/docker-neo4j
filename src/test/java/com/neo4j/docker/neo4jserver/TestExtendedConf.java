@@ -74,10 +74,12 @@ public class TestExtendedConf
 
 	private void assertPasswordChangedLogIsCorrect( String password, GenericContainer container )
 	{
+		String successMessage = "Changed initial password for user 'neo4j'. " +
+								"IMPORTANT: this change will only take effect if performed before the database is started for the first time.";
 		if ( password.isEmpty()) {
-			Assertions.assertFalse( container.getLogs( OutputFrame.OutputType.STDOUT).contains( "Changed password for user 'neo4j'." ) );
+			Assertions.assertFalse( container.getLogs( OutputFrame.OutputType.STDOUT).contains( successMessage ) );
 		} else {
-			Assertions.assertTrue( container.getLogs( OutputFrame.OutputType.STDOUT).contains( "Changed password for user 'neo4j'." ) );
+			Assertions.assertTrue( container.getLogs( OutputFrame.OutputType.STDOUT).contains( successMessage ) );
 		}
 	}
 
