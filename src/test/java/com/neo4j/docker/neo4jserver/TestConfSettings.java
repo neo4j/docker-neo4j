@@ -384,10 +384,8 @@ public class TestConfSettings {
             //Read debug.log to check that cluster confs are set successfully
             String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
 
-            String clusterSettingPrefix = getClusterSettingNamespace();
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                    clusterSettingPrefix + ".transaction_advertised_address", expectedTxAddress,
-                    true );
+                    getClusterAdvertisedAddressSetting(), expectedTxAddress, true );
         }
     }
 
@@ -423,9 +421,7 @@ public class TestConfSettings {
             //Read debug.log to check that cluster confs are set successfully
 
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                    getClusterSettingNamespace() + ".transaction_advertised_address",
-                    "localhost:6060",
-                    true );
+                    getClusterAdvertisedAddressSetting(), "localhost:6060", true );
         }
     }
 
@@ -478,9 +474,7 @@ public class TestConfSettings {
         }
 
         //Read debug.log to check that cluster confs are not present
-        assertConfigurationPresentInDebugLog( debugLog, getClusterSettingNamespace() + ".transaction_listen_address",
-                                              "*",
-                                              false );
+        assertConfigurationPresentInDebugLog( debugLog, getClusterAdvertisedAddressSetting(), "*", false );
     }
 
     @Test
@@ -542,8 +536,9 @@ public class TestConfSettings {
     }
 
     @NotNull
-    private String getClusterSettingNamespace()
+    private String getClusterAdvertisedAddressSetting()
     {
-        return TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) ? "cluster" : "causal_clustering";
+        return TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) ?
+                "server.cluster.advertised_address" : "causal_clustering.transaction_advertised_address";
     }
 }
