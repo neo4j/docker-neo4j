@@ -160,11 +160,10 @@ public class TestPluginInstallation
             // Check that the config remains as set by our env var and is not overridden by the plugin defaults
             DatabaseIO db = new DatabaseIO(container);
             verifyTestPluginLoaded(db);
-            List<Record> results = db.runCypherQuery(DB_USER, DB_PASSWORD,
-                        "CALL dbms.listConfig() YIELD name, value WHERE name='dbms.security.procedures.unrestricted' RETURN value");
-            Assertions.assertEquals(1, results.size(), "Config lookup should only return a single result");
-            Assertions.assertEquals( "foo", results.get(0).get( "value" ).asString(),
-                    "neo4j config should not be overridden by plugin" );
+            db.verifyConfigurationSetting( DB_USER, DB_PASSWORD,
+                                           "dbms.security.procedures.unrestricted",
+                                           "foo",
+                                           "neo4j config should not be overridden by plugin");
         }
     }
 
