@@ -42,7 +42,7 @@ public class TestExtendedConf
 	@BeforeAll
 	static void ensureFeaturePresent()
 	{
-		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,2,1 ) ),
+		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( new Neo4jVersion( 4,2,0 ) ),
 								"Extended configuration feature not available before 4.2" );
 	}
 
