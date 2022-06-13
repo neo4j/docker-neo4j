@@ -63,6 +63,15 @@ public class TestConfSettings {
         return container;
     }
 
+    private GenericContainer makeContainerWaitForNeo4jReady(GenericContainer container)
+    {
+        container.setWaitStrategy( Wait.forHttp( "/" )
+                                       .forPort( 7474 )
+                                       .forStatusCode( 200 )
+                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
+        return container;
+    }
+
     private Map<String, String> parseConfFile(File conf) throws FileNotFoundException
     {
         Map<String, String> configurations = new HashMap<>();
@@ -202,7 +211,7 @@ public class TestConfSettings {
             Path confFile = Paths.get( "src", "test", "resources", "confs", "ReadConf.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            makeContainerWaitForNeo4jReady( container );
             container.start();
         }
 
@@ -326,7 +335,7 @@ public class TestConfSettings {
             Path confFile = Paths.get( "src", "test", "resources", "confs", "EnvVarsOverride.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            makeContainerWaitForNeo4jReady( container );
             container.start();
         }
 
@@ -379,7 +388,7 @@ public class TestConfSettings {
                     "/logs" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            makeContainerWaitForNeo4jReady( container );
             container.start();
             //Read debug.log to check that cluster confs are set successfully
             String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
@@ -416,7 +425,7 @@ public class TestConfSettings {
 
             //Start the container
             SetContainerUser.nonRootUser( container );
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            makeContainerWaitForNeo4jReady( container );
             container.start();
             //Read debug.log to check that cluster confs are set successfully
 
@@ -469,7 +478,7 @@ public class TestConfSettings {
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            makeContainerWaitForNeo4jReady( container );
             container.start();
         }
 
@@ -480,12 +489,12 @@ public class TestConfSettings {
     @Test
     void testJvmAdditionalNotOverridden() throws Exception
     {
+        Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400),
+                                 "test not applicable in versions newer than 4.0." );
         Path logMount;
 
         try(GenericContainer container = createContainer())
         {
-            Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test not applicable in versions newer than 4.0." );
-
 			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvmaddnotoverridden-" );
             //Mount /conf
 			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
@@ -502,13 +511,72 @@ public class TestConfSettings {
             Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            makeContainerWaitForNeo4jReady( container );
             container.start();
         }
 
         assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
                                               "dbms.jvm.additional",
                                               "-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+                                              true );
+    }
+
+    @Test
+    void testDollarInConfigEscapedProperly_conf() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
+                                "test not applicable in versions before 4.3." );
+        Path logMount;
+        try(GenericContainer container = createContainer())
+        {
+            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvmdollarinconf-" );
+            //Mount /conf
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "conf-",
+                    "/conf", testOutputFolder);
+            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "logs-",
+                    "/logs",
+                    testOutputFolder);
+            SetContainerUser.nonRootUser( container );
+            //copy test conf file
+            Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalWithDollar.conf" );
+            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            //Start the container
+            makeContainerWaitForNeo4jReady( container );
+            container.start();
+        }
+
+        assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
+                                              "dbms.jvm.additional",
+                                              "-Djavax.net.ssl.trustStorePassword=beepbeep$boop1boop2",
+                                              true );
+    }
+
+    @Test
+    void testDollarInConfigEscapedProperly_env() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
+                                "test not applicable in versions before 4.3." );
+        Path logMount;
+        try(GenericContainer container = createContainer())
+        {
+            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "confdollarlogs-",
+                    "/logs");
+            SetContainerUser.nonRootUser( container );
+            container.withEnv( "NEO4J_dbms_jvm_additional", "-Djavax.net.ssl.trustStorePassword=beepbeep$boop1boop2");
+            //Start the container
+            makeContainerWaitForNeo4jReady( container );
+            container.start();
+        }
+
+        assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
+                                              "dbms.jvm.additional",
+                                              "-Djavax.net.ssl.trustStorePassword=beepbeep$boop1boop2",
                                               true );
     }
 
