@@ -5,9 +5,9 @@ import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TestSettings;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +26,59 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+class Configuration
+{
+    public String name;
+    public String envName;
 
-public class TestConfSettings {
+    public Configuration( String name )
+    {
+        this.name = name;
+        this.envName = "NEO4J_" + name.replace( '_', '-' )
+                                      .replace( '.', '_')
+                                      .replace( "-", "__" );
+    }
+}
+
+public class TestConfSettings
+{
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
+    private static Path confFolder;
+    private static Map<String,Configuration> confNames;
+
+    @BeforeAll
+    static void createVersionSpecificConfigurationSettings()
+    {
+        confNames = new HashMap<>();
+        if (TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500))
+        {
+            confFolder = Paths.get("src", "test", "resources", "confs");
+            confNames.put( "memoryHeapMaxSize", new Configuration("server.memory.heap.max_size")  );
+            confNames.put( "memoryPagecacheSize", new Configuration("server.memory.pagecache.size")  );
+            confNames.put( "memoryHeapInitialSize", new Configuration("server.memory.heap.initial_size"));
+            confNames.put( "directoriesLogs", new Configuration("server.directories.logs"));
+            confNames.put( "directoriesData", new Configuration("server.directories.data"));
+            confNames.put( "clusterAdvertisedAddress", new Configuration("server.cluster.advertised_address"));
+        }
+        else
+        {
+            confFolder = Paths.get("src", "test", "resources", "confs", "before50");
+            confNames.put( "memoryHeapMaxSize", new Configuration("dbms.memory.heap.max_size")  );
+            confNames.put( "memoryPagecacheSize", new Configuration("dbms.memory.pagecache.size")  );
+            confNames.put( "memoryHeapInitialSize", new Configuration("dbms.memory.heap.initial_size"));
+            confNames.put( "directoriesLogs", new Configuration("dbms.directories.logs"));
+            confNames.put( "directoriesData", new Configuration("dbms.directories.data"));
+            confNames.put( "directoriesMetrics", new Configuration("dbms.directories.metrics"));
+            confNames.put( "clusterAdvertisedAddress", new Configuration("causal_clustering.transaction_advertised_address"));
+            confNames.put("jvmAdditional", new Configuration("dbms.jvm.additional"));
+            confNames.put("securityProceduresUnrestricted", new Configuration("dbms.security.procedures.unrestricted"));
+        }
+    }
 
     private GenericContainer createContainer()
     {
@@ -90,16 +134,16 @@ public class TestConfSettings {
         return configurations;
     }
 
-    private void assertConfigurationPresentInDebugLog( Path debugLog, String setting, String value, boolean shouldBeFound ) throws IOException
+    private void assertConfigurationPresentInDebugLog( Path debugLog, Configuration setting, String value, boolean shouldBeFound ) throws IOException
     {
         assertConfigurationPresentInDebugLog( debugLog, setting, new String[]{value}, shouldBeFound );
     }
 
-    private void assertConfigurationPresentInDebugLog( Path debugLog, String setting, String[] eitherOfValues, boolean shouldBeFound ) throws IOException
+    private void assertConfigurationPresentInDebugLog( Path debugLog, Configuration setting, String[] eitherOfValues, boolean shouldBeFound ) throws IOException
     {
         // searches the debug log for the given string, returns true if present
         Stream<String> lines = Files.lines(debugLog);
-        String actualSetting = lines.filter(s -> s.contains( setting )).findFirst().orElse( "" );
+        String actualSetting = lines.filter(s -> s.contains( setting.name )).findFirst().orElse( "" );
         lines.close();
         if(shouldBeFound)
         {
@@ -141,18 +185,18 @@ public class TestConfSettings {
 
         File conf;
         try(GenericContainer container = createContainer()
-                .withEnv("NEO4J_dbms_memory_pagecache_size", "1000m")
-                .withEnv("NEO4J_dbms_memory_heap_initial__size", "2000m")
-                .withEnv("NEO4J_dbms_memory_heap_max__size", "3000m")
-                .withEnv( "NEO4J_dbms_directories_logs", "/notdefaultlogs" )
-                .withEnv( "NEO4J_dbms_directories_data", "/notdefaultdata" ) )
-		{
-			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-					container,
-					"overriddenbyenv-conf-",
-					"/conf" );
-			conf = confMount.resolve( "neo4j.conf" ).toFile();
-			makeContainerDumpConfig( container );
+                .withEnv(confNames.get( "memoryPagecacheSize" ).envName, "1000m")
+                .withEnv(confNames.get( "memoryHeapInitialSize" ).envName, "2000m")
+                .withEnv(confNames.get( "memoryHeapMaxSize" ).envName, "3000m")
+                .withEnv( confNames.get( "directoriesLogs" ).envName, "/notdefaultlogs" )
+                .withEnv( confNames.get( "directoriesData" ).envName, "/notdefaultdata" ) )
+        {
+            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "overriddenbyenv-conf-",
+                    "/conf" );
+            conf = confMount.resolve( "neo4j.conf" ).toFile();
+            makeContainerDumpConfig( container );
             container.start();
         }
 
@@ -161,35 +205,38 @@ public class TestConfSettings {
         Assertions.assertTrue( conf.canRead(), "configuration file not readable for some reason?" );
 
         Map<String,String> configurations = parseConfFile( conf );
-        Assertions.assertTrue( configurations.containsKey( "dbms.memory.pagecache.size" ), "pagecache size not overridden" );
+        Assertions.assertTrue( configurations.containsKey( confNames.get( "memoryPagecacheSize" ).name ),
+                               "pagecache size not overridden" );
         Assertions.assertEquals( "1000m",
-                                 configurations.get( "dbms.memory.pagecache.size" ),
+                                 configurations.get( confNames.get( "memoryPagecacheSize" ).name ),
                                  "pagecache size not overridden" );
 
-        Assertions.assertTrue( configurations.containsKey( "dbms.memory.heap.initial_size" ), "initial heap size not overridden" );
+        Assertions.assertTrue( configurations.containsKey( confNames.get( "memoryHeapInitialSize" ).name ), 
+                               "initial heap size not overridden" );
         Assertions.assertEquals( "2000m",
-                                 configurations.get( "dbms.memory.heap.initial_size" ),
+                                 configurations.get( confNames.get( "memoryHeapInitialSize" ).name ),
                                  "initial heap size not overridden" );
 
-        Assertions.assertTrue( configurations.containsKey( "dbms.memory.heap.max_size" ), "maximum heap size not overridden" );
+        Assertions.assertTrue( configurations.containsKey( confNames.get( "memoryHeapMaxSize" ).name ), 
+                               "maximum heap size not overridden" );
         Assertions.assertEquals( "3000m",
-                                 configurations.get( "dbms.memory.heap.max_size" ),
+                                 configurations.get( confNames.get( "memoryHeapMaxSize" ).name ),
                                  "maximum heap size not overridden" );
 
-        Assertions.assertTrue( configurations.containsKey( "dbms.directories.logs" ), "log folder not overridden" );
+        Assertions.assertTrue( configurations.containsKey( confNames.get( "directoriesLogs" ).name ), 
+                               "log folder not overridden" );
         Assertions.assertEquals( "/notdefaultlogs",
-                                 configurations.get( "dbms.directories.logs" ),
+                                 configurations.get(confNames.get( "directoriesLogs" ).name),
                                  "log directory not overridden" );
-        Assertions.assertTrue( configurations.containsKey( "dbms.directories.data" ), "data folder not overridden" );
+        Assertions.assertTrue( configurations.containsKey( confNames.get( "directoriesData" ).name ), "data folder not overridden" );
         Assertions.assertEquals( "/notdefaultdata",
-                                 configurations.get( "dbms.directories.data" ),
+                                 configurations.get(confNames.get( "directoriesData" ).name),
                                  "data directory not overridden" );
     }
 
     @Test
     void testReadsTheConfFile() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ), "These tests only apply to neo4j images before 5.0" );
         Path debugLog;
 
         try(GenericContainer container = createContainer())
@@ -209,7 +256,7 @@ public class TestConfSettings {
             debugLog = logMount.resolve("debug.log");
             SetContainerUser.nonRootUser( container );
             //Create ReadConf.conf file with the custom env variables
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "ReadConf.conf" );
+            Path confFile = confFolder.resolve( "ReadConf.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             makeContainerWaitForNeo4jReady( container );
@@ -217,42 +264,7 @@ public class TestConfSettings {
         }
 
         //Check if the container reads the conf file
-        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.heap.max_size", "512", true );
-    }
-
-    @Test
-    void testReadsTheConfFile5_0() throws Exception
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                "These tests only apply to neo4j images 5.0 and after" );
-        Path debugLog;
-
-        try(GenericContainer container = createContainer())
-        {
-            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "confIsRead-" );
-            //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "conf-",
-                    "/conf",
-                    testOutputFolder);
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "logs-",
-                    "/logs",
-                    testOutputFolder);
-            debugLog = logMount.resolve("debug.log");
-            SetContainerUser.nonRootUser( container );
-            //Create ReadConf.conf file with the custom env variables
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "ReadConf5_0.conf" );
-            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
-            //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
-            container.start();
-        }
-
-        //Check if the container reads the conf file
-        assertConfigurationPresentInDebugLog( debugLog, "server.memory.heap.max_size", "512", true );
+        assertConfigurationPresentInDebugLog( debugLog, confNames.get( "memoryHeapMaxSize" ), "512", true );
     }
 
     @Test
@@ -269,7 +281,7 @@ public class TestConfSettings {
             conf = confMount.resolve( "neo4j.conf" ).toFile();
             SetContainerUser.nonRootUser( container );
             //Create ConfsReplaced.conf file
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "ConfsReplaced.conf" );
+            Path confFile = confFolder.resolve( "ConfsReplaced.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             makeContainerDumpConfig( container );
             //Start the container
@@ -277,10 +289,10 @@ public class TestConfSettings {
         }
         //Read the config file to check if the config is set correctly
         Map<String,String> configurations = parseConfFile( conf );
-        Assertions.assertTrue( configurations.containsKey( "dbms.memory.pagecache.size" ),
+        Assertions.assertTrue( configurations.containsKey( confNames.get( "memoryPagecacheSize" ).name ),
                                "conf settings not set correctly by docker-entrypoint" );
         Assertions.assertEquals( "512M",
-                                 configurations.get( "dbms.memory.pagecache.size" ),
+                                 configurations.get(confNames.get( "memoryPagecacheSize" ).name),
                                  "conf settings not appended correctly by docker-entrypoint" );
     }
 
@@ -297,8 +309,8 @@ public class TestConfSettings {
 					"/conf" );
             conf = confMount.resolve( "neo4j.conf" ).toFile();
             SetContainerUser.nonRootUser( container );
-            //Create ConfsNotOverriden.conf file
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "ConfsNotOverriden.conf" );
+            //Create ConfsNotOverridden.conf file
+            Path confFile = confFolder.resolve( "ConfsNotOverridden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             makeContainerDumpConfig( container );
             container.start();
@@ -306,18 +318,18 @@ public class TestConfSettings {
 
         //Read the config file to check if the config is not overriden
         Map<String, String> configurations = parseConfFile(conf);
-        Assertions.assertTrue(configurations.containsKey("dbms.memory.pagecache.size"), "conf settings not set correctly by docker-entrypoint");
+        Assertions.assertTrue(configurations.containsKey(confNames.get("memoryPagecacheSize").name),
+                              "conf settings not set correctly by docker-entrypoint");
         Assertions.assertEquals("1024M",
-                                configurations.get("dbms.memory.pagecache.size"),
-                                "docker-entrypoint has overriden custom setting set from user's conf");
+                                configurations.get(confNames.get("memoryPagecacheSize").name),
+                                "docker-entrypoint has overridden custom setting set from user's conf");
     }
 
     @Test
     void testEnvVarsOverride() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ), "These tests only apply to neo4j images before 5.0" );
         Path debugLog;
-        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
+        try(GenericContainer container = createContainer().withEnv(confNames.get("memoryPagecacheSize").envName, "512m"))
         {
 			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "envoverrideworks-" );
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
@@ -333,45 +345,15 @@ public class TestConfSettings {
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Create EnvVarsOverride.conf file
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "EnvVarsOverride.conf" );
+            Path confFile = confFolder.resolve("EnvVarsOverride.conf");
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             makeContainerWaitForNeo4jReady( container );
             container.start();
         }
 
-        assertConfigurationPresentInDebugLog( debugLog, "dbms.memory.pagecache.size", new String[]{"512m", "512.00MiB"}, true );
-    }
-
-    @Test
-    void testEnvVarsOverride5_0() throws Exception
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ), "These tests only apply to neo4j images 5.0 and after" );
-        Path debugLog;
-        try(GenericContainer container = createContainer().withEnv("NEO4J_server_memory_pagecache_size", "512m"))
-        {
-            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "envoverrideworks-" );
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "conf-",
-                    "/conf",
-                    testOutputFolder );
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "logs-",
-                    "/logs",
-                    testOutputFolder );
-            debugLog = logMount.resolve( "debug.log" );
-            SetContainerUser.nonRootUser( container );
-            //Create EnvVarsOverride.conf file
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "EnvVarsOverride.conf" );
-            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
-            //Start the container
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
-            container.start();
-        }
-
-        assertConfigurationPresentInDebugLog( debugLog, "server.memory.pagecache.size", new String[]{"512m", "512.00MiB"}, true );
+        assertConfigurationPresentInDebugLog(debugLog, confNames.get("memoryPagecacheSize"),
+                                             new String[]{"512m", "512.00MiB"}, true );
     }
 
     @Test
@@ -380,7 +362,7 @@ public class TestConfSettings {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                 "This is testing only ENTERPRISE EDITION configs");
 
-        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
+        try(GenericContainer container = createContainer().withEnv(confNames.get("memoryPagecacheSize").envName, "512m"))
         {
             //Mount /logs
             Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
@@ -395,7 +377,8 @@ public class TestConfSettings {
             String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
 
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                    getClusterAdvertisedAddressSetting(), expectedTxAddress, true );
+                                                  confNames.get( "clusterAdvertisedAddress" ),
+                                                  expectedTxAddress, true );
         }
     }
 
@@ -419,9 +402,7 @@ public class TestConfSettings {
                     "/logs",
                     testOutputFolder );
             // mount a configuration file with enterprise only settings already set
-            String confFileName = TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) ? "EnterpriseOnlyNotOverwritten.conf"
-                                                                                                                : "EnterpriseOnlyNotOverwrittenOld.conf";
-            Path confFile = Paths.get( "src", "test", "resources", "confs", confFileName);
+            Path confFile = confFolder.resolve( "EnterpriseOnlyNotOverwritten.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
 
             //Start the container
@@ -431,7 +412,8 @@ public class TestConfSettings {
             //Read debug.log to check that cluster confs are set successfully
 
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                    getClusterAdvertisedAddressSetting(), "localhost:6060", true );
+                                                  confNames.get( "clusterAdvertisedAddress" ),
+                                                  "localhost:6060", true );
         }
     }
 
@@ -457,7 +439,7 @@ public class TestConfSettings {
 
             File conf = confMount.resolve( "neo4j.conf" ).toFile();
             Map<String, String> configurations = parseConfFile(conf);
-            Assertions.assertFalse(configurations.containsKey("dbms.directories.metrics"),
+            Assertions.assertFalse(configurations.containsKey(confNames.get( "directoriesMetrics" ).name),
                                    "should not be setting any metrics configurations in community edition");
         }
     }
@@ -469,7 +451,7 @@ public class TestConfSettings {
                                "This is testing only COMMUNITY EDITION configs");
 
         Path debugLog;
-        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_memory_pagecache_size", "512m"))
+        try(GenericContainer container = createContainer().withEnv(confNames.get("memoryPagecacheSize").envName, "512m"))
         {
             //Mount /logs
 			Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
@@ -484,7 +466,7 @@ public class TestConfSettings {
         }
 
         //Read debug.log to check that cluster confs are not present
-        assertConfigurationPresentInDebugLog( debugLog, getClusterAdvertisedAddressSetting(), "*", false );
+        assertConfigurationPresentInDebugLog( debugLog, confNames.get("clusterAdvertisedAddress"), "*", false );
     }
 
     @Test
@@ -509,19 +491,20 @@ public class TestConfSettings {
 					"/logs",
 					testOutputFolder);
 			SetContainerUser.nonRootUser( container );
-            //Create JvmAdditionalNotOverriden.conf file
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalNotOverriden.conf" );
+            //Create JvmAdditionalNotOverridden.conf file
+            Path confFile = confFolder.resolve( "JvmAdditionalNotOverridden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             makeContainerWaitForNeo4jReady( container );
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none", "dbms.jvm.additional", expectedJvmAdditional);
+            dbio.verifyConfigurationSetting( "neo4j", "none",
+                                             confNames.get( "jvmAdditional" ).name, expectedJvmAdditional);
         }
 
         assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
-                                              "dbms.jvm.additional",
+                                              confNames.get( "jvmAdditional" ),
                                               expectedJvmAdditional,
                                               true );
     }
@@ -548,18 +531,19 @@ public class TestConfSettings {
                     testOutputFolder);
             SetContainerUser.nonRootUser( container );
             //copy test conf file
-            Path confFile = Paths.get( "src", "test", "resources", "confs", "JvmAdditionalWithDollar.conf" );
+            Path confFile = confFolder.resolve("JvmAdditionalWithDollar.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
             makeContainerWaitForNeo4jReady( container );
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none", "dbms.jvm.additional", expectedJvmAdditional);
+            dbio.verifyConfigurationSetting( "neo4j", "none",
+                                             confNames.get( "jvmAdditional" ).name, expectedJvmAdditional);
         }
 
         assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
-                                              "dbms.jvm.additional",
+                                              confNames.get( "jvmAdditional" ),
                                               expectedJvmAdditional,
                                               true );
     }
@@ -584,11 +568,12 @@ public class TestConfSettings {
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none", "dbms.jvm.additional", expectedJvmAdditional);
+            dbio.verifyConfigurationSetting( "neo4j", "none",
+                                             confNames.get( "jvmAdditional" ).name, expectedJvmAdditional);
         }
 
         assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
-                                              "dbms.jvm.additional",
+                                              confNames.get( "jvmAdditional" ),
                                               expectedJvmAdditional,
                                               true );
     }
@@ -599,7 +584,7 @@ public class TestConfSettings {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test only applicable to 4.0 and beyond." );
 
         Path confMount;
-        try(GenericContainer container = createContainer().withEnv("NEO4J_dbms_security_procedures_unrestricted", "*"))
+        try(GenericContainer container = createContainer().withEnv(confNames.get("securityProceduresUnrestricted").envName, "*"))
         {
 			confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					container,
@@ -610,16 +595,10 @@ public class TestConfSettings {
         }
         File conf = confMount.resolve( "neo4j.conf" ).toFile();
         Map<String, String> configurations = parseConfFile(conf);
-        Assertions.assertTrue(configurations.containsKey("dbms.security.procedures.unrestricted"), "configuration not set from env var");
+        Assertions.assertTrue(configurations.containsKey(confNames.get("securityProceduresUnrestricted").name),
+                              "configuration not set from env var");
         Assertions.assertEquals("*",
-                configurations.get("dbms.security.procedures.unrestricted"),
+                configurations.get(confNames.get("securityProceduresUnrestricted").name),
                 "Configuration value should be *. If it's not docker-entrypoint.sh probably evaluated it as a glob expression.");
-    }
-
-    @NotNull
-    private String getClusterAdvertisedAddressSetting()
-    {
-        return TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) ?
-                "server.cluster.advertised_address" : "causal_clustering.transaction_advertised_address";
     }
 }
