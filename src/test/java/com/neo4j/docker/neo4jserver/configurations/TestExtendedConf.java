@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver;
+package com.neo4j.docker.neo4jserver.configurations;
 
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,6 +39,8 @@ import java.util.stream.Stream;
 public class TestExtendedConf
 {
 	private static final Logger log = LoggerFactory.getLogger( TestExtendedConf.class );
+    private static Path testConfsFolder;
+    private static Configuration logRotationConfig;
 
 	@BeforeAll
 	static void ensureFeaturePresent()
@@ -45,6 +48,13 @@ public class TestExtendedConf
 		Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( new Neo4jVersion( 4,2,0 ) ),
 								"Extended configuration feature not available before 4.2" );
 	}
+
+    @BeforeAll
+    static void createVersionSpecificConfigurationSettings() {
+        testConfsFolder = Configuration.getConfigurationResourcesFolder( TestSettings.NEO4J_VERSION );
+        logRotationConfig = Configuration.getConfigurationNameMap( TestSettings.NEO4J_VERSION )
+                                         .get( Setting.LOGS_GC_ROTATION_KEEPNUMBER );
+    }
 
 	protected GenericContainer createContainer(String password)
 	{
@@ -75,9 +85,11 @@ public class TestExtendedConf
 	private void assertPasswordChangedLogIsCorrect( String password, GenericContainer container )
 	{
 		if ( password.isEmpty()) {
-			Assertions.assertFalse( container.getLogs( OutputFrame.OutputType.STDOUT).contains( "Changed password for user 'neo4j'." ) );
+			Assertions.assertFalse( container.getLogs( OutputFrame.OutputType.STDOUT)
+                                             .contains( "Changed password for user 'neo4j'." ) );
 		} else {
-			Assertions.assertTrue( container.getLogs( OutputFrame.OutputType.STDOUT).contains( "Changed password for user 'neo4j'." ) );
+			Assertions.assertTrue( container.getLogs( OutputFrame.OutputType.STDOUT)
+                                            .contains( "Changed password for user 'neo4j'." ) );
 		}
 	}
 
@@ -91,7 +103,7 @@ public class TestExtendedConf
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
 
 		// copy configuration file and set permissions
-		Path confFile = Paths.get( "src", "test", "resources", "confs", "ExtendedConf.conf" );
+		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
 		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
 		setFileOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
 		chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
@@ -112,7 +124,7 @@ public class TestExtendedConf
         Path confFolder = HostFileSystemOperations.createTempFolder( "conf-", testOutputFolder );
 
         // copy configuration file and set permissions
-        Path confFile = Paths.get( "src", "test", "resources", "confs", "InvalidExtendedConf.conf" );
+        Path confFile = testConfsFolder.resolve( "InvalidExtendedConf.conf" );
         Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
         chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 
@@ -133,7 +145,7 @@ public class TestExtendedConf
 
             String logs = container.getLogs();
             // check that error messages from neo4j are visible in docker logs
-            Assertions.assertTrue( logs.contains( "Error evaluating value for setting 'dbms.logs.http.rotation.keep_number'" ) );
+            Assertions.assertTrue( logs.contains( "Error evaluating value for setting '" + logRotationConfig.name + "'" ) );
             // check that error messages from the command that failed are visible in docker logs
             Assertions.assertTrue( logs.contains( "this is an error message from inside neo4j config command expansion" ) );
             // check that the error is only encountered once (i.e. we quit the docker entrypoint the first time it was encountered)
@@ -162,7 +174,7 @@ public class TestExtendedConf
 		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
 
 		// copy configuration file and set permissions
-		Path confFile = Paths.get( "src", "test", "resources", "confs", "ExtendedConf.conf" );
+		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
 		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
 		chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 
@@ -187,9 +199,9 @@ public class TestExtendedConf
 
 		//Check if the container reads the conf file
 		Stream<String> lines = Files.lines( debugLog);
-		Optional<String> isMatch = lines.filter( s -> s.contains("dbms.logs.http.rotation.keep_number=20")).findFirst();
+		Optional<String> isMatch = lines.filter( s -> s.contains(logRotationConfig.name + "=20")).findFirst();
 		lines.close();
-		Assertions.assertTrue(  isMatch.isPresent(), "dbms.max_databases was not set correctly");
+		Assertions.assertTrue(  isMatch.isPresent(), logRotationConfig.name+" was not set correctly");
 
 		//Check the password was changed if set
 		assertPasswordChangedLogIsCorrect( password, container );
