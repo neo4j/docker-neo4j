@@ -284,7 +284,6 @@ function set_initial_password
     if [ "${cmd}" == "neo4j" ]; then
         if [ "${_neo4j_auth:-}" == "none" ]; then
             add_env_setting_to_conf "dbms.security.auth_enabled" "false" "${NEO4J_HOME}"
-            # NEO4J_dbms_security_auth__enabled=false
         elif [[ "${_neo4j_auth:-}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
             admin_user="${BASH_REMATCH[1]}"
             password="${BASH_REMATCH[2]}"
@@ -390,15 +389,8 @@ fi
 # - double underscore char '__' instead of single underscore '_' char in the setting name
 # - underscore char '_' instead of dot '.' char in the setting name
 # Example:
-# NEO4J_dbms_tx__log_rotation_retention__policy env variable to set
-#       dbms.tx_log.rotation.retention_policy setting
-
-# Backward compatibility - map old hardcoded env variables into new naming convention (if they aren't set already)
-# Set some to default values if unset
-: ${NEO4J_dbms_tx__log_rotation_retention__policy:=${NEO4J_dbms_txLog_rotation_retentionPolicy:-}}
-: ${NEO4J_dbms_unmanaged__extension__classes:=${NEO4J_dbms_unmanagedExtensionClasses:-}}
-: ${NEO4J_dbms_allow__format__migration:=${NEO4J_dbms_allowFormatMigration:-}}
-: ${NEO4J_dbms_connectors_default__advertised__address:=${NEO4J_dbms_connectors_defaultAdvertisedAddress:-}}
+# NEO4J_server_tx__log_rotation_retention__policy env variable to set
+#       server.tx_log.rotation.retention_policy setting
 
 if [ "${NEO4J_EDITION}" == "enterprise" ];
   then
@@ -410,9 +402,9 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
 fi
 
 # unset old hardcoded unsupported env variables
-unset NEO4J_dbms_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
-    NEO4J_dbms_unmanagedExtensionClasses NEO4J_dbms_allowFormatMigration \
-    NEO4J_dbms_connectors_defaultAdvertisedAddress NEO4J_ha_serverId \
+unset NEO4J_server_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
+    NEO4J_server_unmanagedExtensionClasses NEO4J_server_allowFormatMigration \
+    NEO4J_server_connectors_defaultAdvertisedAddress NEO4J_ha_serverId \
     NEO4J_ha_initialHosts NEO4J_causalClustering_expectedCoreClusterSize \
     NEO4J_causalClustering_initialDiscoveryMembers \
     NEO4J_causalClustering_discoveryListenAddress \
@@ -443,12 +435,12 @@ if [ -d /plugins ]; then
         check_mounted_folder_writable_with_chown "/plugins"
     fi
     check_mounted_folder_readable "/plugins"
-    : ${NEO4J_dbms_directories_plugins:="/plugins"}
+    : ${NEO4J_server_directories_plugins:="/plugins"}
 fi
 
 if [ -d /import ]; then
     check_mounted_folder_readable "/import"
-    : ${NEO4J_dbms_directories_import:="/import"}
+    : ${NEO4J_server_directories_import:="/import"}
 fi
 
 if [ -d /metrics ]; then
@@ -456,13 +448,13 @@ if [ -d /metrics ]; then
     if [ "${NEO4J_EDITION}" == "enterprise" ];
     then
         check_mounted_folder_writable_with_chown "/metrics"
-        : ${NEO4J_dbms_directories_metrics:="/metrics"}
+        : ${NEO4J_server_directories_metrics:="/metrics"}
     fi
 fi
 
 if [ -d /logs ]; then
     check_mounted_folder_writable_with_chown "/logs"
-    : ${NEO4J_dbms_directories_logs:="/logs"}
+    : ${NEO4J_server_directories_logs:="/logs"}
 fi
 
 if [ -d /data ]; then
@@ -480,7 +472,7 @@ fi
 
 if [ -d /licenses ]; then
     check_mounted_folder_readable "/licenses"
-    : ${NEO4J_dbms_directories_licenses:="/licenses"}
+    : ${NEO4J_server_directories_licenses:="/licenses"}
 fi
 
 # ==== SET CONFIGURATIONS ====
@@ -488,15 +480,15 @@ fi
 ## == DOCKER SPECIFIC DEFAULT CONFIGURATIONS ===
 ## these should not override *any* configurations set by the user
 
-add_docker_default_to_conf "dbms.tx_log.rotation.retention_policy" "100M size" "${NEO4J_HOME}"
-add_docker_default_to_conf "dbms.memory.pagecache.size" "512M" "${NEO4J_HOME}"
-add_docker_default_to_conf "dbms.default_listen_address" "0.0.0.0" "${NEO4J_HOME}"
+add_docker_default_to_conf "db.tx_log.rotation.retention_policy" "100M size" "${NEO4J_HOME}"
+add_docker_default_to_conf "server.memory.pagecache.size" "512M" "${NEO4J_HOME}"
+add_docker_default_to_conf "server.default_listen_address" "0.0.0.0" "${NEO4J_HOME}"
 # set enterprise only docker defaults
 if [ "${NEO4J_EDITION}" == "enterprise" ];
 then
-    add_docker_default_to_conf "cluster.discovery_advertised_address" "$(hostname):5000" "${NEO4J_HOME}"
-    add_docker_default_to_conf "cluster.transaction_advertised_address" "$(hostname):6000" "${NEO4J_HOME}"
-    add_docker_default_to_conf "cluster.raft_advertised_address" "$(hostname):7000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "server.discovery.advertised_address" "$(hostname):5000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "server.cluster.advertised_address" "$(hostname):6000" "${NEO4J_HOME}"
+    add_docker_default_to_conf "server.cluster.raft.advertised_address" "$(hostname):7000" "${NEO4J_HOME}"
 fi
 
 ## == ENVIRONMENT VARIABLE CONFIGURATIONS ===

@@ -54,6 +54,7 @@ public class TestConfSettings
     @BeforeAll
     static void createVersionSpecificConfigurationSettings()
     {
+        // see also https://docs.google.com/spreadsheets/d/1ahUM4hsuuHdHhzqgGLn5WAgk7EJVTgd_sCPGI2BRHxE/edit#gid=0
         confNames = new HashMap<>();
         if (TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500))
         {
@@ -63,7 +64,14 @@ public class TestConfSettings
             confNames.put( "memoryHeapInitialSize", new Configuration("server.memory.heap.initial_size"));
             confNames.put( "directoriesLogs", new Configuration("server.directories.logs"));
             confNames.put( "directoriesData", new Configuration("server.directories.data"));
-            confNames.put( "clusterAdvertisedAddress", new Configuration("server.cluster.advertised_address"));
+            confNames.put( "directoriesMetrics", new Configuration("server.directories.metrics"));
+            confNames.put( "clusterDiscoveryAddress", new Configuration("server.discovery.advertised_address"));
+            confNames.put( "clusterTransactionAddress", new Configuration("server.cluster.advertised_address"));
+            confNames.put( "clusterRaftAddress", new Configuration("server.cluster.raft.advertised_address"));
+            confNames.put("jvmAdditional", new Configuration("server.jvm.additional"));
+            confNames.put("securityProceduresUnrestricted", new Configuration("dbms.security.procedures.unrestricted"));
+            confNames.put("txLogRetentionPolicy", new Configuration("db.tx_log.rotation.retention_policy"));
+            confNames.put( "defaultListenAddress", new Configuration("server.default_listen_address"));
         }
         else
         {
@@ -74,9 +82,13 @@ public class TestConfSettings
             confNames.put( "directoriesLogs", new Configuration("dbms.directories.logs"));
             confNames.put( "directoriesData", new Configuration("dbms.directories.data"));
             confNames.put( "directoriesMetrics", new Configuration("dbms.directories.metrics"));
-            confNames.put( "clusterAdvertisedAddress", new Configuration("causal_clustering.transaction_advertised_address"));
+            confNames.put( "clusterDiscoveryAddress", new Configuration("causal_clustering.discovery_advertised_address"));
+            confNames.put( "clusterTransactionAddress", new Configuration("causal_clustering.transaction_advertised_address"));
+            confNames.put( "clusterRaftAddress", new Configuration("causal_clustering.raft_advertised_address"));
             confNames.put("jvmAdditional", new Configuration("dbms.jvm.additional"));
             confNames.put("securityProceduresUnrestricted", new Configuration("dbms.security.procedures.unrestricted"));
+            confNames.put("txLogRetentionPolicy", new Configuration("dbms.tx_log.rotation.retention_policy"));
+            confNames.put( "defaultListenAddress", new Configuration("dbms.default_listen_address"));
         }
     }
 
@@ -147,14 +159,15 @@ public class TestConfSettings
         lines.close();
         if(shouldBeFound)
         {
-            Assertions.assertTrue( !actualSetting.isEmpty(), setting+" was never set" );
+            Assertions.assertTrue( !actualSetting.isEmpty(), setting.name+" was never set" );
             Assertions.assertTrue( Arrays.stream( eitherOfValues ).anyMatch( actualSetting::contains ),
-                                   setting +" is set to the wrong value. Expected either of: "+ Arrays.toString( eitherOfValues ) +" Actual: " + actualSetting );
+                                   setting.name +" is set to the wrong value. Expected either of: "+
+                                   Arrays.toString( eitherOfValues ) +" Actual: " + actualSetting );
         }
         else
         {
-            Assertions.assertTrue( actualSetting.isEmpty(),
-                                    setting+" was set when it should not have been. Actual value: "+actualSetting );
+            Assertions.assertTrue( actualSetting.isEmpty(),setting.name+" was set when it should not have been. " +
+                                                           "Actual value: "+actualSetting );
         }
     }
 
@@ -268,6 +281,42 @@ public class TestConfSettings
     }
 
     @Test
+    void testDefaultsConfigsAreSet() throws Exception
+    {
+        try(GenericContainer container = createContainer())
+        {
+            //Mount /logs
+            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "enterpriseonlysettings-logs-",
+                    "/logs" );
+            SetContainerUser.nonRootUser( container );
+            //Start the container
+            makeContainerWaitForNeo4jReady( container );
+            container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+
+            dbio.verifyConfigurationSetting("neo4j", "none", confNames.get("txLogRetentionPolicy").name, "100M size");
+            assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get("txLogRetentionPolicy"), "100M size", true);
+            dbio.verifyConfigurationSetting("neo4j", "none", confNames.get("defaultListenAddress").name, "0.0.0.0");
+            assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get("defaultListenAddress"), "0.0.0.0", true);
+
+            // test enterprise only default configurations are set
+            if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE) {
+                String expectedDiscoveryAddress = container.getContainerId().substring(0, 12) + ":5000";
+                String expectedTxAddress = container.getContainerId().substring(0, 12) + ":6000";
+                String expectedRaftAddress = container.getContainerId().substring(0, 12) + ":7000";
+                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get("clusterDiscoveryAddress").name, expectedDiscoveryAddress);
+                assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get("clusterDiscoveryAddress"), expectedDiscoveryAddress,true);
+                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get("clusterTransactionAddress").name, expectedTxAddress);
+                assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get("clusterTransactionAddress"), expectedTxAddress,true);
+                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get("clusterRaftAddress").name, expectedRaftAddress);
+                assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get("clusterRaftAddress"), expectedRaftAddress,true);
+            }
+        }
+    }
+
+    @Test
     void testCommentedConfigsAreReplacedByDefaultOnes() throws Exception
     {
         File conf;
@@ -357,32 +406,6 @@ public class TestConfSettings
     }
 
     @Test
-    void testEnterpriseOnlyDefaultsConfigsAreSet() throws Exception
-    {
-        Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                "This is testing only ENTERPRISE EDITION configs");
-
-        try(GenericContainer container = createContainer().withEnv(confNames.get("memoryPagecacheSize").envName, "512m"))
-        {
-            //Mount /logs
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "enterpriseonlysettings-logs-",
-                    "/logs" );
-            SetContainerUser.nonRootUser( container );
-            //Start the container
-            makeContainerWaitForNeo4jReady( container );
-            container.start();
-            //Read debug.log to check that cluster confs are set successfully
-            String expectedTxAddress = container.getContainerId().substring( 0, 12 ) + ":6000";
-
-            assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                                                  confNames.get( "clusterAdvertisedAddress" ),
-                                                  expectedTxAddress, true );
-        }
-    }
-
-    @Test
     void testEnterpriseOnlyDefaultsDontOverrideConfFile() throws Exception
     {
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
@@ -412,7 +435,7 @@ public class TestConfSettings
             //Read debug.log to check that cluster confs are set successfully
 
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
-                                                  confNames.get( "clusterAdvertisedAddress" ),
+                                                  confNames.get( "clusterTransactionAddress" ),
                                                   "localhost:6060", true );
         }
     }
@@ -466,16 +489,16 @@ public class TestConfSettings
         }
 
         //Read debug.log to check that cluster confs are not present
-        assertConfigurationPresentInDebugLog( debugLog, confNames.get("clusterAdvertisedAddress"), "*", false );
+        assertConfigurationPresentInDebugLog( debugLog, confNames.get("clusterTransactionAddress"), "*", false );
     }
 
     @Test
     void testJvmAdditionalNotOverridden() throws Exception
     {
-        Assumptions.assumeFalse( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400),
-                                 "test not applicable in versions newer than 4.0." );
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400),
+                                 "test not applicable in versions older than 4.0." );
         Path logMount;
-        String expectedJvmAdditional = "-Dunsupported.dbms.udc.source=docker,-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
+        String expectedJvmAdditional = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
 
         try(GenericContainer container = createContainer())
         {
@@ -562,7 +585,7 @@ public class TestConfSettings
                     "confdollarlogs-",
                     "/logs");
             SetContainerUser.nonRootUser( container );
-            container.withEnv( "NEO4J_dbms_jvm_additional", expectedJvmAdditional);
+            container.withEnv( confNames.get( "jvmAdditional" ).envName, expectedJvmAdditional);
             //Start the container
             makeContainerWaitForNeo4jReady( container );
             container.start();
@@ -581,7 +604,8 @@ public class TestConfSettings
     @Test
     void testShellExpansionAvoided() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400), "test only applicable to 4.0 and beyond." );
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400),
+                                "test only applicable to 4.0 and beyond." );
 
         Path confMount;
         try(GenericContainer container = createContainer().withEnv(confNames.get("securityProceduresUnrestricted").envName, "*"))
