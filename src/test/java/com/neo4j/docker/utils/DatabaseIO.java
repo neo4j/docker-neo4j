@@ -90,7 +90,7 @@ public class DatabaseIO
                                                       "CALL dbms.listConfig() YIELD name, value " +
                                                       "WHERE name='" + confName + "' " +
                                                       "RETURN value" );
-            Assertions.assertEquals(1, confRecord.size() );
+            Assertions.assertEquals(1, confRecord.size(), "Configuration "+confName+" was not set." );
             Assertions.assertEquals(expectedValue, confRecord.get( 0 ).get( 0 ).asString(),
                                     String.format("Expected %s to be %s but it was %s.%s",
                                                   confName, expectedValue, confRecord.get( 0 ).get( 0 ).asString(), extraFailureMsg));

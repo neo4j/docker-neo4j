@@ -241,7 +241,7 @@ public class TestConfSettings
             //Mount /logs
             Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     container,
-                    "enterpriseonlysettings-logs-",
+                    "default-settings-logs-",
                     "/logs" );
             SetContainerUser.nonRootUser( container );
             //Start the container
@@ -249,8 +249,6 @@ public class TestConfSettings
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
 
-            dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.TXLOG_RETENTION_POLICY).name, "100M size");
-            assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get( Setting.TXLOG_RETENTION_POLICY), "100M size", true);
             dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.DEFAULT_LISTEN_ADDRESS).name, "0.0.0.0");
             assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0", true);
 
@@ -265,6 +263,9 @@ public class TestConfSettings
                 assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress,true);
                 dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.CLUSTER_RAFT_ADDRESS).name, expectedRaftAddress);
                 assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress,true);
+
+                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.TXLOG_RETENTION_POLICY).name, "100M size");
+                assertConfigurationPresentInDebugLog(logMount.resolve("debug.log"), confNames.get( Setting.TXLOG_RETENTION_POLICY), "100M size", true);
             }
         }
     }
