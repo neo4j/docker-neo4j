@@ -28,7 +28,7 @@ enum Setting{
 
 class Configuration
 {
-    private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<>( Setting.class ) {{
+    private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<Setting,Configuration>( Setting.class ) {{
         put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration( "server.memory.heap.max_size"));
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("server.memory.pagecache.size"));
         put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration("server.memory.heap.initial_size"));
@@ -45,7 +45,7 @@ class Configuration
         put( Setting.LOGS_GC_ROTATION_KEEPNUMBER, new Configuration( "server.logs.gc.rotation.keep_number"));
     }};
 
-    private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<>( Setting.class ) {{
+    private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class ) {{
         put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration("dbms.memory.heap.max_size"));
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("dbms.memory.pagecache.size"));
         put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration("dbms.memory.heap.initial_size"));
