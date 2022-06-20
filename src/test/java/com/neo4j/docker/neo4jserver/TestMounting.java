@@ -2,6 +2,7 @@ package com.neo4j.docker.neo4jserver;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
+import com.neo4j.docker.neo4jserver.configurations.Configuration;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import org.junit.jupiter.api.Assertions;
@@ -27,10 +28,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.time.Duration;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -324,4 +328,25 @@ public class TestMounting
 			databaseIO.verifyInitialDataInContainer( "neo4j", "none" );
 		}
 	}
+
+    @Test
+    void shouldReownSubfilesToNeo4j() throws Exception {
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 0, 0)),
+                "User checks not valid before 4.0");
+        Path logMount;
+        Path debugLog;
+
+        try (GenericContainer container = setupBasicContainer(false, false)) {
+            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "subfileownership-", "/logs");
+            debugLog = logMount.resolve("debug.log");
+            // put file in logMount
+            Files.write(debugLog, "some log words".getBytes());
+            // make neo4j own the conf folder but NOT the neo4j.conf
+            HostFileSystemOperations.setFileOwnerToNeo4j( logMount );
+            HostFileSystemOperations.setFileOwnerToCurrentUser( debugLog );
+            container.start();
+            // if debug.log doesn't get re-owned, neo4j will not start and this test will fail here
+        }
+    }
 }

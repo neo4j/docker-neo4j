@@ -105,7 +105,7 @@ public class TestExtendedConf
 		// copy configuration file and set permissions
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
 		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
-		setFileOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
+		HostFileSystemOperations.setFileOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
 		chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 
 		// start  container
@@ -221,23 +221,5 @@ public class TestExtendedConf
 			permissions.add( PosixFilePermission.GROUP_READ );
 		}
 		Files.setPosixFilePermissions( file, permissions );
-	}
-
-	private void setFileOwnerToNeo4j(Path file) throws Exception
-	{
-		ProcessBuilder pb = new ProcessBuilder( "chown", "7474:7474", file.toAbsolutePath().toString() ).redirectErrorStream( true );
-		Process proc = pb.start();
-		proc.waitFor();
-		if(proc.exitValue() != 0)
-		{
-			String errorMsg = new BufferedReader( new InputStreamReader( proc.getInputStream() ) )
-					.lines()
-					.collect( Collectors.joining() );
-			// if we cannot set up test conditions properly, abort test but don't register a test failure.
-			Assumptions.assumeTrue( false,
-									"Could not change owner of test file to 7474. User needs to be in sudoers list. Error:\n" +
-									errorMsg );
-		}
-		return;
 	}
 }
