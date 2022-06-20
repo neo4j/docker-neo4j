@@ -1,14 +1,18 @@
 package com.neo4j.docker.utils;
 
+import org.junit.jupiter.api.Assumptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class HostFileSystemOperations
 {
@@ -70,5 +74,33 @@ public class HostFileSystemOperations
         }
 
         return hostFolder;
+    }
+
+    public static void setFileOwnerToCurrentUser(Path file) throws Exception
+    {
+        setFileOwnerTo( file, SetContainerUser.getNonRootUserString() );
+    }
+
+    public static void setFileOwnerToNeo4j(Path file) throws Exception
+    {
+        setFileOwnerTo( file, "7474:7474" );
+    }
+
+    private static void setFileOwnerTo(Path file, String userAndGroup) throws Exception
+    {
+        ProcessBuilder pb = new ProcessBuilder( "chown", userAndGroup, file.toAbsolutePath().toString() ).redirectErrorStream( true );
+        Process proc = pb.start();
+        proc.waitFor();
+        if(proc.exitValue() != 0)
+        {
+            String errorMsg = new BufferedReader( new InputStreamReader( proc.getInputStream() ) )
+                    .lines()
+                    .collect( Collectors.joining() );
+            // if we cannot set up test conditions properly, abort test but don't register a test failure.
+            Assumptions.assumeTrue( false,
+                                    "Could not change owner of test file to 7474. User needs to be in sudoers list. Error:\n" +
+                                    errorMsg );
+        }
+        return;
     }
 }

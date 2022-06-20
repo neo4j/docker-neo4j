@@ -25,7 +25,7 @@ enum Setting{
     TXLOG_RETENTION_POLICY
     }
 
-class Configuration
+public class Configuration
 {
     private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<Setting,Configuration>( Setting.class ) {{
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("server.discovery.advertised_address"));
