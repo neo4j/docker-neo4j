@@ -557,11 +557,11 @@ function get_neo4j_run_cmd {
         extraArgs+=("--expand-commands")
     fi
 
-#    if running_as_root; then
+    if running_as_root; then
         ${exec_cmd} neo4j console --dry-run "${extraArgs[@]}"
-#    else
-#        neo4j console --dry-run "${extraArgs[@]}"
-#    fi
+    else
+        neo4j console --dry-run "${extraArgs[@]}"
+    fi
 }
 
 # Use su-exec to drop privileges to neo4j user
