@@ -127,7 +127,7 @@ function check_mounted_folder_writable_with_chown
             echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         # check permissions on files in the folder
-        elif [ $(gosu "${userid}":"${groupid}" find "${mountFolder}" -not -writable | wc -l) -gt 0 ]; then
+        elif [ $(${exec_cmd} find "${mountFolder}" -not -writable | wc -l) -gt 0 ]; then
             echo "Warning: Some files inside \"${mountFolder}\" are not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         fi
@@ -293,7 +293,7 @@ if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   groups=($(id -G neo4j))
-  exec_cmd="exec gosu neo4j:neo4j"
+  exec_cmd="runuser -p -u neo4j -g neo4j --"
 else
   userid="$(id -u)"
   groupid="$(id -g)"
@@ -326,7 +326,7 @@ if [[ "${cmd}" == *"neo4j"* ]]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-(c) Neo4j Sweden AB.  2021.  All Rights Reserved.
+(c) Neo4j Sweden AB.  2022.  All Rights Reserved.
 Use of this Software without a proper commercial license with Neo4j,
 Inc. or its affiliates is prohibited.
 
