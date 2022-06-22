@@ -293,7 +293,7 @@ if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   groups=($(id -G neo4j))
-  exec_cmd="runuser -p -u neo4j -g neo4j --"
+  exec_cmd="exec runuser -p -u neo4j -g neo4j --"
 else
   userid="$(id -u)"
   groupid="$(id -g)"

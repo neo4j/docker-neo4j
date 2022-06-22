@@ -1,5 +1,7 @@
 package com.neo4j.docker.neo4jserver;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -15,6 +17,7 @@ import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
+import java.util.function.Consumer;
 
 public class TestBasic
 {
@@ -25,9 +28,16 @@ public class TestBasic
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", "none" )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withExposedPorts( 7474 )
+                 .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
         return container;
+    }
+
+    private void setContainerWaitForNeo4jUp(GenericContainer container)
+    {
+        container.setWaitStrategy( Wait.forHttp( "/" )
+                                       .forPort( 7474 )
+                                       .forStatusCode( 200 ) );
     }
 
 
@@ -36,7 +46,9 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            container.setWaitStrategy( Wait.forHttp( "/" )
+                                           .forPort( 7474 )
+                                           .forStatusCode( 200 ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
         }
@@ -47,7 +59,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-			container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+			setContainerWaitForNeo4jUp( container );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -104,7 +116,7 @@ public class TestBasic
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
         try(GenericContainer container = createBasicContainer())
         {
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
+            setContainerWaitForNeo4jUp( container );
             container.start();
 
             Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell" );
@@ -118,13 +130,34 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
+            setContainerWaitForNeo4jUp( container );
             container.setWorkingDirectory( "/tmp" );
-            container.setWaitStrategy( Wait.forHttp( "/" )
-                                           .forPort( 7474 )
-                                           .forStatusCode( 200 )
-                                           .withStartupTimeout( Duration.ofSeconds( 60 ) ) );
             Assertions.assertDoesNotThrow( () -> container.start(),
                                            "Could not start neo4j from workdir NEO4J_HOME" );
+        }
+    }
+
+    @Test
+    void testShutsDownCleanlyOnSigterm() throws Exception
+    {
+        log.info( "Starting first container" );
+        try(GenericContainer container = createBasicContainer())
+        {
+            setContainerWaitForNeo4jUp( container );
+            // sets sigterm as the stop container signal
+            container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
+                    cmd.withStopSignal( "SIGTERM" )
+                       .withStopTimeout( 20 ));
+            container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+            dbio.putInitialDataIntoContainer( "neo4j", "none" );
+            log.info( "issuing container stop command" );
+            container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
+            String stdout = container.getLogs();
+            Assertions.assertTrue( stdout.contains( "Neo4j Server shutdown initiated by request" ),
+                                   "clean shutdown not initiated by sigterm");
+            Assertions.assertTrue( stdout.contains( "Stopping..." ),
+                                   "clean shutdown not initiated by sigterm");
         }
     }
 }
