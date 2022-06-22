@@ -108,7 +108,9 @@ public class TestDumpLoad44
     // This runs the actual stop command. Which we set up in createDBContainer to send SIGTERM
     private void stopContainer(GenericContainer container)
     {
+        log.info( "issuing container stop command" );
         container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
+        log.info( "Container stopped" );
     }
 
     private void shouldCreateDumpAndLoadDump( boolean asDefaultUser, String password ) throws Exception

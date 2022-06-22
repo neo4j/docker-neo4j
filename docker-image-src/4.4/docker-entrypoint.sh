@@ -284,7 +284,6 @@ function set_initial_password
     if [ "${cmd}" == "neo4j" ]; then
         if [ "${_neo4j_auth:-}" == "none" ]; then
             add_env_setting_to_conf "dbms.security.auth_enabled" "false" "${NEO4J_HOME}"
-            # NEO4J_dbms_security_auth__enabled=false
         elif [[ "${_neo4j_auth:-}" =~ ^([^/]+)\/([^/]+)/?([tT][rR][uU][eE])?$ ]]; then
             admin_user="${BASH_REMATCH[1]}"
             password="${BASH_REMATCH[2]}"
@@ -329,7 +328,7 @@ if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   groups=($(id -G neo4j))
-  exec_cmd="runuser -p -u neo4j -g neo4j --"
+  exec_cmd="exec runuser -p -u neo4j -g neo4j --"
   neo4j_admin_cmd="runuser -p -u neo4j -g neo4j -- neo4j-admin"
 else
   userid="$(id -u)"
