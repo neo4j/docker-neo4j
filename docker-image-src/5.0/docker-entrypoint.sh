@@ -236,7 +236,7 @@ function install_neo4j_labs_plugins
   # We store a copy of the config before we modify it for the plugins to allow us to see if there are user-set values in the input config that we shouldn't override
   local _old_config="$(mktemp)"
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
-  for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
+  for plugin_name in $(echo "${NEO4J_PLUGINS}" | jq --raw-output '.[]'); do
     local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
     if [ "${_location}" != "null" ]; then
         load_plugin_from_location "${plugin_name}" "${_location}"
@@ -401,18 +401,13 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-}}
 fi
 
-# unset old hardcoded unsupported env variables
-unset NEO4J_server_txLog_rotation_retentionPolicy NEO4J_UDC_SOURCE \
-    NEO4J_server_unmanagedExtensionClasses NEO4J_server_allowFormatMigration \
-    NEO4J_server_connectors_defaultAdvertisedAddress NEO4J_ha_serverId \
-    NEO4J_ha_initialHosts NEO4J_causalClustering_expectedCoreClusterSize \
-    NEO4J_causalClustering_initialDiscoveryMembers \
-    NEO4J_causalClustering_discoveryListenAddress \
-    NEO4J_causalClustering_discoveryAdvertisedAddress \
-    NEO4J_causalClustering_transactionListenAddress \
-    NEO4J_causalClustering_transactionAdvertisedAddress \
-    NEO4J_causalClustering_raftListenAddress \
-    NEO4J_causalClustering_raftAdvertisedAddress
+# NEO4JLABS_PLUGINS has been renamed to NEO4J_PLUGINS, but we want the old name to work for now.
+if [ -n "${NEO4JLABS_PLUGINS:-}" ];
+then
+    echo >&2 "NEO4JLABS_PLUGINS has been renamed to NEO4J_PLUGINS in Neo4j 5.0.0.
+The old name will still work, but is likely to be deprecated in future releases."
+    : ${NEO4J_PLUGINS:=${NEO4JLABS_PLUGINS:-}}
+fi
 
 # ==== CHECK FILE PERMISSIONS ON MOUNTED FOLDERS ====
 
@@ -430,7 +425,7 @@ if [ -d /ssl ]; then
 fi
 
 if [ -d /plugins ]; then
-    if [[ -n "${NEO4JLABS_PLUGINS:-}" ]]; then
+    if [[ -n "${NEO4J_PLUGINS:-}" ]]; then
         # We need write permissions
         check_mounted_folder_writable_with_chown "/plugins"
     fi
@@ -497,8 +492,9 @@ fi
 # save NEO4J_HOME and NEO4J_AUTH to temp variables that don't begin with NEO4J_ so they don't get added to the conf
 temp_neo4j_home="${NEO4J_HOME}"
 temp_neo4j_auth="${NEO4J_AUTH:-}"
+temp_neo4j_plugins="${NEO4J_PLUGINS:-}"
 # list env variables with prefix NEO4J_ and create settings from them
-unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL NEO4J_EDITION NEO4J_ACCEPT_LICENSE_AGREEMENT NEO4J_HOME
+unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL NEO4J_EDITION NEO4J_ACCEPT_LICENSE_AGREEMENT NEO4J_HOME NEO4J_PLUGINS
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     setting=$(echo "${i}" | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
     value=$(echo "${!i}")
@@ -512,15 +508,16 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 export NEO4J_HOME="${temp_neo4j_home}"
-unset temp_neo4j_home
+export NEO4J_PLUGINS="${temp_neo4j_plugins}"
+unset temp_neo4j_home temp_neo4j_plugins
 
 # ==== SET PASSWORD AND PLUGINS ====
 
 set_initial_password "${temp_neo4j_auth}"
 
 
-if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
-  # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
+if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
+  # NEO4J_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
   install_neo4j_labs_plugins
 fi
 

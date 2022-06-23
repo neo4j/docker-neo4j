@@ -40,6 +40,9 @@ public class TestPluginInstallation
     private static final String DB_USER = "neo4j";
     private static final String DB_PASSWORD = "quality";
     private static final String PLUGIN_JAR = "myPlugin.jar";
+    private static final String PLUGIN_ENV_4X = "NEO4JLABS_PLUGINS";
+    private static final String PLUGIN_ENV_5X = "NEO4J_PLUGINS";
+    private static String plugins_env;
 
     private static final Logger log = LoggerFactory.getLogger( TestPluginInstallation.class );
 
@@ -59,6 +62,16 @@ public class TestPluginInstallation
                                 "Plugin tests can only run on amd64 machines at the moment" );
     }
 
+    @BeforeAll
+    public static void getCorrectPluginEnvName()
+    {
+        if( NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ) )
+        {
+            plugins_env = PLUGIN_ENV_4X;
+        }
+        else plugins_env = PLUGIN_ENV_5X;
+    }
+
     private GenericContainer createContainerWithTestingPlugin()
     {
         Testcontainers.exposeHostPorts( httpServer.PORT );
@@ -66,7 +79,7 @@ public class TestPluginInstallation
 
         container.withEnv( "NEO4J_AUTH", DB_USER+"/"+ DB_PASSWORD)
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                .withEnv( "NEO4JLABS_PLUGINS", "[\"_testing\"]" )
+                .withEnv( plugins_env, "[\"_testing\"]" )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
                 .waitingFor( Wait.forHttp( "/" )
@@ -136,6 +149,25 @@ public class TestPluginInstallation
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            verifyTestPluginLoaded(db);
+        }
+    }
+
+    @Test
+    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
+    public void testPlugin_50BackwardsCompatibility() throws Exception
+    {
+        Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                                "NEO4JLABS_PLUGIN backwards compatibility does not need checking");
+        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-backcompat-" );
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
+        setupTestPlugin( pluginsDir, versionsJson );
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.withEnv( PLUGIN_ENV_5X, "" );
+            container.withEnv( PLUGIN_ENV_4X, "[\"_testing\"]" );
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             verifyTestPluginLoaded(db);
@@ -254,7 +286,7 @@ public class TestPluginInstallation
 
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
-            container.withEnv( "NEO4JLABS_PLUGINS", "" ); // don't need the _testing plugin for this
+            container.withEnv( plugins_env, "" ); // don't need the _testing plugin for this
             container.start();
 
             String semverQuery = "echo \"{\\\"neo4j\\\":\\\"%s\\\"}\" | " +
