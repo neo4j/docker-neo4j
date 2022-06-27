@@ -12,6 +12,7 @@
     }
   },
   "bloom": {
+    "location": "/var/lib/neo4j/products/bloom-plugin-*.jar",
     "versions": "https://bloom-plugins.s3.eu-west-2.amazonaws.com/versions.json",
     "properties": {
       "dbms.unmanaged_extension_classes": "com.neo4j.bloom.server=/browser/bloom",
@@ -38,6 +39,7 @@
   },
   "graph-data-science": {
     "versions": "https://graphdatascience.ninja/versions.json",
+    "location": "/var/lib/neo4j/products/neo4j-graph-data-science-*.jar",
     "properties": {
       "dbms.security.procedures.unrestricted": "gds.*"
     }
