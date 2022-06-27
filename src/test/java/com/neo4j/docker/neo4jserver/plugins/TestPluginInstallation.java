@@ -1,10 +1,8 @@
-package com.neo4j.docker.neo4jserver;
+package com.neo4j.docker.neo4jserver.plugins;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.google.gson.Gson;
-import com.neo4j.docker.neo4jserver.plugins.ExampleNeo4jPlugin;
 import com.neo4j.docker.utils.*;
-import com.neo4j.docker.neo4jserver.plugins.JarBuilder;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -40,9 +38,6 @@ public class TestPluginInstallation
     private static final String DB_USER = "neo4j";
     private static final String DB_PASSWORD = "quality";
     private static final String PLUGIN_JAR = "myPlugin.jar";
-    private static final String PLUGIN_ENV_4X = "NEO4JLABS_PLUGINS";
-    private static final String PLUGIN_ENV_5X = "NEO4J_PLUGINS";
-    private static String plugins_env;
 
     private static final Logger log = LoggerFactory.getLogger( TestPluginInstallation.class );
 
@@ -62,16 +57,6 @@ public class TestPluginInstallation
                                 "Plugin tests can only run on amd64 machines at the moment" );
     }
 
-    @BeforeAll
-    public static void getCorrectPluginEnvName()
-    {
-        if( NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ) )
-        {
-            plugins_env = PLUGIN_ENV_4X;
-        }
-        else plugins_env = PLUGIN_ENV_5X;
-    }
-
     private GenericContainer createContainerWithTestingPlugin()
     {
         Testcontainers.exposeHostPorts( httpServer.PORT );
@@ -79,7 +64,7 @@ public class TestPluginInstallation
 
         container.withEnv( "NEO4J_AUTH", DB_USER+"/"+ DB_PASSWORD)
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                .withEnv( plugins_env, "[\"_testing\"]" )
+                .withEnv( Neo4jPluginEnv.get(), "[\"_testing\"]" )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
                 .waitingFor( Wait.forHttp( "/" )
@@ -166,8 +151,8 @@ public class TestPluginInstallation
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
-            container.withEnv( PLUGIN_ENV_5X, "" );
-            container.withEnv( PLUGIN_ENV_4X, "[\"_testing\"]" );
+            container.withEnv( Neo4jPluginEnv.PLUGIN_ENV_5X, "" );
+            container.withEnv( Neo4jPluginEnv.PLUGIN_ENV_4X, "[\"_testing\"]" );
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             verifyTestPluginLoaded(db);
@@ -286,7 +271,7 @@ public class TestPluginInstallation
 
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
-            container.withEnv( plugins_env, "" ); // don't need the _testing plugin for this
+            container.withEnv( Neo4jPluginEnv.get(), "" ); // don't need the _testing plugin for this
             container.start();
 
             String semverQuery = "echo \"{\\\"neo4j\\\":\\\"%s\\\"}\" | " +
