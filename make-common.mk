@@ -89,7 +89,9 @@ tmp/local-context-neo4j-admin-%/.sentinel: tmp/image-neo4j-admin-%/.sentinel in/
 # You can successfully do `docker build tmp/image-{community,enterprise}` so long as the Neo4j is a released version.
 tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(series)/docker-entrypoint.sh \
                        in/$(call tarball,%,$(NEO4JVERSION))
-> mkdir -p $(@D)
+> mkdir -p $(@D)/local-package
+> cp docker-image-src/common/* $(@D)/local-package
+> cp $(filter %.sh,$^) $(@D)/local-package
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
 > <$(filter %/Dockerfile,$^) sed \
     -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \
@@ -98,9 +100,6 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
     -e "s|%%NEO4J_EDITION%%|$*|" \
     -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
     >$(@D)/Dockerfile
-> mkdir -p $(@D)/local-package
-> cp docker-image-src/common/* $(@D)/local-package
-> cp $(filter %.sh,$^) $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
 
