@@ -146,6 +146,31 @@ function check_mounted_folder_writable_with_chown
     fi
 }
 
+function load_plugin_from_location
+{
+  # Install a plugin from location at runtime.
+  local _plugin_name="${1}"
+  local _location="${2}"
+
+  local _plugins_dir="${NEO4J_HOME}/plugins"
+  if [ -d /plugins ]; then
+    local _plugins_dir="/plugins"
+  fi
+
+  local _destination="${_plugins_dir}/${_plugin_name}.jar"
+
+  # Now we install the plugin that is shipped with Neo4j
+  for filename in ${_location}; do
+    echo "Installing Plugin '${_plugin_name}' from ${_location} to ${_destination}"
+    cp --preserve "${filename}" "${_destination}"
+  done
+
+  if ! is_readable "${_destination}"; then
+    echo >&2 "Plugin at '${_destination}' is not readable"
+    exit 1
+  fi
+}
+
 function load_plugin_from_github
 {
   # Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
@@ -212,7 +237,12 @@ function install_neo4j_labs_plugins
   local _old_config="$(mktemp)"
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
-    load_plugin_from_github "${plugin_name}"
+    local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
+    if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
+        load_plugin_from_location "${plugin_name}" "${_location}"
+    else
+        load_plugin_from_github "${plugin_name}"
+    fi
     apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
   done
   rm "${_old_config}"
