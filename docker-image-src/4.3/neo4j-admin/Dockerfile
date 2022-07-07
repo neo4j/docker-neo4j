@@ -13,13 +13,12 @@ RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-creat
 COPY ./local-package/* /startup/
 
 RUN apt update \
-    && apt install -y curl procps \
+    && apt install -y curl gosu procps \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
     && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
     && rm ${NEO4J_TARBALL} \
-    && rm ${NEO4J_HOME}/bin/neo4j \
     && mv "${NEO4J_HOME}"/data /data \
     && chown -R neo4j:neo4j /data \
     && chmod -R 777 /data \
