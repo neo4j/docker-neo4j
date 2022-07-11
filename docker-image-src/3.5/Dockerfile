@@ -13,7 +13,7 @@ RUN addgroup --system neo4j && adduser --system --no-create-home --home "${NEO4J
 COPY ./local-package/* /startup/
 
 RUN apt update \
-    && apt install -y curl wget jq tini \
+    && apt install -y curl gosu jq tini wget \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
