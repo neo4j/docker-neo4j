@@ -133,7 +133,7 @@ function check_mounted_folder_writable_with_chown
             echo "Warning: Folder mounted to \"${mountFolder}\" is not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         # check permissions on files in the folder
-        elif [ $(${exec_cmd} find "${mountFolder}" -not -writable | wc -l) -gt 0 ]; then
+        elif [ $(gosu "${userid}":"${groupid}" find "${mountFolder}" -not -writable | wc -l) -gt 0 ]; then
             echo "Warning: Some files inside \"${mountFolder}\" are not writable from inside container. Changing folder owner to ${userid}."
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         fi
@@ -329,8 +329,8 @@ if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   groups=($(id -G neo4j))
-  exec_cmd="exec runuser -p -u neo4j -g neo4j --"
-  neo4j_admin_cmd="runuser -p -u neo4j -g neo4j -- neo4j-admin"
+  exec_cmd="exec gosu neo4j:neo4j"
+  neo4j_admin_cmd="gosu neo4j:neo4j neo4j-admin"
 else
   userid="$(id -u)"
   groupid="$(id -g)"
@@ -558,7 +558,7 @@ function get_neo4j_run_cmd {
     fi
 
     if running_as_root; then
-        ${exec_cmd} neo4j console --dry-run "${extraArgs[@]}"
+        gosu neo4j:neo4j neo4j console --dry-run "${extraArgs[@]}"
     else
         neo4j console --dry-run "${extraArgs[@]}"
     fi
