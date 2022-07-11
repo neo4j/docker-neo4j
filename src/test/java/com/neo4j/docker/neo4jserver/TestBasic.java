@@ -7,6 +7,8 @@ import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
@@ -137,27 +139,33 @@ public class TestBasic
         }
     }
 
-    @Test
-    void testShutsDownCleanlyOnSigterm() throws Exception
+//    @Test
+//    void testShutsDownCleanly_SIGTERM() throws Exception
+//    {
+//        verifyShutsDownCleanly( "SIGTERM" );
+//    }
+
+    @ParameterizedTest(name = "ShutsDownCorrectly_{0}")
+    @ValueSource(strings = {"SIGTERM", "SIGINT"})
+    void verifyShutsDownCleanly(String signal) throws Exception
     {
-        log.info( "Starting first container" );
         try(GenericContainer container = createBasicContainer())
         {
             setContainerWaitForNeo4jUp( container );
             // sets sigterm as the stop container signal
             container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
-                    cmd.withStopSignal( "SIGTERM" )
+                    cmd.withStopSignal( signal )
                        .withStopTimeout( 20 ));
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", "none" );
-            log.info( "issuing container stop command" );
+            log.info( "issuing container stop command " + signal );
             container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
             String stdout = container.getLogs();
             Assertions.assertTrue( stdout.contains( "Neo4j Server shutdown initiated by request" ),
-                                   "clean shutdown not initiated by sigterm");
-            Assertions.assertTrue( stdout.contains( "Stopping..." ),
-                                   "clean shutdown not initiated by sigterm");
+                                   "clean shutdown not initiated by " + signal );
+            Assertions.assertTrue( stdout.contains( "Stopped." ),
+                                   "clean shutdown not initiated by " + signal );
         }
     }
 }
