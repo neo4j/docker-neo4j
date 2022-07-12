@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestPasswords
 {
+    public static final String AUTH = "none";
     private static Logger log = LoggerFactory.getLogger( TestPasswords.class);
 
     private GenericContainer createContainer( boolean asCurrentUser )
@@ -48,7 +50,8 @@ public class TestPasswords
 		// we test that setting NEO4J_AUTH to none lets the database start in TestBasic.java but not that we can read/write the database
 		try(GenericContainer container = createContainer( false ))
 		{
-			container.withEnv( "NEO4J_AUTH", "none" );
+			container.withEnv( "NEO4J_AUTH", AUTH);
+            StartupDetector.makeContainerWaitForNeo4jReady(container, AUTH, Duration.ofSeconds( 90 ));
 			container.start();
             DatabaseIO db = new DatabaseIO(container);
             db.putInitialDataIntoContainer( "neo4j", "none" );
@@ -83,6 +86,7 @@ public class TestPasswords
 		try(GenericContainer container = createContainer( true ))
         {
             log.info( "Starting first container as current user and not specifying NEO4J_AUTH" );
+            StartupDetector.makeContainerWaitForDatabaseReady(container, "neo4j", "neo4j", "neo4j", Duration.ofSeconds(90));
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             // try with no password, this should fail because the default password should be applied with no NEO4J_AUTH env variable
@@ -108,6 +112,7 @@ public class TestPasswords
         try(GenericContainer firstContainer = createContainer( asCurrentUser ))
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
+            StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
 			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					firstContainer,
 					"password-defaultuser-data-",
@@ -125,6 +130,7 @@ public class TestPasswords
         {
             HostFileSystemOperations.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
             log.info( "starting new container with same /data mount as same user without setting password" );
+            StartupDetector.makeContainerWaitForNeo4jReady(secondContainer, password);
             secondContainer.start();
             DatabaseIO db = new DatabaseIO(secondContainer);
             db.verifyInitialDataInContainer( "neo4j", password );
@@ -142,6 +148,7 @@ public class TestPasswords
 		try(GenericContainer firstContainer = createContainer( asCurrentUser ))
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
+            StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
 			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
 					firstContainer,
 					"password-envoverride-data-",
@@ -181,6 +188,8 @@ public class TestPasswords
             String intialPass = "apassword";
             String resetPass = "new_password";
             container.withEnv("NEO4J_AUTH", user+"/"+intialPass+"/true" );
+            StartupDetector.makeContainerWaitForDatabaseReady(container, user, intialPass, "neo4j",
+                    Duration.ofSeconds(30));
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             Assertions.assertThrows( org.neo4j.driver.exceptions.ClientException.class,
