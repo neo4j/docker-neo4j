@@ -3,6 +3,7 @@ package com.neo4j.docker.neo4jserver.plugins;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.google.gson.Gson;
 import com.neo4j.docker.utils.*;
+import java.time.Duration;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -66,11 +67,9 @@ public class TestPluginInstallation
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                 .withEnv( Neo4jPluginEnv.get(), "[\"_testing\"]" )
                 .withExposedPorts( 7474, 7687 )
-                .withLogConsumer( new Slf4jLogConsumer( log ) )
-                .waitingFor( Wait.forHttp( "/" )
-                                 .forPort( 7474 )
-                                 .forStatusCode( 200 ) );
-
+                .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitForDatabaseReady(container, DB_USER, DB_PASSWORD, "neo4j",
+                Duration.ofSeconds(60));
         SetContainerUser.nonRootUser( container );
         return container;
     }
