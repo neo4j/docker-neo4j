@@ -3,6 +3,7 @@ package com.neo4j.docker.neo4jserver;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -151,7 +152,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            setContainerWaitForNeo4jUp( container );
+            StartupDetector.makeContainerWaitForNeo4jReady(container, "none");
             // sets sigterm as the stop container signal
             container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
                     cmd.withStopSignal( signal )

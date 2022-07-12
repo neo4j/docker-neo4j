@@ -1,10 +1,22 @@
 package com.neo4j.docker.neo4jserver;
 
+import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
+
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
-import com.neo4j.docker.neo4jserver.configurations.Configuration;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
+import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.TestSettings;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -18,25 +30,8 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.TestSettings;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserPrincipal;
-import java.time.Duration;
-import java.util.Random;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 
 public class TestMounting
@@ -66,6 +61,7 @@ public class TestMounting
 				 .withLogConsumer( new Slf4jLogConsumer( log ) )
 				 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
 				 .withEnv( "NEO4J_AUTH", "none" );
+		makeContainerWaitForNeo4jReady( container, "none" );
 		if(asCurrentUser)
 		{
 			SetContainerUser.nonRootUser( container );
