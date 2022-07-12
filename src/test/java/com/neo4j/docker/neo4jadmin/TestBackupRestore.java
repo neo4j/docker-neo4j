@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -49,11 +50,8 @@ public class TestBackupRestore
                  .withEnv( "NEO4J_dbms_backup_enabled", "true" )
                  .withEnv( "NEO4J_dbms_backup_listen__address", "0.0.0.0:6362" )
                  .withExposedPorts( 7474, 7687, 6362 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( Wait.forHttp( "/" )
-                                  .forPort( 7474 )
-                                  .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 90 ) ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitForNeo4jReady(container, password, Duration.ofSeconds( 90 ));
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );

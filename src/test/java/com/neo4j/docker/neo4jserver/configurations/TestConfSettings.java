@@ -1,5 +1,7 @@
 package com.neo4j.docker.neo4jserver.configurations;
 
+import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
+
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -30,9 +32,9 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-
 public class TestConfSettings
 {
+    private static final String AUTH = "none";
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
     private static Path confFolder;
     private static Map<Setting,Configuration> confNames;
@@ -47,7 +49,7 @@ public class TestConfSettings
     private GenericContainer createContainer()
     {
         return new GenericContainer(TestSettings.IMAGE_ID)
-                .withEnv("NEO4J_AUTH", "none")
+                .withEnv("NEO4J_AUTH", AUTH)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log));
@@ -69,15 +71,6 @@ public class TestConfSettings
         // It seems to do what we need... FOR NOW??
         container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
         SetContainerUser.nonRootUser( container );
-        return container;
-    }
-
-    private GenericContainer makeContainerWaitForNeo4jReady(GenericContainer container)
-    {
-        container.setWaitStrategy( Wait.forHttp( "/" )
-                                       .forPort( 7474 )
-                                       .forStatusCode( 200 )
-                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
         return container;
     }
 
@@ -224,7 +217,7 @@ public class TestConfSettings
             Path confFile = confFolder.resolve( "ReadConf.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
         }
 
@@ -245,7 +238,7 @@ public class TestConfSettings
                     "/logs" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
 
@@ -351,7 +344,7 @@ public class TestConfSettings
             Path confFile = confFolder.resolve("EnvVarsOverride.conf");
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
         }
 
@@ -384,7 +377,7 @@ public class TestConfSettings
 
             //Start the container
             SetContainerUser.nonRootUser( container );
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
             //Read debug.log to check that cluster confs are set successfully
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
@@ -437,7 +430,7 @@ public class TestConfSettings
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
         }
 
@@ -471,7 +464,7 @@ public class TestConfSettings
             Path confFile = confFolder.resolve( "JvmAdditionalNotOverridden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
@@ -510,7 +503,7 @@ public class TestConfSettings
             Path confFile = confFolder.resolve("JvmAdditionalWithDollar.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
@@ -540,7 +533,7 @@ public class TestConfSettings
             SetContainerUser.nonRootUser( container );
             container.withEnv( confNames.get( Setting.JVM_ADDITIONAL ).envName, expectedJvmAdditional);
             //Start the container
-            makeContainerWaitForNeo4jReady( container );
+            makeContainerWaitForNeo4jReady( container, AUTH );
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
