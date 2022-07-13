@@ -36,22 +36,12 @@ public class TestBasic
         return container;
     }
 
-    private void setContainerWaitForNeo4jUp(GenericContainer container)
-    {
-        container.setWaitStrategy( Wait.forHttp( "/" )
-                                       .forPort( 7474 )
-                                       .forStatusCode( 200 ) );
-    }
-
-
     @Test
     void testListensOn7474()
     {
         try(GenericContainer container = createBasicContainer())
         {
-            container.setWaitStrategy( Wait.forHttp( "/" )
-                                           .forPort( 7474 )
-                                           .forStatusCode( 200 ) );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
         }
@@ -62,7 +52,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-			setContainerWaitForNeo4jUp( container );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -119,7 +109,7 @@ public class TestBasic
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
         try(GenericContainer container = createBasicContainer())
         {
-            setContainerWaitForNeo4jUp( container );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
             container.start();
 
             Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell" );
@@ -133,18 +123,12 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            setContainerWaitForNeo4jUp( container );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
             container.setWorkingDirectory( "/tmp" );
             Assertions.assertDoesNotThrow( () -> container.start(),
-                                           "Could not start neo4j from workdir NEO4J_HOME" );
+                                           "Could not start neo4j from workdir other than NEO4J_HOME" );
         }
     }
-
-//    @Test
-//    void testShutsDownCleanly_SIGTERM() throws Exception
-//    {
-//        verifyShutsDownCleanly( "SIGTERM" );
-//    }
 
     @ParameterizedTest(name = "ShutsDownCorrectly_{0}")
     @ValueSource(strings = {"SIGTERM", "SIGINT"})
@@ -156,7 +140,7 @@ public class TestBasic
             // sets sigterm as the stop container signal
             container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
                     cmd.withStopSignal( signal )
-                       .withStopTimeout( 20 ));
+                       .withStopTimeout( 60 ));
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", "none" );
