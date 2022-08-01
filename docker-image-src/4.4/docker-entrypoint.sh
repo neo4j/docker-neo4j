@@ -567,6 +567,11 @@ function get_neo4j_run_cmd {
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
+    if [ -f "${NEO4J_HOME}/run/neo4j.pid" ]; then
+        echo >&2 "Error: It looks like neo4j is already running. If you are sure that neo4j is not running, delete ${NEO4J_HOME}/run/neo4j.pid. This could be caused by not shutting down neo4j gracefully. Consider increasing --time/-t for docker stop."
+        exit 1
+    fi
+
     # separate declaration and use of get_neo4j_run_cmd so that error codes are correctly surfaced
     neo4j_console_cmd="$(get_neo4j_run_cmd)"
     ${exec_cmd} ${neo4j_console_cmd?:No Neo4j command was generated}
