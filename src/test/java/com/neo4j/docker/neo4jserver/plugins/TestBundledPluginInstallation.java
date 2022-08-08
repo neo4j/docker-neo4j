@@ -33,7 +33,7 @@ public class TestBundledPluginInstallation
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
                 // plugin name key, version it's bundled since, is enterprise only
-               Arguments.arguments("apoc-core", new Neo4jVersion(4, 1, 0), false),
+               Arguments.arguments("apoc-core", new Neo4jVersion(4, 3, 15), false),
                Arguments.arguments( "graph-data-science", new Neo4jVersion( 4,4,0 ), true ),
                Arguments.arguments( "bloom", new Neo4jVersion( 4,4,0 ), true )
         );
