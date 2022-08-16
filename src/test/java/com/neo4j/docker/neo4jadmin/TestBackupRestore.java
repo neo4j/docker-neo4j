@@ -113,7 +113,12 @@ public class TestBackupRestore
         GenericContainer adminBackup = createAdminContainer( asDefaultUser )
                 .withNetworkMode( "host" )
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup complete successful.*" ) )
-                .withCommand( "neo4j-admin", "database", "backup", "--database=neo4j", "--backup-dir=/backups", "--from="+neoDBAddress);
+                .withCommand("neo4j-admin",
+                        "database",
+                        "backup-legacy",
+                        "--database=neo4j",
+                        "--backup-dir=/backups",
+                        "--from=" + neoDBAddress);
 
         Path backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                 adminBackup, "backup-", "/backups", testOutputFolder );
@@ -133,7 +138,12 @@ public class TestBackupRestore
         dbio.runCypherQuery( dbUser, password, "STOP DATABASE neo4j", "system" );
         GenericContainer adminRestore = createAdminContainer( asDefaultUser )
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^.*restoreStatus=successful.*" ) )
-                .withCommand( "neo4j-admin", "database", "restore", "--database=neo4j", "--from=/backups/neo4j", "--force");
+                .withCommand("neo4j-admin",
+                        "database",
+                        "restore-legacy",
+                        "--database=neo4j",
+                        "--from=/backups/neo4j",
+                        "--force");
         HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
         HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
         adminRestore.start();
