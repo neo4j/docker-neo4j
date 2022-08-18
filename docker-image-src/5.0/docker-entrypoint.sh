@@ -361,9 +361,16 @@ if [[ "${cmd}" == *"neo4j"* ]]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-(c) Neo4j Sweden AB. 2022.  All Rights Reserved.
-Use of this Software without a proper commercial license with Neo4j,
-Inc. or its affiliates is prohibited.
+The license agreement is available https://neo4j.com/terms/licensing/
+
+If you do not have a commercial license and want to evaluate the Software
+please read the terms of the evaluation agreement before you accept.
+https://neo4j.com/terms/enterprise_us/
+
+(c) Neo4j Sweden AB. All Rights Reserved.
+Use of this Software without a proper commercial license, or evaluation license
+with Neo4j,Inc. or its affiliates is prohibited.
+Neo4j has the right to terminate your usage if you are not compliant.
 
 Email inquiries can be directed to: licensing@neo4j.com
 
