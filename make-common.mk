@@ -50,6 +50,7 @@ out/%/.sentinel: tmp/image-%/.sentinel
 tmp/.image-id-%: tmp/local-context-%/.sentinel
 > mkdir -p $(@D)
 > image=test/$$RANDOM
+> cp -r jvm $(<D)
 > docker build --tag=$$image \
     --build-arg="NEO4J_URI=file:///startup/$(call tarball,$*,$(NEO4JVERSION))" \
     $(<D)
