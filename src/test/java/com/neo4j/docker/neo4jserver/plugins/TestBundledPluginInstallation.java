@@ -33,9 +33,10 @@ public class TestBundledPluginInstallation
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
                 // plugin name key, version it's bundled since, is enterprise only
-               Arguments.arguments("apoc-core", new Neo4jVersion(4, 3, 15), false),
-               Arguments.arguments( "graph-data-science", new Neo4jVersion( 4,4,0 ), true ),
-               Arguments.arguments( "bloom", new Neo4jVersion( 4,4,0 ), true )
+               Arguments.arguments( "apoc-core", new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
+               Arguments.arguments( "apoc", new Neo4jVersion(5, 0, 0), null, false ),
+               Arguments.arguments( "graph-data-science", new Neo4jVersion( 4,4,0 ), null, true ),
+               Arguments.arguments( "bloom", new Neo4jVersion( 4,4,0 ), null, true )
         );
     }
 
@@ -57,10 +58,14 @@ public class TestBundledPluginInstallation
 
     @ParameterizedTest(name = "testBundledPlugin_{0}")
     @MethodSource("bundledPluginsArgs")
-    public void testBundledPlugin(String pluginName, Neo4jVersion bundledSince, boolean isEnterpriseOnly) throws Exception
+    public void testBundledPlugin(String pluginName, Neo4jVersion bundledSince, Neo4jVersion bundledUntil, boolean isEnterpriseOnly) throws Exception
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( bundledSince ),
-                                String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince.toString()));
+                                String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince));
+        if(bundledUntil != null) {
+            Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil ),
+                                    String.format("plugin %s was not bundled in Neo4j until %s", pluginName, bundledUntil));
+        }
         if(isEnterpriseOnly)
         {
             Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
@@ -121,10 +126,14 @@ public class TestBundledPluginInstallation
     @ParameterizedTest(name = "testBundledPlugin_downloadsIfNotAvailableLocally_{0}")
     @MethodSource("bundledPluginsArgs")
     public void testBundledPlugin_downloadsIfNotAvailableLocally
-            (String pluginName, Neo4jVersion bundledSince, boolean isEnterpriseOnly) throws Exception
+            (String pluginName, Neo4jVersion bundledSince, Neo4jVersion bundledUntil, boolean isEnterpriseOnly) throws Exception
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( bundledSince ),
                                 String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince.toString()));
+        if(bundledUntil != null) {
+            Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil ),
+                                    String.format("plugin %s was not bundled in Neo4j until %s", pluginName, bundledUntil));
+        }
         Assumptions.assumeTrue( isEnterpriseOnly, "Test only applies to enterprise only bundled plugins tested against community edition" );
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                 "Test only applies to enterprise only bundled plugins tested against community edition" );
