@@ -1,5 +1,6 @@
 FROM debian:bullseye-slim
 ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=fake-temurin:11.0.16.1 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
@@ -33,7 +34,6 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/*
 
 
-COPY ./jvm/ $JAVA_HOME/
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
 WORKDIR "${NEO4J_HOME}"
