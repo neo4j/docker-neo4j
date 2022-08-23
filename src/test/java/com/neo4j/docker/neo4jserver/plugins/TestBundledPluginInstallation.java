@@ -64,7 +64,7 @@ public class TestBundledPluginInstallation
                                 String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince));
         if(bundledUntil != null) {
             Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil ),
-                                    String.format("plugin %s was not bundled in Neo4j until %s", pluginName, bundledUntil));
+                                    String.format("plugin %s was not bundled after Neo4j %s", pluginName, bundledUntil));
         }
         if(isEnterpriseOnly)
         {
@@ -132,7 +132,7 @@ public class TestBundledPluginInstallation
                                 String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince.toString()));
         if(bundledUntil != null) {
             Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil ),
-                                    String.format("plugin %s was not bundled in Neo4j until %s", pluginName, bundledUntil));
+                                    String.format("plugin %s was not bundled after Neo4j %s", pluginName, bundledUntil));
         }
         Assumptions.assumeTrue( isEnterpriseOnly, "Test only applies to enterprise only bundled plugins tested against community edition" );
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
