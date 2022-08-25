@@ -104,6 +104,26 @@ public class TestBasic
     }
 
     @Test
+    void testLicenseAcceptanceAvoidsWarning() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+                                "No license checks for community edition");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,0,0 ) ),
+                                "No unified license acceptance method before 5.0.0");
+        try(GenericContainer container = createBasicContainer())
+        {
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            container.start();
+            Assertions.assertTrue( container.isRunning() );
+
+            String stdout = container.getLogs(OutputFrame.OutputType.STDOUT);
+            Assertions.assertTrue( stdout.contains( "The license agreement was accepted with environment variable " +
+                                                    "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes when the Software was started." ),
+            "Neo4j did not register that the license was agreed to.");
+        }
+    }
+
+    @Test
     void testCypherShellOnPath() throws Exception
     {
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
