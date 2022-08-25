@@ -516,6 +516,7 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
 done
 export NEO4J_HOME="${temp_neo4j_home}"
 export NEO4J_PLUGINS="${temp_neo4j_plugins}"
+export NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
 unset temp_neo4j_home temp_neo4j_plugins
 
 # ==== SET PASSWORD AND PLUGINS ====
