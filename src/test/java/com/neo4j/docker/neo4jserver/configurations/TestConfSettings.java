@@ -479,67 +479,72 @@ public class TestConfSettings
     }
 
     @Test
-    void testDollarInConfigEscapedProperly_conf() throws Exception
+    void testSpecialCharInJvmAdditional_space_conf() throws Exception
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
                                 "test not applicable in versions before 4.3." );
-        String expectedJvmAdditional = "-Djavax.net.ssl.trustStorePassword=beepbeep$boop1boop2";
-        Path logMount;
+        testJvmAdditionalSpecialCharacters_conf("space", "-XX:OnOutOfMemoryError=\"/usr/bin/echo oh no oom\"");
+    }
+
+    @Test
+    void testSpecialCharInJvmAdditional_dollar_conf() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
+                                "test not applicable in versions before 4.3." );
+        testJvmAdditionalSpecialCharacters_conf("dollar",
+                                                "-Djavax.net.ssl.trustStorePassword=\"beepbeep$boop1boop2\"" );
+    }
+
+    @Test
+    void testSpecialCharInJvmAdditional_dollar_env() throws Exception {
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 3, 0)),
+                "test not applicable in versions before 4.3.");
+        testJvmAdditionalSpecialCharacters_env("dollar", "-Djavax.net.ssl.trustStorePassword=\"bleepblorp$bleep1blorp4\"");
+    }
+
+    void testJvmAdditionalSpecialCharacters_conf(String charName, String expectedJvmAdditional) throws Exception
+    {
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvmdollarinconf-" );
+            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvm-"+charName+"-in-conf-" );
             //Mount /conf
             Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                     container,
                     "conf-",
                     "/conf", testOutputFolder);
-            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "logs-",
-                    "/logs",
-                    testOutputFolder);
-            SetContainerUser.nonRootUser( container );
             //copy test conf file
-            Path confFile = confFolder.resolve("JvmAdditionalWithDollar.conf" );
-            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            String confContent = confNames.get( Setting.JVM_ADDITIONAL ).name + "=" + expectedJvmAdditional;
+            Files.write( confMount.resolve( "neo4j.conf" ), confContent.getBytes() );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
-            container.start();
-            // verify setting correctly loaded into neo4j
-            DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none",
-                                             confNames.get( Setting.JVM_ADDITIONAL ).name, expectedJvmAdditional);
+            verifyJvmAdditional( charName, expectedJvmAdditional, container );
         }
-
-        assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
-                                              confNames.get( Setting.JVM_ADDITIONAL ),
-                                              expectedJvmAdditional,
-                                              true );
     }
 
-    @Test
-    void testDollarInConfigEscapedProperly_env() throws Exception
+    void testJvmAdditionalSpecialCharacters_env(String charName, String expectedJvmAdditional) throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
-                                "test not applicable in versions before 4.3." );
-        Path logMount;
-        String expectedJvmAdditional = "-Djavax.net.ssl.trustStorePassword=bleepblorp$bleep1blorp4";
         try(GenericContainer container = createContainer())
         {
-            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
-                    container,
-                    "confdollarlogs-",
-                    "/logs");
-            SetContainerUser.nonRootUser( container );
             container.withEnv( confNames.get( Setting.JVM_ADDITIONAL ).envName, expectedJvmAdditional);
-            //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
-            container.start();
-            // verify setting correctly loaded into neo4j
-            DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none",
-                                             confNames.get( Setting.JVM_ADDITIONAL ).name, expectedJvmAdditional);
+            verifyJvmAdditional( charName, expectedJvmAdditional, container );
         }
+    }
+
+    void verifyJvmAdditional(String charName, String expectedJvmAdditional, GenericContainer container) throws Exception
+    {
+        Path logMount;
+        logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                container,
+                "conf"+charName+"logs-",
+                "/logs");
+        SetContainerUser.nonRootUser( container );
+        //Start the container
+        makeContainerWaitForNeo4jReady( container, AUTH );
+        container.start();
+        // verify setting correctly loaded into neo4j
+        DatabaseIO dbio = new DatabaseIO( container );
+        dbio.verifyConfigurationSetting( "neo4j", "none",
+                                         confNames.get( Setting.JVM_ADDITIONAL ).name, expectedJvmAdditional);
 
         assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
                                               confNames.get( Setting.JVM_ADDITIONAL ),
