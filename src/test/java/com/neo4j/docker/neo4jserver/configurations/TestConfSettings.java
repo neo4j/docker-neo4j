@@ -481,8 +481,8 @@ public class TestConfSettings
     @Test
     void testSpecialCharInJvmAdditional_space_conf() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
-                                "test not applicable in versions before 4.3." );
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 ) ),
+                                "test not applicable in versions before 4.4." );
         testJvmAdditionalSpecialCharacters_conf("space", "-XX:OnOutOfMemoryError=\"/usr/bin/echo oh no oom\"");
     }
 
