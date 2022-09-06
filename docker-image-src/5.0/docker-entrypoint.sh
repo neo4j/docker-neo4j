@@ -389,25 +389,6 @@ To do this you can use the following docker argument:
   fi
 fi
 
-# ==== RENAME LEGACY ENVIRONMENT CONF VARIABLES ====
-
-# Env variable naming convention:
-# - prefix NEO4J_
-# - double underscore char '__' instead of single underscore '_' char in the setting name
-# - underscore char '_' instead of dot '.' char in the setting name
-# Example:
-# NEO4J_server_tx__log_rotation_retention__policy env variable to set
-#       server.tx_log.rotation.retention_policy setting
-
-if [ "${NEO4J_EDITION}" == "enterprise" ];
-  then
-   : ${NEO4J_causal__clustering_expected__core__cluster__size:=${NEO4J_causalClustering_expectedCoreClusterSize:-}}
-   : ${NEO4J_causal__clustering_initial__discovery__members:=${NEO4J_causalClustering_initialDiscoveryMembers:-}}
-   : ${NEO4J_causal__clustering_discovery__advertised__address:=${NEO4J_causalClustering_discoveryAdvertisedAddress:-}}
-   : ${NEO4J_causal__clustering_transaction__advertised__address:=${NEO4J_causalClustering_transactionAdvertisedAddress:-}}
-   : ${NEO4J_causal__clustering_raft__advertised__address:=${NEO4J_causalClustering_raftAdvertisedAddress:-}}
-fi
-
 # NEO4JLABS_PLUGINS has been renamed to NEO4J_PLUGINS, but we want the old name to work for now.
 if [ -n "${NEO4JLABS_PLUGINS:-}" ];
 then
@@ -475,6 +456,28 @@ fi
 if [ -d /licenses ]; then
     check_mounted_folder_readable "/licenses"
     : ${NEO4J_server_directories_licenses:="/licenses"}
+fi
+
+# ==== RENAME LEGACY ENVIRONMENT CONF VARIABLES ====
+
+# Env variable naming convention:
+# - prefix NEO4J_
+# - double underscore char '__' instead of single underscore '_' char in the setting name
+# - underscore char '_' instead of dot '.' char in the setting name
+# Example:
+# NEO4J_server_tx__log_rotation_retention__policy env variable to set
+#       server.tx_log.rotation.retention_policy setting
+
+# we only need to override the configurations with a docker specific override.
+# The other config renames will be taken care of inside Neo4j.
+: ${NEO4J_db_tx__log_rotation_retention__policy:=${NEO4J_dbms_tx__log_rotation_retention__policy:-}}
+: ${NEO4J_server_memory_pagecache_size:=${NEO4J_dbms_memory_pagecache_size:-}}
+: ${NEO4J_server_default__listen__address:=${NEO4J_dbms_default__listen__address:-}}
+if [ "${NEO4J_EDITION}" == "enterprise" ];
+  then
+   : ${NEO4J_server_discovery_advertised__address:=${NEO4J_causal__clustering_discovery__advertised__address:-}}
+   : ${NEO4J_server_cluster_advertised__address:=${NEO4J_causal__clustering_transaction__advertised__address:-}}
+   : ${NEO4J_server_cluster_raft_advertised__address:=${NEO4J_causal__clustering_raft__advertised__address:-}}
 fi
 
 # ==== SET CONFIGURATIONS ====
