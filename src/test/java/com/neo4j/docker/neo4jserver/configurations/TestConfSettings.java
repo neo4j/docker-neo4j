@@ -136,7 +136,7 @@ public class TestConfSettings
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 0, 0)),
                                "No neo4j-admin in 2.3: skipping neo4j-admin-conf-override test");
         File conf;
-        Map<Setting,String> expectedValues = new HashMap<>() {{
+        Map<Setting,String> expectedValues = new HashMap<Setting,String>() {{
                 put( Setting.MEMORY_PAGECACHE_SIZE, "1000m");
                 put( Setting.MEMORY_HEAP_INITIALSIZE, "2000m");
                 put( Setting.MEMORY_HEAP_MAXSIZE, "3000m");
@@ -312,7 +312,7 @@ public class TestConfSettings
         // at some point we will fully deprecate old config names, at which point we add an assume-version-less-than here
         Path logMount;
         Map<Setting,Configuration> oldConfMap = Configuration.getConfigurationNameMap( new Neo4jVersion( 4, 4, 0 ) );
-        Map<Setting,String> expectedValues = new HashMap<>() {{
+        Map<Setting,String> expectedValues = new HashMap<Setting,String>() {{
             put( Setting.TXLOG_RETENTION_POLICY, "5M size" );
             put( Setting.MEMORY_PAGECACHE_SIZE, "100.00KiB" );
             put( Setting.DEFAULT_LISTEN_ADDRESS, "127.0.0.1" );
@@ -355,6 +355,8 @@ public class TestConfSettings
     @Test
     void testEnvVarsOverride() throws Exception
     {
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 0, 0)),
+                               "test not applicable in versions before 4.0.");
         Path debugLog;
         try(GenericContainer container = createContainer().withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512.00MiB"))
         {
