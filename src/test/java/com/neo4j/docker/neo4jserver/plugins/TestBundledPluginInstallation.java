@@ -33,10 +33,12 @@ public class TestBundledPluginInstallation
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
                 // plugin name key, version it's bundled since, is enterprise only
-               Arguments.arguments( "apoc-core", new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
-               Arguments.arguments( "apoc", new Neo4jVersion(5, 0, 0), null, false ),
-               Arguments.arguments( "graph-data-science", new Neo4jVersion( 4,4,0 ), null, true ),
-               Arguments.arguments( "bloom", new Neo4jVersion( 4,4,0 ), null, true )
+                Arguments.arguments( "apoc-core", new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
+                Arguments.arguments( "apoc", new Neo4jVersion(5, 0, 0), null, false ),
+                //todo reenable this when gds is back in 5.0
+                //https://trello.com/c/hE5D6LwB/913-in-testbundledplugininstallation-re-enable-gds-test-once-it-is-packaged-back-into-50
+                //Arguments.arguments( "graph-data-science", new Neo4jVersion( 4,4,0 ), null, true ),
+                Arguments.arguments( "bloom", new Neo4jVersion( 4,4,0 ), null, true )
         );
     }
 
