@@ -2,32 +2,18 @@ package com.neo4j.docker.neo4jserver.configurations;
 
 
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.TestSettings;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.Map;
 
-enum Setting{
-    CLUSTER_DISCOVERY_ADDRESS,
-    CLUSTER_RAFT_ADDRESS,
-    CLUSTER_TRANSACTION_ADDRESS,
-    DEFAULT_LISTEN_ADDRESS,
-    DIRECTORIES_DATA,
-    DIRECTORIES_LOGS,
-    DIRECTORIES_METRICS,
-    JVM_ADDITIONAL,
-    LOGS_GC_ROTATION_KEEPNUMBER,
-    MEMORY_HEAP_INITIALSIZE,
-    MEMORY_HEAP_MAXSIZE,
-    MEMORY_PAGECACHE_SIZE,
-    SECURITY_PROCEDURES_UNRESTRICTED,
-    TXLOG_RETENTION_POLICY
-    }
-
 public class Configuration
 {
     private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<Setting,Configuration>( Setting.class ) {{
+        put( Setting.BACKUP_ENABLED, new Configuration("server.backup.enabled"));
+        put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("server.backup.listen_address"));
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("server.discovery.advertised_address"));
         put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("server.cluster.raft.advertised_address"));
         put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("server.cluster.advertised_address"));
@@ -45,6 +31,8 @@ public class Configuration
     }};
 
     private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class ) {{
+        put( Setting.BACKUP_ENABLED, new Configuration("dbms.backup.enabled"));
+        put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("dbms.backup.listen_address"));
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("causal_clustering.discovery_advertised_address"));
         put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("causal_clustering.raft_advertised_address"));
         put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("causal_clustering.transaction_advertised_address"));
@@ -60,6 +48,10 @@ public class Configuration
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration("dbms.tx_log.rotation.retention_policy"));
     }};
+    public static Map<Setting,Configuration> getConfigurationNameMap()
+    {
+        return getConfigurationNameMap( TestSettings.NEO4J_VERSION );
+    }
 
     public static Map<Setting,Configuration> getConfigurationNameMap( Neo4jVersion version )
     {
