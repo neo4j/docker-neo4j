@@ -115,7 +115,7 @@ public class TestBackupRestore
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup complete successful.*" ) )
                 .withCommand("neo4j-admin",
                         "database",
-                        "backup-legacy",
+                        "legacy-backup",
                         "--database=neo4j",
                         "--backup-dir=/backups",
                         "--from=" + neoDBAddress);
@@ -140,7 +140,7 @@ public class TestBackupRestore
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^.*restoreStatus=successful.*" ) )
                 .withCommand("neo4j-admin",
                         "database",
-                        "restore-legacy",
+                        "legacy-restore",
                         "--database=neo4j",
                         "--from=/backups/neo4j",
                         "--force");
