@@ -52,7 +52,7 @@ public class TestExtendedConf
     @BeforeAll
     static void createVersionSpecificConfigurationSettings() {
         testConfsFolder = Configuration.getConfigurationResourcesFolder( TestSettings.NEO4J_VERSION );
-        logRotationConfig = Configuration.getConfigurationNameMap( TestSettings.NEO4J_VERSION )
+        logRotationConfig = Configuration.getConfigurationNameMap()
                                          .get( Setting.LOGS_GC_ROTATION_KEEPNUMBER );
     }
 
