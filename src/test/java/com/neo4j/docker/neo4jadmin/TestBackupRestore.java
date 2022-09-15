@@ -130,6 +130,7 @@ public class TestBackupRestore
                              "--from=" + neoDBAddress,
                              "neo4j");
 
+
         Path backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                 adminBackup, "backup-", "/backups", testOutputFolder );
         adminBackup.start();
