@@ -1,5 +1,7 @@
 package com.neo4j.docker.neo4jadmin;
 
+import com.neo4j.docker.neo4jserver.configurations.Configuration;
+import com.neo4j.docker.neo4jserver.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -18,8 +20,14 @@ import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestBackupRestore
 {
@@ -43,12 +51,12 @@ public class TestBackupRestore
         {
             auth = "neo4j/"+password;
         }
-
+        Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", auth )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_dbms_backup_enabled", "true" )
-                 .withEnv( "NEO4J_dbms_backup_listen__address", "0.0.0.0:6362" )
+                 .withEnv( confNames.get( Setting.BACKUP_ENABLED ).envName, "true" )
+                 .withEnv( confNames.get( Setting.BACKUP_LISTEN_ADDRESS ).envName, "0.0.0.0:6362" )
                  .withExposedPorts( 7474, 7687, 6362 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
         StartupDetector.makeContainerWaitForNeo4jReady(container, password, Duration.ofSeconds( 90 ));
@@ -112,13 +120,16 @@ public class TestBackupRestore
         String neoDBAddress = neo4j.getHost()+":"+neo4j.getMappedPort( 6362 );
         GenericContainer adminBackup = createAdminContainer( asDefaultUser )
                 .withNetworkMode( "host" )
-                .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup complete successful.*" ) )
+                .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup command completed.*" ) )
+                .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 15 ) ) )
                 .withCommand("neo4j-admin",
-                        "database",
-                        "legacy-backup",
-                        "--database=neo4j",
-                        "--backup-dir=/backups",
-                        "--from=" + neoDBAddress);
+                             "database",
+                             "backup",
+                             "--to-path=/backups",
+                             "--include-metadata=all",
+                             "--from=" + neoDBAddress,
+                             "neo4j");
+
 
         Path backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
                 adminBackup, "backup-", "/backups", testOutputFolder );
@@ -127,6 +138,13 @@ public class TestBackupRestore
         Assertions.assertTrue( neo4j.isRunning(), "neo4j container should still be running" );
         dbio.verifyInitialDataInContainer( dbUser, password );
         adminBackup.stop();
+
+        // find backup file name and verify its existence.
+        List<Path> backupFolder = Files.list( backupDir )
+                                       .filter( p -> p.toFile().getName().startsWith( "neo4j" ) )
+                                       .collect( Collectors.toList());
+        Assertions.assertEquals( 1, backupFolder.size(), "No backup file was created" );
+        File backupFile = backupFolder.get( 0 ).toFile();
 
         // RESTORE
 
@@ -137,13 +155,14 @@ public class TestBackupRestore
         // do restore
         dbio.runCypherQuery( dbUser, password, "STOP DATABASE neo4j", "system" );
         GenericContainer adminRestore = createAdminContainer( asDefaultUser )
-                .waitingFor( new LogMessageWaitStrategy().withRegEx( "^.*restoreStatus=successful.*" ) )
+                .waitingFor( Wait.forLogMessage( ".*Restore of database .* completed successfully.*", 1 )
+                                 .withStartupTimeout( Duration.ofSeconds( 30 ) ) )
                 .withCommand("neo4j-admin",
                         "database",
-                        "legacy-restore",
-                        "--database=neo4j",
-                        "--from=/backups/neo4j",
-                        "--force");
+                        "restore",
+                        "--overwrite-destination=true",
+                        "--from-path=/backups/"+backupFile.getName(),
+                        "neo4j");
         HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
         HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
         adminRestore.start();

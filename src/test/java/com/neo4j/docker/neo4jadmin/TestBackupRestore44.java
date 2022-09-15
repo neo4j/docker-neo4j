@@ -1,5 +1,7 @@
 package com.neo4j.docker.neo4jadmin;
 
+import com.neo4j.docker.neo4jserver.configurations.Configuration;
+import com.neo4j.docker.neo4jserver.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -19,6 +21,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 
 public class TestBackupRestore44
 {
@@ -44,12 +47,12 @@ public class TestBackupRestore44
         {
             auth = "neo4j/"+password;
         }
-
+        Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", auth )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_dbms_backup_enabled", "true" )
-                 .withEnv( "NEO4J_dbms_backup_listen__address", "0.0.0.0:6362" )
+                 .withEnv( confNames.get( Setting.BACKUP_ENABLED ).envName, "true" )
+                 .withEnv( confNames.get( Setting.BACKUP_LISTEN_ADDRESS ).envName, "0.0.0.0:6362" )
                  .withExposedPorts( 7474, 7687, 6362 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .waitingFor( Wait.forHttp( "/" )

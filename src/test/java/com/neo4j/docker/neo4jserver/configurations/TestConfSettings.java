@@ -43,7 +43,7 @@ public class TestConfSettings
     static void getVersionSpecificConfigurationSettings()
     {
         confFolder = Configuration.getConfigurationResourcesFolder( TestSettings.NEO4J_VERSION );
-        confNames = Configuration.getConfigurationNameMap( TestSettings.NEO4J_VERSION );
+        confNames = Configuration.getConfigurationNameMap();
     }
 
     private GenericContainer createContainer()
