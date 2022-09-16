@@ -23,6 +23,14 @@ out/%/.sentinel: tmp/image-%/.sentinel
 > cp -r $(<D)/* $(@D)
 > touch $@
 
+## tagging the images ##
+tag: tag-community tag-enterprise
+.PHONY: tag
+
+tag-%: build-%
+> docker tag $$(cat tmp/.image-id-$*) neo4j:$(NEO4JVERSION)
+> docker tag $$(cat tmp/.image-id-neo4j-admin-$*) neo4j/neo4j-admin:$(NEO4JVERSION)
+
 ## building the image ##
 
 build: build-community build-enterprise
