@@ -8,20 +8,20 @@ NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
 # by default this is empty which means all tests will be run
 TESTS?=""
 
-all: test
+all: tag
 .PHONY: all
 
-test: test-enterprise test-community
-.PHONY: test
+## tagging the images ##
+tag: tag-community tag-enterprise
+.PHONY: tag
 
-test-enterprise: build-enterprise
-> mvn test -Dimage=$$(cat tmp/.image-id-enterprise) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
-.PHONY: test-enterprise
+tag-community: build-community
+> docker tag $$(cat tmp/.image-id-community) neo4j:$(NEO4JVERSION)
+> docker tag $$(cat tmp/.image-id-neo4j-admin-community) neo4j/neo4j-admin:$(NEO4JVERSION)
 
-test-community: build-community
-> mvn test -Dimage=$$(cat tmp/.image-id-community) -Dadminimage=$$(cat tmp/.image-id-neo4j-admin-community) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
-.PHONY: test-community
-
+tag-enterprise: build-enterprise
+> docker tag $$(cat tmp/.image-id-community) neo4j:$(NEO4JVERSION)-enterprise
+> docker tag $$(cat tmp/.image-id-neo4j-admin-community) neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise
 
 
 # create release images and loadable images
