@@ -355,8 +355,8 @@ public class TestConfSettings
     @Test
     void testEnvVarsOverride() throws Exception
     {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 0, 0)),
-                               "test not applicable in versions before 4.0.");
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 2, 0)),
+                               "test not applicable in versions before 4.2.");
         Path debugLog;
         try(GenericContainer container = createContainer().withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512.00MiB"))
         {
