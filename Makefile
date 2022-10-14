@@ -28,12 +28,12 @@ tag-enterprise: build-enterprise
 package: package-community package-enterprise
 .PHONY: package
 
-package-community: tag-community
+package-community:  tag-community out/community/.sentinel out/neo4j-admin-community/.sentinel
 > mkdir -p out
 > docker save neo4j:$(NEO4JVERSION) > out/neo4j-community-$(NEO4JVERSION)-docker-loadable.tar
 > docker save neo4j/neo4j-admin:$(NEO4JVERSION) > out/neo4j-admin-community-$(NEO4JVERSION)-docker-loadable.tar
 
-package-enterprise: tag-enterprise
+package-enterprise:  tag-enterprise out/enterprise/.sentinel out/neo4j-admin-enterprise/.sentinel
 > mkdir -p out
 > docker save neo4j:$(NEO4JVERSION)-enterprise > out/neo4j-enterprise-$(NEO4JVERSION)-docker-loadable.tar
 > docker save neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise > out/neo4j-admin-enterprise-$(NEO4JVERSION)-docker-loadable.tar
