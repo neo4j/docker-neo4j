@@ -189,7 +189,7 @@ public class TestPasswords
             String resetPass = "new_password";
             container.withEnv("NEO4J_AUTH", user+"/"+intialPass+"/true" );
             StartupDetector.makeContainerWaitForDatabaseReady(container, user, intialPass, "neo4j",
-                    Duration.ofSeconds(30));
+                    Duration.ofSeconds(60));
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             Assertions.assertThrows( org.neo4j.driver.exceptions.ClientException.class,
