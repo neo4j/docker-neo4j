@@ -50,24 +50,6 @@ public class TestBasic
     }
 
     @Test
-    void testEditionActuallyCorrect()
-    {
-        try(GenericContainer container = createBasicContainer())
-        {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
-            container.start();
-            DatabaseIO dbio = new DatabaseIO( container );
-            Record dbms = dbio.runCypherQuery( "neo4j", "none", "CALL dbms.components();" ).get( 0 );
-            String actualEdition = dbms.get( "edition" ).asString();
-            switch(TestSettings.EDITION)
-            {
-                case ENTERPRISE -> Assertions.assertEquals( "enterprise", actualEdition );
-                case COMMUNITY -> Assertions.assertEquals( "community", actualEdition );
-            }
-        }
-    }
-
-    @Test
     void testNoUnexpectedErrors() throws Exception
     {
         try(GenericContainer container = createBasicContainer())
