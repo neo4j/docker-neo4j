@@ -22,6 +22,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import java.time.Duration;
 import java.util.function.Consumer;
 
+import org.neo4j.driver.Record;
+
 public class TestBasic
 {
     private static Logger log = LoggerFactory.getLogger( TestBasic.class );
@@ -44,6 +46,24 @@ public class TestBasic
             StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
+        }
+    }
+
+    @Test
+    void testEditionActuallyCorrect()
+    {
+        try(GenericContainer container = createBasicContainer())
+        {
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+            Record dbms = dbio.runCypherQuery( "neo4j", "none", "CALL dbms.components();" ).get( 0 );
+            String actualEdition = dbms.get( "edition" ).asString();
+            switch(TestSettings.EDITION)
+            {
+                case ENTERPRISE -> Assertions.assertEquals( "enterprise", actualEdition );
+                case COMMUNITY -> Assertions.assertEquals( "community", actualEdition );
+            }
         }
     }
 

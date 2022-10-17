@@ -20,8 +20,8 @@ tag-community: build-community
 > docker tag $$(cat tmp/.image-id-neo4j-admin-community) neo4j/neo4j-admin:$(NEO4JVERSION)
 
 tag-enterprise: build-enterprise
-> docker tag $$(cat tmp/.image-id-community) neo4j:$(NEO4JVERSION)-enterprise
-> docker tag $$(cat tmp/.image-id-neo4j-admin-community) neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise
+> docker tag $$(cat tmp/.image-id-enterprise) neo4j:$(NEO4JVERSION)-enterprise
+> docker tag $$(cat tmp/.image-id-neo4j-admin-enterprise) neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise
 
 
 # create release images and loadable images
