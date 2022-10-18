@@ -138,9 +138,9 @@ function check_mounted_folder_writable_with_chown
             chown -R "${userid}":"${groupid}" "${mountFolder}"
         fi
     else
-        if ! is_writable "${mountFolder}"; then
-        #if [[ ! -w "${mountFolder}" ]]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
-            echo >&2 "Consider unsetting SECURE_FILE_PERMISSIONS environment variable, to enable docker to write to ${mountFolder}."
+        #if ! is_writable "${mountFolder}"; then
+        if [[ ! -w "${mountFolder}" ]]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
+            #echo >&2 "Consider unsetting SECURE_FILE_PERMISSIONS environment variable, to enable docker to write to ${mountFolder}."
             print_permissions_advice_and_fail "${mountFolder}"
         fi
     fi
