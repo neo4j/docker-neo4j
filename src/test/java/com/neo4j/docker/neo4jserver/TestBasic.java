@@ -22,8 +22,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-import org.neo4j.driver.Record;
-
 public class TestBasic
 {
     private static Logger log = LoggerFactory.getLogger( TestBasic.class );
