@@ -499,32 +499,29 @@ fi
 ## == ENVIRONMENT VARIABLE CONFIGURATIONS ===
 ## these override BOTH defaults and any existing values in the neo4j.conf file
 
-# save NEO4J_HOME and NEO4J_AUTH to temp variables that don't begin with NEO4J_ so they don't get added to the conf
-temp_neo4j_home="${NEO4J_HOME}"
-temp_neo4j_auth="${NEO4J_AUTH:-}"
-temp_neo4j_plugins="${NEO4J_PLUGINS:-}"
+# these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
+not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_EDITION" "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL")
+
 # list env variables with prefix NEO4J_ and create settings from them
-unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL NEO4J_EDITION NEO4J_ACCEPT_LICENSE_AGREEMENT NEO4J_HOME NEO4J_PLUGINS
 for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
+    if containsElement "$i" "${not_configs[@]}"; then
+        continue
+    fi
     setting=$(echo "${i}" | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
     value=$(echo "${!i}")
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
     if [[ -n ${value} ]]; then
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            add_env_setting_to_conf "${setting}" "${value}" "${temp_neo4j_home}"
+            add_env_setting_to_conf "${setting}" "${value}" "${NEO4J_HOME}"
         else
             echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
         fi
     fi
 done
-export NEO4J_HOME="${temp_neo4j_home}"
-export NEO4J_PLUGINS="${temp_neo4j_plugins}"
-export NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-unset temp_neo4j_home temp_neo4j_plugins
 
 # ==== SET PASSWORD AND PLUGINS ====
 
-set_initial_password "${temp_neo4j_auth}"
+set_initial_password "${NEO4J_AUTH}"
 
 
 if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
