@@ -187,6 +187,7 @@ function load_plugin_from_github
     local _plugins_dir="/plugins"
   fi
   local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /startup/neo4jlabs-plugins.json )"
+  debug_msg "Will read ${_plugin_name} versions.json from ${_versions_json_url}"
   # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
   local _destination="${_plugins_dir}/${_plugin_name}.jar"
   local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
@@ -210,30 +211,34 @@ function load_plugin_from_github
 
 function apply_plugin_default_configuration
 {
-  # Set the correct Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
-  # correct format.
-  local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
-  local _reference_conf="${2}" # used to determine if we can override properties
-  local _neo4j_conf="${NEO4J_HOME}/conf/neo4j.conf"
+    # Set the correct Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
+    # correct format.
+    local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
+    local _reference_conf="${2}" # used to determine if we can override properties
+    local _neo4j_conf="${NEO4J_HOME}/conf/neo4j.conf"
 
-  local _property _value
-  echo "Applying default values for plugin ${_plugin_name} to neo4j.conf"
-  for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /startup/neo4jlabs-plugins.json); do
-    _property="$(jq --raw-output '.key' <<< "${_entry}")"
-    _value="$(jq --raw-output '.value' <<< "${_entry}")"
+    local _property _value
+    echo "Applying default values for plugin ${_plugin_name} to neo4j.conf"
+    for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /startup/neo4jlabs-plugins.json); do
+        _property="$(jq --raw-output '.key' <<< "${_entry}")"
+        _value="$(jq --raw-output '.value' <<< "${_entry}")"
+        debug_msg "${_plugin_name} requires setting ${_property}=${_value}"
 
-    # the first grep strips out comments
-    if grep -o "^[^#]*" "${_reference_conf}" | grep -q --fixed-strings "${_property}=" ; then
-      # property is already set in the user provided config. In this case we don't override what has been set explicitly by the user.
-      echo "Skipping ${_property} for plugin ${_plugin_name} because it is already set"
-    else
-      if grep -o "^[^#]*" "${_neo4j_conf}" | grep -q --fixed-strings "${_property}=" ; then
-        sed --in-place "s/${_property}=/&${_value},/" "${_neo4j_conf}"
-      else
-        echo "${_property}=${_value}" >> "${_neo4j_conf}"
-      fi
-    fi
-  done
+        # the first grep strips out comments
+        if grep -o "^[^#]*" "${_reference_conf}" | grep -q --fixed-strings "${_property}=" ; then
+            # property is already set in the user provided config. In this case we don't override what has been set explicitly by the user.
+            echo "Skipping ${_property} for plugin ${_plugin_name} because it is already set."
+            echo "You may need to add ${_value} to the ${_property} setting in your configuration file."
+        else
+            if grep -o "^[^#]*" "${_neo4j_conf}" | grep -q --fixed-strings "${_property}=" ; then
+                sed --in-place "s/${_property}=/&${_value},/" "${_neo4j_conf}"
+                debug_msg "${_property} was already in the configuration file, so ${_value} was added to it."
+            else
+                echo "${_property}=${_value}" >> "${_neo4j_conf}"
+                debug_msg "${_property}=${_value} has been added to the configuration file."
+            fi
+        fi
+    done
 }
 
 function install_neo4j_labs_plugins
@@ -244,10 +249,13 @@ function install_neo4j_labs_plugins
   for plugin_name in $(echo "${NEO4J_PLUGINS}" | jq --raw-output '.[]'); do
     local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
     if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
+        debug_msg "$plugin_name is already in the container at ${_location}"
         load_plugin_from_location "${plugin_name}" "${_location}"
     else
+        debug_msg "$plugin_name must be downloaded."
         load_plugin_from_github "${plugin_name}"
     fi
+    debug_msg "Applying plugin specific configurations"
     apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
   done
   rm "${_old_config}"
