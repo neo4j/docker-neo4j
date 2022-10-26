@@ -29,8 +29,7 @@ public class TestBasic
     private GenericContainer createBasicContainer()
     {
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-        container.withEnv( "NEO4J_AUTH", "none" )
-                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+        container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
         return container;
@@ -41,9 +40,12 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
+            String stdout = container.getLogs();
+            Assertions.assertFalse( stdout.contains( "DEBUGGING ENABLED" ),
+                                    "Debugging was enabled even though we did not set debugging" );
         }
     }
 
@@ -52,7 +54,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -112,7 +114,7 @@ public class TestBasic
                                 "No unified license acceptance method before 5.0.0");
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -129,7 +131,7 @@ public class TestBasic
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
 
             Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell" );
@@ -143,7 +145,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.setWorkingDirectory( "/tmp" );
             Assertions.assertDoesNotThrow( () -> container.start(),
                                            "Could not start neo4j from workdir other than NEO4J_HOME" );
@@ -156,6 +158,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
+            container.withEnv( "NEO4J_AUTH", "none" );
             StartupDetector.makeContainerWaitForNeo4jReady(container, "none");
             // sets sigterm as the stop container signal
             container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
@@ -174,14 +177,14 @@ public class TestBasic
         }
     }
 
-//    @Test
-//    void testStartsWhenDebuggingEnabled()
-//    {
-//        try(GenericContainer container = createBasicContainer())
-//        {
-//            container.withEnv( "NEO4J_DEBUG", "true" );
-//            container.start();
-//            Assertions.assertTrue( container.isRunning() );
-//        }
-//    }
+    @Test
+    void testStartsWhenDebuggingEnabled()
+    {
+        try(GenericContainer container = createBasicContainer())
+        {
+            container.withEnv( "NEO4J_DEBUG", "true" );
+            container.start();
+            Assertions.assertTrue( container.isRunning() );
+        }
+    }
 }
