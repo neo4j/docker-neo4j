@@ -152,7 +152,7 @@ public class TestBasic
 
     @ParameterizedTest(name = "ShutsDownCorrectly_{0}")
     @ValueSource(strings = {"SIGTERM", "SIGINT"})
-    void verifyShutsDownCleanly(String signal) throws Exception
+    void testShutsDownCleanly(String signal) throws Exception
     {
         try(GenericContainer container = createBasicContainer())
         {
@@ -173,4 +173,15 @@ public class TestBasic
                                    "clean shutdown not initiated by " + signal );
         }
     }
+
+//    @Test
+//    void testStartsWhenDebuggingEnabled()
+//    {
+//        try(GenericContainer container = createBasicContainer())
+//        {
+//            container.withEnv( "NEO4J_DEBUG", "true" );
+//            container.start();
+//            Assertions.assertTrue( container.isRunning() );
+//        }
+//    }
 }
