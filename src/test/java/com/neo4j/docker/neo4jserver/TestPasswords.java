@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 public class TestPasswords
 {
-    public static final String AUTH = "none";
     private static Logger log = LoggerFactory.getLogger( TestPasswords.class);
 
     private GenericContainer createContainer( boolean asCurrentUser )
@@ -50,8 +49,8 @@ public class TestPasswords
 		// we test that setting NEO4J_AUTH to none lets the database start in TestBasic.java but not that we can read/write the database
 		try(GenericContainer container = createContainer( false ))
 		{
-			container.withEnv( "NEO4J_AUTH", AUTH);
-            StartupDetector.makeContainerWaitForNeo4jReady(container, AUTH, Duration.ofSeconds( 90 ));
+			container.withEnv( "NEO4J_AUTH", "none");
+            StartupDetector.makeContainerWaitForNeo4jReady(container, "none", Duration.ofSeconds( 90 ));
 			container.start();
             DatabaseIO db = new DatabaseIO(container);
             db.putInitialDataIntoContainer( "neo4j", "none" );
@@ -137,6 +136,22 @@ public class TestPasswords
         }
     }
 
+    @Test
+    void testCanSetPasswordWithDebugging() throws Exception
+    {
+        String password = "some_valid_password";
+
+        try ( GenericContainer container = createContainer( false  ) )
+        {
+            container.withEnv( "NEO4J_AUTH", "neo4j/" + password )
+                     .withEnv( "NEO4J_DEBUG", "yes" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, password );
+            // create a database with stuff in
+            container.start();
+            DatabaseIO db = new DatabaseIO( container );
+            db.putInitialDataIntoContainer( "neo4j", password );
+        }
+    }
 
     @ParameterizedTest(name = "as current user={0}")
     @ValueSource(booleans = {true, false})
