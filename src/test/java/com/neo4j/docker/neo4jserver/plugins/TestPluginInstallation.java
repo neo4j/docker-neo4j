@@ -37,7 +37,7 @@ import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
 public class TestPluginInstallation
 {
     private static final String DB_USER = "neo4j";
-    private static final String DB_PASSWORD = "quality";
+    private static final String DB_PASSWORD = "qualityPassword";
     private static final String PLUGIN_JAR = "myPlugin.jar";
 
     private static final Logger log = LoggerFactory.getLogger( TestPluginInstallation.class );
