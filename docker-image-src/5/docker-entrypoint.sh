@@ -247,6 +247,7 @@ function install_neo4j_labs_plugins
   local _old_config="$(mktemp)"
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
   for plugin_name in $(echo "${NEO4J_PLUGINS}" | jq --raw-output '.[]'); do
+    debug_msg "Plugin ${plugin_name} will be installed"
     local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
     if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
         debug_msg "$plugin_name is already in the container at ${_location}"
@@ -333,7 +334,7 @@ function set_initial_password
             debug_msg "${neo4j_admin_cmd} dbms set-initial-password ${password} ${extra_args[*]}"
             if debugging_enabled; then
                 # don't suppress any output or errors in debugging mode
-                ${neo4j_admin_cmd} dbms set-initial-password "${password}" "${extra_args[@]}"
+                ${neo4j_admin_cmd} dbms set-initial-password "${password}" "${extra_args[@]}" --verbose
             else
             # Will exit with error if users already exist (and print a message explaining that)
             # we probably don't want the message though, since it throws an error message on restarting the container.
@@ -495,6 +496,14 @@ if [ -d /licenses ]; then
     : ${NEO4J_server_directories_licenses:="/licenses"}
 fi
 
+
+# ==== LOAD PLUGINS ====
+
+if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
+  # NEO4J_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
+  install_neo4j_labs_plugins
+fi
+
 # ==== RENAME LEGACY ENVIRONMENT CONF VARIABLES ====
 
 # Env variable naming convention:
@@ -560,15 +569,9 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
-# ==== SET PASSWORD AND PLUGINS ====
+# ==== SET PASSWORD ====
 
 set_initial_password "${NEO4J_AUTH:-}"
-
-
-if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
-  # NEO4J_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
-  install_neo4j_labs_plugins
-fi
 
 # ==== INVOKE NEO4J STARTUP ====
 
