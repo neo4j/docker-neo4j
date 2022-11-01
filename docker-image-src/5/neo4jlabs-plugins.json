@@ -9,7 +9,7 @@
     "location": "/var/lib/neo4j/products/bloom-plugin-*.jar",
     "versions": "https://bloom-plugins.s3.eu-west-2.amazonaws.com/versions.json",
     "properties": {
-      "dbms.unmanaged_extension_classes": "com.neo4j.bloom.server=/browser/bloom",
+      "server.unmanaged_extension_classes": "com.neo4j.bloom.server=/browser/bloom",
       "dbms.security.procedures.unrestricted": "bloom.*",
       "dbms.bloom.license_file": "/licenses/bloom.license"
     }

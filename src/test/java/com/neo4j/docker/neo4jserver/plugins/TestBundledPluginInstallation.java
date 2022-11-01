@@ -1,10 +1,12 @@
 package com.neo4j.docker.neo4jserver.plugins;
 
+import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,17 +30,20 @@ public class TestBundledPluginInstallation
     private static final int DEFAULT_BROWSER_PORT = 7474;
     private static final int DEFAULT_BOLT_PORT = 7687;
     private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
+    private static String APOC = "apoc";
+    private static String APOC_CORE = "apoc-core";
+    private static String BLOOM = "bloom";
+    private static String GDS = "graph-data-science";
 
 
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
-                // plugin name key, version it's bundled since, is enterprise only
-                Arguments.arguments( "apoc-core", new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
-                Arguments.arguments( "apoc", new Neo4jVersion(5, 0, 0), null, false ),
-                //todo reenable this when gds is back in 5.0
+                // plugin name key, version it's bundled since, version bundled until, is enterprise only
+                Arguments.arguments( APOC_CORE, new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
+                Arguments.arguments( APOC, new Neo4jVersion(5, 0, 0), null, false ),
                 //https://trello.com/c/hE5D6LwB/913-in-testbundledplugininstallation-re-enable-gds-test-once-it-is-packaged-back-into-50
-                //Arguments.arguments( "graph-data-science", new Neo4jVersion( 4,4,0 ), null, true ),
-                Arguments.arguments( "bloom", new Neo4jVersion( 4,4,0 ), null, true )
+                Arguments.arguments( GDS, new Neo4jVersion( 4,4,0 ), null, true ),
+                Arguments.arguments( BLOOM, new Neo4jVersion( 4,4,0 ), null, true )
         );
     }
 
@@ -84,6 +89,8 @@ public class TestBundledPluginInstallation
                                                        "bundled-"+pluginName+"-plugin-",
                                                        "/plugins" );
             container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+            dbio.putInitialDataIntoContainer( "neo4j", "none" );
         }
         catch(ContainerLaunchException e)
         {
@@ -109,10 +116,6 @@ public class TestBundledPluginInstallation
                         Stream.of(logs.split( "\n" ))
                               .anyMatch( line -> line.matches( "Installing Plugin '" + pluginName + "' from /var/lib/neo4j/.*" ) ),
                         "Plugin was not installed from neo4j home");
-//                Assertions.assertFalse(
-//                        Stream.of(errlogs.split( "\n" ))
-//                              .anyMatch( line -> line.matches( "Failed to read config .+: Unrecognized setting\\..*" ) ),
-//                        "An invalid configuration setting was set");
             }
             if(container !=null)
             {
@@ -176,10 +179,6 @@ public class TestBundledPluginInstallation
                         Stream.of(logs.split( "\n" ))
                               .anyMatch( line -> line.matches( "Fetching versions.json for Plugin '" + pluginName + "' from http[s]?://.*" ) ),
                         "Plugin was not installed from cloud");
-//                Assertions.assertFalse(
-//                        Stream.of(errlogs.split( "\n" ))
-//                              .anyMatch( line -> line.matches( "Failed to read config .+: Unrecognized setting\\..*" ) ),
-//                        "An invalid configuration setting was set");
             }
             if(container !=null)
             {
@@ -189,6 +188,28 @@ public class TestBundledPluginInstallation
             {
                 Assertions.fail("Test failed before container could even be initialised");
             }
+        }
+    }
+
+    @Test
+    void testPluginLoadsWithAuthentication() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
+
+        final String PASSWORD = "12345";
+        Path testFolder = HostFileSystemOperations.createTempFolder( "plugin-with-auth-loads" );
+
+        try( GenericContainer container = createContainerWithBundledPlugin(BLOOM))
+        {
+            container.withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
+                     .withEnv( "NEO4J_dbms_bloom_license__file", "/licenses/bloom.license" );
+            // mounting logs because it's useful for debugging
+            HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs", "/logs", testFolder );
+
+            // make sure the container successfully starts and we can write to it without getting authentication errors
+            container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+            dbio.putInitialDataIntoContainer( "neo4j", PASSWORD );
         }
     }
 }
