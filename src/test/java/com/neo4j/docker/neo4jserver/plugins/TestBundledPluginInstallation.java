@@ -196,7 +196,7 @@ public class TestBundledPluginInstallation
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
 
-        final String PASSWORD = "12345";
+        final String PASSWORD = "12345678";
         Path testFolder = HostFileSystemOperations.createTempFolder( "plugin-with-auth-loads" );
 
         try( GenericContainer container = createContainerWithBundledPlugin(BLOOM))
