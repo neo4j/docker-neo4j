@@ -45,19 +45,6 @@ public class TestPluginInstallation
     @Rule
     public HttpServerRule httpServer = new HttpServerRule();
 
-//    @BeforeAll
-//    public static void ensureNotARMArchitecture()
-//    {
-//        // These tests make use of a TestContainers feature that means that if you serve something locally on the
-//        // host machine, it is accessible from a container at the address http://host.testcontainers.internal
-//        // This feature does not seem to work on ARM64 machines. I've created a bug report here 27/01/2022:
-//        // https://github.com/testcontainers/testcontainers-java/issues/4956
-//        //
-//        // For now, we skip these tests on ARM until there is a fix or workaround.
-//        Assumptions.assumeTrue( System.getProperty("os.arch").equals( "amd64" ),
-//                                "Plugin tests can only run on amd64 machines at the moment" );
-//    }
-
     private GenericContainer createContainerWithTestingPlugin()
     {
         Testcontainers.exposeHostPorts( httpServer.PORT );
