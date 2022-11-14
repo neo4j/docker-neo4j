@@ -13,7 +13,7 @@
         <neo4j.version>${env.NEO4JVERSION}</neo4j.version>
         <!-- set java.version to either 1.8, 11 or 17 but don't commit with it set to 11 or 17 -->
         <java.version>1.8</java.version>
-        <testcontainers.version>1.17.1</testcontainers.version>
+        <testcontainers.version>1.17.5</testcontainers.version>
 	</properties>
 
 	<build>
