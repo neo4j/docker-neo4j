@@ -41,8 +41,7 @@ public class TestBundledPluginInstallation
                 // plugin name key, version it's bundled since, version bundled until, is enterprise only
                 Arguments.arguments( APOC_CORE, new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
                 Arguments.arguments( APOC, new Neo4jVersion(5, 0, 0), null, false ),
-                //https://trello.com/c/hE5D6LwB/913-in-testbundledplugininstallation-re-enable-gds-test-once-it-is-packaged-back-into-50
-                Arguments.arguments( GDS, new Neo4jVersion( 4,4,0 ), null, true ),
+                // Arguments.arguments( GDS, new Neo4jVersion( 4,4,0 ), null, true ),
                 Arguments.arguments( BLOOM, new Neo4jVersion( 4,4,0 ), null, true )
         );
     }
