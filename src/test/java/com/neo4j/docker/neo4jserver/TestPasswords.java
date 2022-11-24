@@ -80,6 +80,29 @@ public class TestPasswords
     }
 
 	@Test
+    void testPasswordCantBeLessThan8Chars() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
+                                "Minimum password length introduced in 5.2.0");
+        try(GenericContainer failContainer = new GenericContainer( TestSettings.IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) ))
+        {
+            if ( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE )
+            {
+                failContainer.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
+            }
+            failContainer.withEnv( "NEO4J_AUTH", "neo4j/123" );
+            failContainer.start();
+
+            WaitingConsumer waitingConsumer = new WaitingConsumer();
+            failContainer.followOutput( waitingConsumer );
+
+            Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil(
+                    frame -> frame.getUtf8String().contains("Invalid value for password" ), 10, TimeUnit.SECONDS ),
+                                           "did not error due to too short" );
+        }
+    }
+
+	@Test
 	void testDefaultPasswordAndPasswordResetIfNoNeo4jAuthSet()
 	{
 		try(GenericContainer container = createContainer( true ))
