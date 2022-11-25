@@ -312,10 +312,10 @@ function set_initial_password
             fi
             if [ "${#password}" -lt 8 ]; then
                 echo >&2 "Invalid value for password. The minimum password length is 8 characters."
-                exit 1
+                echo >&2 "Neo4j may fail to start."
             fi
             if [ "${admin_user}" != "neo4j" ]; then
-                echo >&2 "Invalid admin username, it must be neo4j"
+                echo >&2 "Invalid admin username, it must be neo4j."
                 exit 1
             fi
 

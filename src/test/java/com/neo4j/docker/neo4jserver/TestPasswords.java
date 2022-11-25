@@ -80,7 +80,7 @@ public class TestPasswords
     }
 
 	@Test
-    void testPasswordCantBeLessThan8Chars() throws Exception
+    void testWarnIfPasswordLessThan8Chars() throws Exception
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
                                 "Minimum password length introduced in 5.2.0");
