@@ -25,7 +25,7 @@ public class TestUpgrade
 {
 	private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
 	private final String user = "neo4j";
-	private final String password = "quality";
+	private final String password = "verylongpassword";
 
 	private GenericContainer makeContainer(String image)
 	{
@@ -49,7 +49,8 @@ public class TestUpgrade
 
 	private static List<Neo4jVersion> upgradableNeo4jVersions()
 	{
-		return Arrays.asList( new Neo4jVersion( 5, 1, 0) );
+		return Arrays.asList( new Neo4jVersion( 5, 1, 0),
+                              new Neo4jVersion( 5, 2, 0));
 	}
 
 	@ParameterizedTest(name = "upgrade from {0}")
@@ -94,13 +95,21 @@ public class TestUpgrade
 
 		try(GenericContainer container = makeContainer( upgradeFromImage ))
 		{
-			data = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data-", "/data",
+			data = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+                                                                              "data-",
+                                                                              "/data",
 																			  tmpMountFolder );
-			logs = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs-", "/logs",
+			logs = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+                                                                              "logs-",
+                                                                              "/logs",
 																			  tmpMountFolder );
-			imports = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import-", "/import",
+			imports = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+                                                                                 "import-",
+                                                                                 "/import",
 																				 tmpMountFolder );
-			metrics = HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "metrics-", "/metrics",
+			metrics = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+                                                                                 "metrics-",
+                                                                                 "/metrics",
 																				 tmpMountFolder );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
