@@ -13,9 +13,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.file.Path;
@@ -80,25 +83,21 @@ public class TestPasswords
     }
 
 	@Test
-    void testWarnIfPasswordLessThan8Chars() throws Exception
+    void testWarnAndFailIfPasswordLessThan8Chars() throws Exception
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
                                 "Minimum password length introduced in 5.2.0");
-        try(GenericContainer failContainer = new GenericContainer( TestSettings.IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) ))
+        try(GenericContainer failContainer = createContainer( false ))
         {
-            if ( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE )
-            {
-                failContainer.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
-            }
-            failContainer.withEnv( "NEO4J_AUTH", "neo4j/123" );
-            failContainer.start();
-
-            WaitingConsumer waitingConsumer = new WaitingConsumer();
-            failContainer.followOutput( waitingConsumer );
-
-            Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil(
-                    frame -> frame.getUtf8String().contains("Invalid value for password" ), 10, TimeUnit.SECONDS ),
-                                           "did not error due to too short" );
+            failContainer.withEnv( "NEO4J_AUTH", "neo4j/123" )
+                         .withStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            Assertions.assertThrows( ContainerLaunchException.class, () -> failContainer.start(),
+                                     "Neo4j started even though initial password was too short" );
+            String logsOut = failContainer.getLogs();
+            Assertions.assertTrue( logsOut.contains( "Invalid value for password" ),
+                                   "did not error due to too short password");
+            Assertions.assertFalse( logsOut.contains( "Remote interface available at http://localhost:7474/" ),
+                                   "Neo4j started even though an invalid password was set");
         }
     }
 

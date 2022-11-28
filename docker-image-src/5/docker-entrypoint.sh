@@ -311,8 +311,11 @@ function set_initial_password
                 exit 1
             fi
             if [ "${#password}" -lt 8 ]; then
-                echo >&2 "Invalid value for password. The minimum password length is 8 characters."
-                echo >&2 "Neo4j may fail to start."
+                echo >&2 "Invalid value for password. The minimum password length is 8 characters.
+If Neo4j fails to start, you can:
+1) Use a stronger password.
+2) Set configuration dbms.security.auth_minimum_password_length to override the minimum password length requirement.
+3) Set environment variable NEO4J_dbms_security_auth__minimum__password__length to override the minimum password length requirement."
             fi
             if [ "${admin_user}" != "neo4j" ]; then
                 echo >&2 "Invalid admin username, it must be neo4j."
@@ -334,16 +337,12 @@ function set_initial_password
             if [ "${EXTENDED_CONF+"yes"}" == "yes" ]; then
                 extra_args+=("--expand-commands")
             fi
+            if debugging_enabled; then
+                extra_args+=("--verbose")
+            fi
             debug_msg "Setting initial password"
             debug_msg "${neo4j_admin_cmd} dbms set-initial-password ${password} ${extra_args[*]}"
-            if debugging_enabled; then
-                # don't suppress any output or errors in debugging mode
-                ${neo4j_admin_cmd} dbms set-initial-password "${password}" "${extra_args[@]}" --verbose
-            else
-            # Will exit with error if users already exist (and print a message explaining that)
-            # we probably don't want the message though, since it throws an error message on restarting the container.
-                ${neo4j_admin_cmd} dbms set-initial-password "${password}" "${extra_args[@]}" 2>/dev/null || true
-            fi
+            ${neo4j_admin_cmd} dbms set-initial-password "${password}" "${extra_args[@]}"
 
         elif [ -n "${_neo4j_auth:-}" ]; then
             echo "$_neo4j_auth is invalid"
