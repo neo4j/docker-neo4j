@@ -1,5 +1,6 @@
 package com.neo4j.docker.neo4jserver.configurations;
 
+import com.neo4j.docker.neo4jserver.plugins.Neo4jPluginEnv;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -25,9 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
@@ -276,7 +279,7 @@ public class TestConfSettings
     }
 
     @Test
-    void testConfigsAreNotOverridenByDockerentrypoint() throws Exception
+    void testConfFileNotOverridenByDockerEntrypoint() throws Exception
     {
         File conf;
         try(GenericContainer container = createContainer())
@@ -353,7 +356,7 @@ public class TestConfSettings
     }
 
     @Test
-    void testEnvVarsOverride() throws Exception
+    void testEnvVarsOverrideConfFile() throws Exception
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 2, 0)),
                                "test not applicable in versions before 4.2.");
@@ -467,6 +470,36 @@ public class TestConfSettings
 
         //Read debug.log to check that cluster confs are not present
         assertConfigurationPresentInDebugLog( debugLog, confNames.get(Setting.CLUSTER_TRANSACTION_ADDRESS), "*", false );
+    }
+
+    @Test
+    void testApocEnvVarsAreWrittenToApocConf() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,3, 0 ) ),
+                                "APOC conf not present before 5.0 and this bug wasn't fixed before 5.3.");
+
+        Path confMount;
+        try(GenericContainer container = createContainer())
+        {
+            container.withEnv( confNames.get( Setting.APOC_EXPORT_FILE_ENABLED ).envName, "true" );
+            container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\"]" );
+            confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+                    container,
+                    "apoc-envvars-in-correct-conffile-",
+                    "/conf");
+            makeContainerDumpConfig( container );
+            container.start();
+        }
+        // there's no way to verify that APOC configurations have been set by querying neo4j or the debug log,
+        // so the only verification we can do is check that neo4j started ok and that there is an apoc.conf dumped.
+        File apocConf = confMount.resolve( "apoc.conf" ).toFile();
+        Assertions.assertTrue( apocConf.exists(), "Did not create an apoc.conf to contain the apoc settings." );
+        Map<String,String> actualApocSettings = parseConfFile( apocConf );
+        Assertions.assertTrue(actualApocSettings.containsKey(confNames.get( Setting.APOC_EXPORT_FILE_ENABLED).name),
+                              "APOC setting not added to apoc.conf");
+        Assertions.assertEquals("true",
+                                actualApocSettings.get(confNames.get( Setting.APOC_EXPORT_FILE_ENABLED).name),
+                                "Incorrect value written for APOC setting");
     }
 
     @Test

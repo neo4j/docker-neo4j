@@ -2,6 +2,7 @@ package com.neo4j.docker.neo4jserver.configurations;
 
 public enum Setting
 {
+    APOC_EXPORT_FILE_ENABLED,
     BACKUP_ENABLED,
     BACKUP_LISTEN_ADDRESS,
     CLUSTER_DISCOVERY_ADDRESS,

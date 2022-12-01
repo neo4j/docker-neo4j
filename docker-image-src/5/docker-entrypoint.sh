@@ -245,7 +245,12 @@ function install_neo4j_labs_plugins
 {
   # We store a copy of the config before we modify it for the plugins to allow us to see if there are user-set values in the input config that we shouldn't override
   local _old_config="$(mktemp)"
-  cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
+  if [ -e "${NEO4J_HOME}"/conf/neo4j.conf ]; then
+    cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
+  else
+      touch "${NEO4J_HOME}"/conf/neo4j.conf
+      touch "${_old_config}"
+  fi
   for plugin_name in $(echo "${NEO4J_PLUGINS}" | jq --raw-output '.[]'); do
     debug_msg "Plugin ${plugin_name} will be installed"
     local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
@@ -268,7 +273,7 @@ function add_docker_default_to_conf
     local _setting="${1}"
     local _value="${2}"
 
-    if ! grep -q "^${_setting}=" "${NEO4J_HOME}"/conf/neo4j.conf
+    if [ ! -e "${NEO4J_HOME}"/conf/neo4j.conf ] || ! grep -q "^${_setting}=" "${NEO4J_HOME}"/conf/neo4j.conf
     then
         debug_msg "Appended ${_setting}=${_value} to ${NEO4J_HOME}/conf/neo4j.conf"
         echo -e "\n"${_setting}=${_value} >> "${NEO4J_HOME}"/conf/neo4j.conf
@@ -280,15 +285,26 @@ function add_env_setting_to_conf
     # settings from environment variables should overwrite values already in the conf
     local _setting=${1}
     local _value=${2}
+    local _conf_file
 
-    if grep -q -F "${_setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
+    # different settings need to go in different files now.
+    case "$(echo ${_setting} | cut -d . -f 1)" in
+        apoc)
+            _conf_file="${NEO4J_HOME}"/conf/apoc.conf
+        ;;
+        *)
+            _conf_file="${NEO4J_HOME}"/conf/neo4j.conf
+        ;;
+    esac
+
+    if [ -e "${_conf_file}" ] && grep -q -F "${_setting}=" "${_conf_file}"; then
         # Remove any lines containing the setting already
-        debug_msg "Removing existing setting for ${_setting}"
-        sed --in-place "/^${_setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
+        debug_msg "Removing existing setting for ${_setting} in ${_conf_file}"
+        sed --in-place "/^${_setting}=.*/d" "${_conf_file}"
     fi
     # Then always append setting to file
-    debug_msg "Appended ${_setting}=${_value} to ${NEO4J_HOME}/conf/neo4j.conf"
-    echo "${_setting}=${_value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
+    debug_msg "Appended ${_setting}=${_value} to ${_conf_file}"
+    echo "${_setting}=${_value}" >> "${_conf_file}"
 }
 
 function set_initial_password
@@ -593,6 +609,7 @@ fi
 
 # this prints out a command for us to run.
 # the command is something like: `java ...[lots of java options]... neo4j.mainClass ...[some neo4j options]...`
+# putting debug messages here causes the function to break
 function get_neo4j_run_cmd {
 
     local extra_args=()
@@ -613,6 +630,7 @@ function get_neo4j_run_cmd {
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
     # separate declaration and use of get_neo4j_run_cmd so that error codes are correctly surfaced
+    debug_msg "getting full neo4j run command"
     neo4j_console_cmd="$(get_neo4j_run_cmd)"
     debug_msg "${exec_cmd} ${neo4j_console_cmd}"
     eval ${exec_cmd} ${neo4j_console_cmd?:No Neo4j command was generated}

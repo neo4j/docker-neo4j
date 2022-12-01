@@ -12,6 +12,7 @@ import java.util.Map;
 public class Configuration
 {
     private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<Setting,Configuration>( Setting.class ) {{
+        put( Setting.APOC_EXPORT_FILE_ENABLED, new Configuration( "apoc.export.file.enabled"));
         put( Setting.BACKUP_ENABLED, new Configuration("server.backup.enabled"));
         put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("server.backup.listen_address"));
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("server.discovery.advertised_address"));
@@ -31,6 +32,7 @@ public class Configuration
     }};
 
     private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class ) {{
+        put( Setting.APOC_EXPORT_FILE_ENABLED, new Configuration( "apoc.export.file.enabled"));
         put( Setting.BACKUP_ENABLED, new Configuration("dbms.backup.enabled"));
         put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("dbms.backup.listen_address"));
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("causal_clustering.discovery_advertised_address"));
