@@ -457,7 +457,7 @@ fi
 
 if [ -d /conf ]; then
     check_mounted_folder_readable "/conf"
-    rm -rf "${NEO4J_HOME}"/conf/*
+    # rm -rf "${NEO4J_HOME}"/conf/*
     debug_msg "Copying contents of /conf to ${NEO4J_HOME}/conf/*"
     find /conf -type f -exec cp --preserve=ownership,mode {} "${NEO4J_HOME}"/conf \;
 fi
