@@ -1,7 +1,6 @@
 {
   "apoc": {
     "location": "/var/lib/neo4j/labs/apoc-*-core.jar",
-    "versions": "https://github.com/neo4j/apoc/blob/master/versions.json",
     "properties": {
       "dbms.security.procedures.unrestricted": "apoc.*"
     }
