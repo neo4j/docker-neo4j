@@ -7,7 +7,6 @@ import java.time.Duration;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
@@ -17,7 +16,6 @@ import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.io.Files;
 
 import java.io.File;
@@ -131,7 +129,7 @@ public class TestPluginInstallation
     public void testPlugin_50BackwardsCompatibility() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                                "NEO4JLABS_PLUGIN backwards compatibility does not need checking");
+                                "NEO4JLABS_PLUGIN backwards compatibility does not need checking before 5.0");
         Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-backcompat-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( pluginsDir, versionsJson );
@@ -167,6 +165,19 @@ public class TestPluginInstallation
                                            "dbms.security.procedures.unrestricted",
                                            "foo",
                                            "neo4j config should not be overridden by plugin");
+        }
+    }
+
+    @Test
+    void testAPOCAlwaysInstallable()
+    {
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\"]" );
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            Assertions.assertDoesNotThrow( ()-> db.runCypherQuery(DB_USER, DB_PASSWORD,"CALL apoc.help(\"apoc\");" ),
+            "APOC plugin was not properly loaded");
         }
     }
 
