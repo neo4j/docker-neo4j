@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
 public class TestUpgrade
 {
@@ -27,7 +28,7 @@ public class TestUpgrade
 	private final String user = "neo4j";
 	private final String password = "verylongpassword";
 
-	private GenericContainer makeContainer(String image)
+	private GenericContainer makeContainer( DockerImageName image)
 	{
         GenericContainer container = new GenericContainer<>( image );
         container.withEnv( "NEO4J_AUTH", user + "/" + password )
@@ -89,11 +90,10 @@ public class TestUpgrade
 	{
 		assumeUpgradeSupported( upgradeFrom );
 
-		String upgradeFromImage = getUpgradeFromImage( upgradeFrom );
 		Path tmpMountFolder = HostFileSystemOperations.createTempFolder( "upgrade-" + upgradeFrom.major + upgradeFrom.minor + "-" );
 		Path data, logs, imports, metrics;
 
-		try(GenericContainer container = makeContainer( upgradeFromImage ))
+		try(GenericContainer container = makeContainer( getUpgradeFromImage( upgradeFrom ) ))
 		{
 			data = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
                                                                               "data-",
@@ -146,11 +146,10 @@ public class TestUpgrade
 	{
 		assumeUpgradeSupported(upgradeFrom);
 
-		String upgradeFromImage = getUpgradeFromImage( upgradeFrom );
 		String id = String.format( "%04d", new Random().nextInt( 10000 ));
 		log.info( "creating volumes with id: "+id );
 
-		try(GenericContainer container = makeContainer( upgradeFromImage ))
+		try(GenericContainer container = makeContainer(getUpgradeFromImage( upgradeFrom )))
 		{
 			container.withCreateContainerCmdModifier(
 					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
@@ -185,15 +184,15 @@ public class TestUpgrade
 		}
 	}
 
-	private String getUpgradeFromImage(Neo4jVersion ver)
+	private DockerImageName getUpgradeFromImage( Neo4jVersion ver)
 	{
 		if(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)
 		{
-			return "neo4j:" + ver.toString() + "-enterprise";
+			return DockerImageName.parse("neo4j:" + ver.toString() + "-enterprise");
 		}
 		else
 		{
-			return "neo4j:" + ver.toString();
+			return DockerImageName.parse("neo4j:" + ver.toString());
 		}
 	}
 }

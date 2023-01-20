@@ -8,6 +8,7 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,10 +35,12 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-
 public class TestMounting
 {
 	private static Logger log = LoggerFactory.getLogger( TestMounting.class );
+
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
 	static Stream<Arguments> defaultUserFlagSecurePermissionsFlag()
 	{
@@ -129,7 +133,7 @@ public class TestMounting
         try(GenericContainer container = setupBasicContainer(asCurrentUser, false))
         {
             //Mount /conf
-            confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container, mountPrefix,"/conf" );
             confFile = confMount.resolve( "neo4j.conf" ).toFile();
 
