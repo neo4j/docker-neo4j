@@ -16,6 +16,7 @@ import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,10 +61,17 @@ public class TemporaryFolderManager implements AfterAllCallback
                 {
                     // don't archive directories...
                     if(fileToBeArchived.toFile().isDirectory()) continue;
-                    ArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, testOutputParentFolder.relativize( fileToBeArchived ).toString() );
-                    archiver.putArchiveEntry( entry );
-                    IOUtils.copy(Files.newInputStream( fileToBeArchived ), archiver);
-                    archiver.closeArchiveEntry();
+                    try( InputStream fileStream = Files.newInputStream( fileToBeArchived ))
+                    {
+                        ArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, testOutputParentFolder.relativize( fileToBeArchived ).toString() );
+                        archiver.putArchiveEntry( entry );
+                        IOUtils.copy( fileStream, archiver );
+                        archiver.closeArchiveEntry();
+                    } catch (IOException ioe)
+                    {
+                        // consume the error, because sometimes, file permissions won't let us copy
+                        log.warn( "Could not archive "+ fileToBeArchived, ioe);
+                    }
                 }
                 archiver.finish();
             }

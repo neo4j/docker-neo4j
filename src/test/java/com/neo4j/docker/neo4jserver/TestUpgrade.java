@@ -1,11 +1,9 @@
 package com.neo4j.docker.neo4jserver;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
-
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;

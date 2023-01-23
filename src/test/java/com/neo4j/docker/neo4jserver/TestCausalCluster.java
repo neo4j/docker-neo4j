@@ -1,6 +1,5 @@
 package com.neo4j.docker.neo4jserver;
 
-
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;

@@ -2,7 +2,6 @@ package com.neo4j.docker.neo4jserver.configurations;
 
 import com.neo4j.docker.neo4jserver.plugins.Neo4jPluginEnv;
 import com.neo4j.docker.utils.DatabaseIO;
-
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;

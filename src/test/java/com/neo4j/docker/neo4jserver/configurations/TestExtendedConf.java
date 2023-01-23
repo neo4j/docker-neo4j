@@ -67,7 +67,7 @@ public class TestExtendedConf
 
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "secretN30"})
+	@ValueSource(strings = {"", "supersecretpassword"})
 	public void shouldStartWithExtendedConf(String password)
 	{
         try(GenericContainer container = createContainer(password))
@@ -92,7 +92,7 @@ public class TestExtendedConf
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "secretN30"})
+	@ValueSource(strings = {"", "supersecretpassword"})
 	void testReadsTheExtendedConfFile_defaultUser(String password) throws Exception
 	{
 		// set up test folders
@@ -103,8 +103,8 @@ public class TestExtendedConf
 		// copy configuration file and set permissions
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
 		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
+        chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 		temporaryFolderManager.setFolderOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
-		chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 
 		// start  container
 		try(GenericContainer container = createContainer(password))
@@ -114,7 +114,7 @@ public class TestExtendedConf
 	}
 
     @ParameterizedTest
-    @ValueSource( strings = {"", "secretN30"} )
+    @ValueSource( strings = {"", "supersecretpassword"} )
     void testInvalidExtendedConfFile_nonRootUser( String password ) throws Exception
     {
         // set up test folders
@@ -163,7 +163,7 @@ public class TestExtendedConf
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "secretN30"})
+	@ValueSource(strings = {"", "supersecretpassword"})
 	void testReadsTheExtendedConfFile_nonRootUser(String password) throws Exception
 	{
 		// set up test folders
