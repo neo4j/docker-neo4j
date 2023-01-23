@@ -4,86 +4,80 @@ import org.junit.jupiter.api.Assumptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Random;
 import java.util.stream.Collectors;
 
 public class HostFileSystemOperations
 {
-    private static Logger log = LoggerFactory.getLogger( HostFileSystemOperations.class);
-    private static Random rng = new Random(  );
-
 	public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
 														 String containerMountPoint ) throws IOException
 	{
-		return createTempFolderAndMountAsVolume( container, hostFolderNamePrefix, containerMountPoint,
-												 TestSettings.TEST_TMP_FOLDER );
+        return null;
 	}
 
     public static Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
 														 String containerMountPoint, Path parentFolder ) throws IOException
     {
-        String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
-        Path hostFolder = parentFolder.resolve( hostFolderNamePrefix + randomStr);
-        try
-        {
-            Files.createDirectories( hostFolder );
-        }
-        catch ( IOException e )
-        {
-            log.error( "could not create directory: " + hostFolder.toAbsolutePath().toString() );
-            e.printStackTrace();
-            throw e;
-        }
-        log.info( "Created folder "+hostFolder.toString() );
-        mountHostFolderAsVolume( container, hostFolder, containerMountPoint );
-        return hostFolder;
+        return null;
     }
 
     public static void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint)
     {
-        container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
-                                      containerMountPoint,
-                                      BindMode.READ_WRITE );
     }
 
     public static Path createTempFolder( String folderNamePrefix ) throws IOException
     {
-    	return createTempFolder( folderNamePrefix, TestSettings.TEST_TMP_FOLDER );
+    	return null;
     }
 
     public static Path createTempFolder( String folderNamePrefix, Path parentFolder ) throws IOException
     {
-        String randomStr = String.format( "%04d", rng.nextInt(10000 ) );  // random 4 digit number
-        Path hostFolder = parentFolder.resolve( folderNamePrefix + randomStr);
-        try
-        {
-            Files.createDirectories( hostFolder );
-        }
-        catch ( IOException e )
-        {
-            log.error( "could not create directory: " + hostFolder.toAbsolutePath().toString() );
-            e.printStackTrace();
-            throw e;
-        }
-
-        return hostFolder;
+        return null;
     }
 
     public static void setFileOwnerToCurrentUser(Path file) throws Exception
     {
-        setFileOwnerTo( file, SetContainerUser.getNonRootUserString() );
+        setFileOwnerTo( SetContainerUser.getNonRootUserString(), file );
     }
 
     public static void setFileOwnerToNeo4j(Path file) throws Exception
     {
-        setFileOwnerTo( file, "7474:7474" );
+        setFileOwnerTo( "7474:7474", file );
+    }
+
+    private static void setFileOwnerTo(String userAndGroup, Path ...files) throws Exception
+    {
+        // uses docker privileges to set file owner, since probably the current user is not a sudoer.
+
+        // Using an nginx because it's easy to verify that the image started.
+        try(GenericContainer container = new GenericContainer( DockerImageName.parse( "nginx:latest")))
+        {
+            container.withExposedPorts( 80 )
+                     .waitingFor( Wait.forHttp( "/" ).withStartupTimeout( Duration.ofSeconds( 5 ) ) );
+            for(Path p : files)
+            {
+                mountHostFolderAsVolume( container, p.getParent(), p.getParent().toAbsolutePath().toString() );
+            }
+            container.start();
+            for(Path p : files)
+            {
+                Container.ExecResult x =
+                        container.execInContainer( "chown", "-R", userAndGroup,
+                                                   p.getParent().toAbsolutePath().toString() );
+            }
+            container.stop();
+        }
     }
 
     private static void setFileOwnerTo(Path file, String userAndGroup) throws Exception
@@ -98,7 +92,8 @@ public class HostFileSystemOperations
                     .collect( Collectors.joining() );
             // if we cannot set up test conditions properly, abort test but don't register a test failure.
             Assumptions.assumeTrue( false,
-                                    "Could not change owner of test file to 7474. User needs to be in sudoers list. Error:\n" +
+                                    "Could not change owner of test file to "+userAndGroup+
+                                    ". User needs to be in sudoers list. Error:\n" +
                                     errorMsg );
         }
         return;

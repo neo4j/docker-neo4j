@@ -133,8 +133,7 @@ public class TestMounting
         try(GenericContainer container = setupBasicContainer(asCurrentUser, false))
         {
             //Mount /conf
-            confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container, mountPrefix,"/conf" );
+            confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(container, mountPrefix,"/conf" );
             confFile = confMount.resolve( "neo4j.conf" ).toFile();
 
             //Start the container
@@ -184,7 +183,7 @@ public class TestMounting
 
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
 		{
-			Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"canmountjustdata-",
 					"/data" );
@@ -205,7 +204,7 @@ public class TestMounting
 
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
 		{
-			Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path logsMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"canmountjustlogs-",
 					"/logs" );
@@ -224,12 +223,12 @@ public class TestMounting
 
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ))
 		{
-			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "canmountdataandlogs-" );
-			Path dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path testOutputFolder = temporaryFolderManager.createTempFolder( "canmountdataandlogs-" );
+			Path dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"data-", "/data", testOutputFolder
 			);
-			Path logsMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path logsMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"logs-", "/logs", testOutputFolder
 			);
@@ -248,7 +247,7 @@ public class TestMounting
 
 		try(GenericContainer container = setupBasicContainer( false, true ))
 		{
-			HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"nopermissioninsecuremode-data-",
 					"/data" );
@@ -270,7 +269,7 @@ public class TestMounting
 
 		try(GenericContainer container = setupBasicContainer( false, true ))
 		{
-			HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"nopermissioninsecuremode-logs-",
 					"/logs" );
@@ -288,15 +287,15 @@ public class TestMounting
 	@ValueSource(booleans = {true, false})
 	void canMountAllTheThings_fileMounts(boolean asCurrentUser) throws Exception
 	{
-		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "mount-everything-" );
+		Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-everything-" );
 		try(GenericContainer container = setupBasicContainer( asCurrentUser, false ))
 		{
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "data", "/data", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "import", "/import", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs", "/logs", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "metrics", "/metrics", testOutputFolder );
-			HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "data", "/data", testOutputFolder );
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "import", "/import", testOutputFolder );
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "logs", "/logs", testOutputFolder );
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "metrics", "/metrics", testOutputFolder );
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
 			container.start();
 			DatabaseIO databaseIO = new DatabaseIO( container );
 			// do some database writes so that we try writing to writable folders.
@@ -338,7 +337,7 @@ public class TestMounting
         Path debugLog;
 
         try (GenericContainer container = setupBasicContainer(false, false)) {
-            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(container, "subfileownership-", "/logs");
+            logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(container, "subfileownership-", "/logs");
             debugLog = logMount.resolve("debug.log");
             // put file in logMount
             Files.write(debugLog, "some log words".getBytes());

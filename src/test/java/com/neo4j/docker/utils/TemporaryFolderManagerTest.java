@@ -16,9 +16,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -70,6 +68,46 @@ class TemporaryFolderManagerTest
     }
 
     @Test
+    void canSetFolderOwnerTo7474ThenCleanup( @TempDir Path outFolder) throws Exception
+    {
+        String folderPrefix = "TemporaryFolderManagerTest_canSetFolderOwnerTo7474ThenCleanup";
+        TemporaryFolderManager manager = new TemporaryFolderManager(outFolder);
+        Path tempFolder = manager.createTempFolder( folderPrefix );
+        verifyTempFolder( tempFolder, folderPrefix, outFolder );
+        Files.write( tempFolder.resolve( "testfile" ), "words".getBytes() );
+
+        manager.setFolderOwnerToNeo4j( tempFolder );
+        // verify expected folder owner
+        Integer fileUID = (Integer) Files.getAttribute( tempFolder, "unix:uid" );
+        Assertions.assertEquals( 7474, fileUID.intValue(),
+                                 "Did not successfully set the owner of "+tempFolder );
+        // clean up and verify successfully cleaned up
+        manager.afterAll( null );
+        Assertions.assertFalse( tempFolder.toFile().exists(), "Did not successfully delete "+tempFolder );
+    }
+
+    @Test
+    void canCreateAndCleanupFoldersWithDifferentOwners( @TempDir Path outFolder) throws Exception
+    {
+        String folderPrefix = "TemporaryFolderManagerTest_canCreateAndCleanupFoldersWithDifferentOwners";
+        TemporaryFolderManager manager = new TemporaryFolderManager(outFolder);
+        Path tempFolder7474 = manager.createTempFolder( folderPrefix );
+        Path tempFolderNormal = manager.createTempFolder( folderPrefix );
+        Files.write( tempFolder7474.resolve( "testfile" ), "words".getBytes() );
+        Files.write( tempFolderNormal.resolve( "testfile" ), "words".getBytes() );
+
+        manager.setFolderOwnerToNeo4j( tempFolder7474 );
+
+        Integer fileUID = (Integer) Files.getAttribute( tempFolder7474, "unix:uid" );
+        Assertions.assertEquals( 7474, fileUID.intValue(),
+                                 "Did not successfully set the owner of "+tempFolder7474 );
+
+        manager.afterAll( null );
+        Assertions.assertFalse( tempFolderNormal.toFile().exists(), "Did not successfully delete "+tempFolderNormal );
+        Assertions.assertFalse( tempFolder7474.toFile().exists(), "Did not successfully delete "+tempFolder7474 );
+    }
+
+    @Test
     void shouldMountFolderToContainer(@TempDir Path outFolder) throws Exception
     {
         String folderPrefix = "TemporaryFolderManagerTest_shouldMountFolderToContainer";
@@ -105,7 +143,7 @@ class TemporaryFolderManagerTest
         Assertions.assertTrue( tempFolder.resolve( "testfile" ).toFile().exists(),
                                "Test failure. Did not successfully write to "+tempFolder);
 
-        manager.zipTempFolders();
+        manager.afterAll( null );
 
         File expectedTar = new File( tempFolder.toAbsolutePath().toString()+".tar.gz" );
         Assertions.assertTrue( expectedTar.exists(), "Did not create archive "+expectedTar );
@@ -114,6 +152,8 @@ class TemporaryFolderManagerTest
                                "Tar file "+expectedTar+" exists but is empty." );
         String writtenFile = readFileInTar( expectedTar, tempFolder.getFileName()+"/testfile" );
         Assertions.assertEquals( expectedFileContents, writtenFile );
+        // all temporary folder should now be deleted
+        Assertions.assertFalse( tempFolder.toFile().exists(), "Temporary folder should have been deleted" );
     }
 
     @Test
@@ -133,7 +173,7 @@ class TemporaryFolderManagerTest
         Assertions.assertTrue( tempFolder.resolve( "testfile2" ).toFile().exists(),
                                "Test failure. Did not successfully write to "+tempFolder);
 
-        manager.zipTempFolders();
+        manager.afterAll( null );
 
         File expectedTar = new File( tempFolder.toAbsolutePath().toString()+".tar.gz" );
         Assertions.assertTrue( expectedTar.exists(), "Did not create archive "+expectedTar );
@@ -144,6 +184,7 @@ class TemporaryFolderManagerTest
         String writtenFile2 = readFileInTar( expectedTar, tempFolder.getFileName()+"/testfile2" );
         Assertions.assertEquals( expectedFileContents1, writtenFile1 );
         Assertions.assertEquals( expectedFileContents2, writtenFile2 );
+        Assertions.assertFalse( tempFolder.toFile().exists(), "Temporary folder should have been deleted" );
     }
 
     @Test
@@ -164,7 +205,7 @@ class TemporaryFolderManagerTest
         Assertions.assertTrue( tempFolder2.resolve( "testfile" ).toFile().exists(),
                                "Test failure. Did not successfully write to "+tempFolder2);
 
-        manager.zipTempFolders();
+        manager.afterAll( null );
 
         File expectedTar1 = new File( tempFolder1.toAbsolutePath().toString()+".tar.gz" );
         File expectedTar2 = new File( tempFolder2.toAbsolutePath().toString()+".tar.gz" );
@@ -180,6 +221,8 @@ class TemporaryFolderManagerTest
                                  "Tar file "+expectedTar2+" exists but is empty." );
         String writtenFile2 = readFileInTar( expectedTar2, tempFolder2.getFileName()+"/testfile" );
         Assertions.assertEquals( expectedFileContents2, writtenFile2 );
+        Assertions.assertFalse( tempFolder1.toFile().exists(), "Temporary folder should have been deleted" );
+        Assertions.assertFalse( tempFolder2.toFile().exists(), "Temporary folder should have been deleted" );
     }
 
     @Test
@@ -201,7 +244,7 @@ class TemporaryFolderManagerTest
         Assertions.assertTrue( tempFolder2.resolve( "testfile" ).toFile().exists(),
                                "Test failure. Did not successfully write to "+tempFolder2);
 
-        manager.zipTempFolders();
+        manager.afterAll( null );
 
         File expectedTar = new File( tempFolder1.toAbsolutePath().toString()+".tar.gz" );
         Assertions.assertTrue( expectedTar.exists(), "Did not create archive "+expectedTar );
@@ -212,8 +255,8 @@ class TemporaryFolderManagerTest
                                             tempFolder1.getFileName() +"/" +
                                             tempFolder2.getFileName()+"/testfile" );
         Assertions.assertEquals( expectedFileContents, writtenFile );
+        Assertions.assertFalse( tempFolder1.toFile().exists(), "Temporary folder should have been deleted" );
     }
-
 
     private void verifyTempFolder( Path tempFolder, String expectedPrefix, Path expectedParent )
     {
