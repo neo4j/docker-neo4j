@@ -2,14 +2,16 @@ package com.neo4j.docker.neo4jserver.configurations;
 
 import com.neo4j.docker.neo4jserver.plugins.Neo4jPluginEnv;
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
+
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -41,6 +43,8 @@ public class TestConfSettings
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
     private static Path confFolder;
     private static Map<Setting,Configuration> confNames;
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     @BeforeAll
     static void getVersionSpecificConfigurationSettings()
@@ -153,7 +157,7 @@ public class TestConfSettings
             {
                 container.withEnv( confNames.get( s ).envName, expectedValues.get( s ) );
             }
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "overriddenbyenv-conf-",
                     "/conf" );
@@ -184,14 +188,14 @@ public class TestConfSettings
 
         try(GenericContainer container = createContainer())
         {
-			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "confIsRead-" );
+			Path testOutputFolder = temporaryFolderManager.createTempFolder( "confIsRead-" );
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
             		container,
 					"conf-",
 					"/conf",
 					testOutputFolder);
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
             		container,
 					"logs-",
 					"/logs",
@@ -217,7 +221,7 @@ public class TestConfSettings
         try(GenericContainer container = createContainer())
         {
             //Mount /logs
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "default-settings-logs-",
                     "/logs" );
@@ -256,7 +260,7 @@ public class TestConfSettings
         try(GenericContainer container = createContainer())
         {
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
             		container,
 					"replacedbydefault-conf-",
 					"/conf" );
@@ -285,7 +289,7 @@ public class TestConfSettings
         try(GenericContainer container = createContainer())
         {
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
             		container,
 					"notoverriddenbydefault-conf-",
 					"/conf" );
@@ -329,7 +333,7 @@ public class TestConfSettings
 
         try(GenericContainer container = createContainer())
         {
-            logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+            logMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                                   "old-conf-names-",
                                                                                   "/logs");
             SetContainerUser.nonRootUser( container );
@@ -363,13 +367,13 @@ public class TestConfSettings
         Path debugLog;
         try(GenericContainer container = createContainer().withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512.00MiB"))
         {
-			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "envoverrideworks-" );
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path testOutputFolder = temporaryFolderManager.createTempFolder( "envoverrideworks-" );
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"conf-",
 					"/conf",
 					testOutputFolder );
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"logs-",
 					"/logs",
@@ -394,13 +398,13 @@ public class TestConfSettings
 
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "ee-only-not-ovewritten-" );
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path testOutputFolder = temporaryFolderManager.createTempFolder( "ee-only-not-ovewritten-" );
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "conf-",
                     "/conf",
                     testOutputFolder );
-            Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "logs-",
                     "/logs",
@@ -428,12 +432,12 @@ public class TestConfSettings
 
         try ( GenericContainer container = createContainer() )
         {
-            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "metrics-mounting-" );
-            HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+            Path testOutputFolder = temporaryFolderManager.createTempFolder( "metrics-mounting-" );
+            temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                        "metrics-",
                                                                        "/metrics",
                                                                        testOutputFolder );
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                                         "conf-",
                                                                                         "/conf",
                                                                                         testOutputFolder );
@@ -457,7 +461,7 @@ public class TestConfSettings
         try(GenericContainer container = createContainer().withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512m"))
         {
             //Mount /logs
-			Path logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"enterprisesettingsnotincommunity-logs-",
 					"/logs" );
@@ -483,7 +487,7 @@ public class TestConfSettings
         {
             container.withEnv( confNames.get( Setting.APOC_EXPORT_FILE_ENABLED ).envName, "true" );
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\"]" );
-            confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "apoc-envvars-in-correct-conffile-",
                     "/conf");
@@ -512,13 +516,13 @@ public class TestConfSettings
 
         try(GenericContainer container = createContainer())
         {
-			Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvmaddnotoverridden-" );
+			Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvmaddnotoverridden-" );
             //Mount /conf
-			Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"conf-",
 					"/conf", testOutputFolder);
-			logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"logs-",
 					"/logs",
@@ -571,9 +575,9 @@ public class TestConfSettings
     {
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = HostFileSystemOperations.createTempFolder( "jvm-"+charName+"-in-conf-" );
+            Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvm-"+charName+"-in-conf-" );
             //Mount /conf
-            Path confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "conf-",
                     "/conf", testOutputFolder);
@@ -597,7 +601,7 @@ public class TestConfSettings
     void verifyJvmAdditional(String charName, String expectedJvmAdditional, GenericContainer container) throws Exception
     {
         Path logMount;
-        logMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+        logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                 container,
                 "conf"+charName+"logs-",
                 "/logs");
@@ -626,7 +630,7 @@ public class TestConfSettings
         try(GenericContainer container = createContainer()
                 .withEnv(confNames.get(Setting.SECURITY_PROCEDURES_UNRESTRICTED).envName, "*"))
         {
-			confMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					container,
 					"shellexpansionavoided-conf-",
 					"/conf" );

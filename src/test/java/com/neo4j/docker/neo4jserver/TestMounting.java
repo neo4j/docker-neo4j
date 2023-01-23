@@ -5,7 +5,6 @@ import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jRe
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;
@@ -342,8 +341,8 @@ public class TestMounting
             // put file in logMount
             Files.write(debugLog, "some log words".getBytes());
             // make neo4j own the conf folder but NOT the neo4j.conf
-            HostFileSystemOperations.setFileOwnerToNeo4j( logMount );
-            HostFileSystemOperations.setFileOwnerToCurrentUser( debugLog );
+            temporaryFolderManager.setFolderOwnerToNeo4j( logMount );
+            temporaryFolderManager.setFolderOwnerToCurrentUser( debugLog );
             container.start();
             // if debug.log doesn't get re-owned, neo4j will not start and this test will fail here
         }

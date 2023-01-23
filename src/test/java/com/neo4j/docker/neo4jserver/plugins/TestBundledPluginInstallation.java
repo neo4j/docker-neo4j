@@ -1,12 +1,14 @@
 package com.neo4j.docker.neo4jserver.plugins;
 
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
+
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,6 +36,8 @@ public class TestBundledPluginInstallation
     private static String APOC_CORE = "apoc-core";
     private static String BLOOM = "bloom";
     private static String GDS = "graph-data-science";
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
 
     static Stream<Arguments> bundledPluginsArgs() {
@@ -83,8 +87,7 @@ public class TestBundledPluginInstallation
         try
         {
             container = createContainerWithBundledPlugin( pluginName );
-            pluginsMount = HostFileSystemOperations
-                    .createTempFolderAndMountAsVolume( container,
+            pluginsMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                        "bundled-"+pluginName+"-plugin-",
                                                        "/plugins" );
             container.start();
@@ -148,8 +151,7 @@ public class TestBundledPluginInstallation
         try
         {
             container = createContainerWithBundledPlugin( pluginName );
-            pluginsMount = HostFileSystemOperations
-                    .createTempFolderAndMountAsVolume( container,
+            pluginsMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                        "bundled-"+pluginName+"-plugin-unavailable-",
                                                        "/plugins" );
             container.start();
@@ -196,14 +198,14 @@ public class TestBundledPluginInstallation
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
 
         final String PASSWORD = "12345678";
-        Path testFolder = HostFileSystemOperations.createTempFolder( "plugin-with-auth-loads" );
+        Path testFolder = temporaryFolderManager.createTempFolder( "plugin-with-auth-loads" );
 
         try( GenericContainer container = createContainerWithBundledPlugin(BLOOM))
         {
             container.withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
                      .withEnv( "NEO4J_dbms_bloom_license__file", "/licenses/bloom.license" );
             // mounting logs because it's useful for debugging
-            HostFileSystemOperations.createTempFolderAndMountAsVolume( container, "logs", "/logs", testFolder );
+            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "logs", "/logs", testFolder );
 
             // make sure the container successfully starts and we can write to it without getting authentication errors
             container.start();

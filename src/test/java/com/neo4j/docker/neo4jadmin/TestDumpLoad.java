@@ -2,15 +2,17 @@ package com.neo4j.docker.neo4jadmin;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
+
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -26,6 +28,8 @@ import java.util.function.Consumer;
 public class TestDumpLoad
 {
     private static Logger log = LoggerFactory.getLogger( TestDumpLoad.class );
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     @BeforeAll
     static void beforeAll()
@@ -109,7 +113,7 @@ public class TestDumpLoad
 
     private void shouldCreateDumpAndLoadDump( boolean asDefaultUser, String password ) throws Exception
     {
-        Path testOutputFolder = HostFileSystemOperations.createTempFolder( "dumpandload-" );
+        Path testOutputFolder = temporaryFolderManager.createTempFolder( "dumpandload-" );
         Path firstDataDir;
         Path secondDataDir;
         Path backupDir;
@@ -117,7 +121,7 @@ public class TestDumpLoad
         // start a database and populate it
         try(GenericContainer container = createDBContainer( asDefaultUser, password ))
         {
-            firstDataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            firstDataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container, "data1-", "/data", testOutputFolder );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
@@ -128,8 +132,8 @@ public class TestDumpLoad
         // use admin container to create dump
         try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
-            HostFileSystemOperations.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
-            backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            temporaryFolderManager.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
+            backupDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     admin, "dump-", "/backups", testOutputFolder );
             admin.withCommand( "neo4j-admin", "database", "dump", "neo4j", "--to-path=/backups" );
             admin.start();
@@ -140,9 +144,9 @@ public class TestDumpLoad
         // use admin container to create dump
         try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
-            secondDataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+            secondDataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     admin, "data2-", "/data", testOutputFolder );
-            HostFileSystemOperations.mountHostFolderAsVolume( admin, backupDir, "/backups" );
+            temporaryFolderManager.mountHostFolderAsVolume( admin, backupDir, "/backups" );
             admin.withCommand( "neo4j-admin", "database", "load", "neo4j", "--from-path=/backups" );
             admin.start();
         }
@@ -150,7 +154,7 @@ public class TestDumpLoad
         // verify data in 2nd data directory by starting a database and verifying data we populated earlier
         try(GenericContainer container = createDBContainer( asDefaultUser, password ))
         {
-            HostFileSystemOperations.mountHostFolderAsVolume( container, secondDataDir, "/data" );
+            temporaryFolderManager.mountHostFolderAsVolume( container, secondDataDir, "/data" );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.verifyInitialDataInContainer( "neo4j", password );
