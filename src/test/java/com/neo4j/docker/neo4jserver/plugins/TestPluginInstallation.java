@@ -7,9 +7,9 @@ import java.time.Duration;
 import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,6 @@ import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.io.Files;
 
 import java.io.File;
@@ -41,6 +40,8 @@ public class TestPluginInstallation
     private static final String PLUGIN_JAR = "myPlugin.jar";
 
     private static final Logger log = LoggerFactory.getLogger( TestPluginInstallation.class );
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     @Rule
     public HttpServerRule httpServer = new HttpServerRule();
@@ -115,7 +116,7 @@ public class TestPluginInstallation
     @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
     public void testPlugin() throws Exception
     {
-        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-" );
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
@@ -132,7 +133,7 @@ public class TestPluginInstallation
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
                                 "NEO4JLABS_PLUGIN backwards compatibility does not need checking");
-        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-backcompat-" );
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-backcompat-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
@@ -149,7 +150,7 @@ public class TestPluginInstallation
     @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
     public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
     {
-        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-noOverride-" );
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-noOverride-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
@@ -173,7 +174,7 @@ public class TestPluginInstallation
     @Test
     void testSemanticVersioningPlugin_catchesMatchWithX() throws Exception
     {
-        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-semverMatchesX-" );
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesX-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x");
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
@@ -187,7 +188,7 @@ public class TestPluginInstallation
     @Test
     void testSemanticVersioningPlugin_catchesMatchWithStar() throws Exception
     {
-        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-semverMatchesStar-" );
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesStar-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".*");
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
@@ -204,7 +205,7 @@ public class TestPluginInstallation
     {
         Assumptions.assumeFalse( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
                                  "/docker-entrypoint.sh is permanently moved from 5.0 onwards");
-        Path pluginsDir = HostFileSystemOperations.createTempFolder( "plugin-oldEntrypoint-" );
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-oldEntrypoint-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x" );
         setupTestPlugin( pluginsDir, versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())

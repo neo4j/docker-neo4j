@@ -18,6 +18,7 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
 import java.util.function.Consumer;
@@ -81,7 +82,7 @@ public class TestBasic
         testLicenseAcceptance( TestSettings.ADMIN_IMAGE_ID );
     }
 
-    private void testLicenseAcceptance(String image)
+    private void testLicenseAcceptance( DockerImageName image )
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "No license checks for community edition");

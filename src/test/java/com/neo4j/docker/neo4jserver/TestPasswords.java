@@ -1,14 +1,15 @@
 package com.neo4j.docker.neo4jserver;
 
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -18,7 +19,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.file.Path;
@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 public class TestPasswords
 {
     private static Logger log = LoggerFactory.getLogger( TestPasswords.class);
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     private GenericContainer createContainer( boolean asCurrentUser )
     {
@@ -134,7 +136,7 @@ public class TestPasswords
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
             StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
-			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					firstContainer,
 					"password-defaultuser-data-",
 					"/data" );
@@ -149,7 +151,7 @@ public class TestPasswords
         // with a new container, check the database data.
         try(GenericContainer secondContainer = createContainer( asCurrentUser ))
         {
-            HostFileSystemOperations.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
+            temporaryFolderManager.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
             log.info( "starting new container with same /data mount as same user without setting password" );
             StartupDetector.makeContainerWaitForNeo4jReady(secondContainer, password);
             secondContainer.start();
@@ -186,7 +188,7 @@ public class TestPasswords
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
             StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
-			dataMount = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+			dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
 					firstContainer,
 					"password-envoverride-data-",
 					"/data" );
@@ -204,7 +206,7 @@ public class TestPasswords
         {
             String wrongPassword = "not_the_password";
             secondContainer.withEnv( "NEO4J_AUTH", "neo4j/"+wrongPassword );
-            HostFileSystemOperations.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
+            temporaryFolderManager.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
             log.info( "starting new container with same /data mount as same user without setting password" );
             secondContainer.start();
             DatabaseIO db = new DatabaseIO(secondContainer);

@@ -1,12 +1,11 @@
 package com.neo4j.docker.neo4jserver;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -14,20 +13,25 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
 public class TestUpgrade
 {
 	private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
 	private final String user = "neo4j";
 	private final String password = "verylongpassword";
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
-	private GenericContainer makeContainer(String image)
+	private GenericContainer makeContainer( DockerImageName image)
 	{
         GenericContainer container = new GenericContainer<>( image );
         container.withEnv( "NEO4J_AUTH", user + "/" + password )
@@ -89,25 +93,24 @@ public class TestUpgrade
 	{
 		assumeUpgradeSupported( upgradeFrom );
 
-		String upgradeFromImage = getUpgradeFromImage( upgradeFrom );
-		Path tmpMountFolder = HostFileSystemOperations.createTempFolder( "upgrade-" + upgradeFrom.major + upgradeFrom.minor + "-" );
+		Path tmpMountFolder = temporaryFolderManager.createTempFolder( "upgrade-" + upgradeFrom.major + upgradeFrom.minor + "-" );
 		Path data, logs, imports, metrics;
 
-		try(GenericContainer container = makeContainer( upgradeFromImage ))
+		try(GenericContainer container = makeContainer( getUpgradeFromImage( upgradeFrom ) ))
 		{
-			data = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+			data = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                               "data-",
                                                                               "/data",
 																			  tmpMountFolder );
-			logs = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+			logs = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                               "logs-",
                                                                               "/logs",
 																			  tmpMountFolder );
-			imports = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+			imports = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                                  "import-",
                                                                                  "/import",
 																				 tmpMountFolder );
-			metrics = HostFileSystemOperations.createTempFolderAndMountAsVolume( container,
+			metrics = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
                                                                                  "metrics-",
                                                                                  "/metrics",
 																				 tmpMountFolder );
@@ -120,10 +123,10 @@ public class TestUpgrade
 
 		try(GenericContainer container = makeContainer( TestSettings.IMAGE_ID ))
 		{
-			HostFileSystemOperations.mountHostFolderAsVolume( container, data, "/data" );
-			HostFileSystemOperations.mountHostFolderAsVolume( container, logs, "/logs" );
-			HostFileSystemOperations.mountHostFolderAsVolume( container, imports, "/import" );
-			HostFileSystemOperations.mountHostFolderAsVolume( container, metrics, "/metrics" );
+			temporaryFolderManager.mountHostFolderAsVolume( container, data, "/data" );
+			temporaryFolderManager.mountHostFolderAsVolume( container, logs, "/logs" );
+			temporaryFolderManager.mountHostFolderAsVolume( container, imports, "/import" );
+			temporaryFolderManager.mountHostFolderAsVolume( container, metrics, "/metrics" );
 			container.withEnv( "NEO4J_dbms_allow__upgrade", "true" );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
@@ -146,11 +149,10 @@ public class TestUpgrade
 	{
 		assumeUpgradeSupported(upgradeFrom);
 
-		String upgradeFromImage = getUpgradeFromImage( upgradeFrom );
 		String id = String.format( "%04d", new Random().nextInt( 10000 ));
 		log.info( "creating volumes with id: "+id );
 
-		try(GenericContainer container = makeContainer( upgradeFromImage ))
+		try(GenericContainer container = makeContainer(getUpgradeFromImage( upgradeFrom )))
 		{
 			container.withCreateContainerCmdModifier(
 					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
@@ -185,15 +187,15 @@ public class TestUpgrade
 		}
 	}
 
-	private String getUpgradeFromImage(Neo4jVersion ver)
+	private DockerImageName getUpgradeFromImage( Neo4jVersion ver)
 	{
 		if(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)
 		{
-			return "neo4j:" + ver.toString() + "-enterprise";
+			return DockerImageName.parse("neo4j:" + ver.toString() + "-enterprise");
 		}
 		else
 		{
-			return "neo4j:" + ver.toString();
+			return DockerImageName.parse("neo4j:" + ver.toString());
 		}
 	}
 }

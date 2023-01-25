@@ -111,6 +111,13 @@
             <version>2.8.9</version>
             <scope>test</scope>
         </dependency>
+        <!--  For creating archives of test data -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.22</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

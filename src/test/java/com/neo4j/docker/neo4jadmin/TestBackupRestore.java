@@ -3,15 +3,16 @@ package com.neo4j.docker.neo4jadmin;
 import com.neo4j.docker.neo4jserver.configurations.Configuration;
 import com.neo4j.docker.neo4jserver.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -34,6 +35,8 @@ public class TestBackupRestore
     // with authentication
     // with non-default user
     private static final Logger log = LoggerFactory.getLogger( TestBackupRestore.class );
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     @BeforeAll
     static void beforeAll()
@@ -104,12 +107,12 @@ public class TestBackupRestore
     private void testCanBackupAndRestore(boolean asDefaultUser, String password) throws Exception
     {
         final String dbUser = "neo4j";
-        Path testOutputFolder = HostFileSystemOperations.createTempFolder( "backupRestore-" );
+        Path testOutputFolder = temporaryFolderManager.createTempFolder( "backupRestore-" );
 
         // BACKUP
         // start a database and populate data
         GenericContainer neo4j = createDBContainer( asDefaultUser, password );
-        Path dataDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+        Path dataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
                 neo4j, "data-", "/data", testOutputFolder );
         neo4j.start();
         DatabaseIO dbio = new DatabaseIO( neo4j );
@@ -131,7 +134,7 @@ public class TestBackupRestore
                              "neo4j");
 
 
-        Path backupDir = HostFileSystemOperations.createTempFolderAndMountAsVolume(
+        Path backupDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
                 adminBackup, "backup-", "/backups", testOutputFolder );
         adminBackup.start();
 
@@ -163,8 +166,8 @@ public class TestBackupRestore
                         "--overwrite-destination=true",
                         "--from-path=/backups/"+backupFile.getName(),
                         "neo4j");
-        HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
-        HostFileSystemOperations.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
+        temporaryFolderManager.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
+        temporaryFolderManager.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
         adminRestore.start();
         dbio.runCypherQuery( dbUser, password, "START DATABASE neo4j", "system" );
 

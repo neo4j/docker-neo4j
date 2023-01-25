@@ -1,13 +1,15 @@
 package com.neo4j.docker.neo4jserver;
 
-import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.*;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.*;
 
@@ -24,6 +26,8 @@ import java.time.Duration;
 public class TestCausalCluster
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     @Disabled
     @Test
@@ -32,7 +36,7 @@ public class TestCausalCluster
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                "No causal clustering for community edition");
 
-        Path tmpDir = HostFileSystemOperations.createTempFolder( "CC_cluster_" );
+        Path tmpDir = temporaryFolderManager.createTempFolder( "CC_cluster_" );
 
         File compose_file =  new File(tmpDir.toString(), "causal-cluster-compose.yml");
         Files.copy(getResource("causal-cluster-compose.yml"), Paths.get(compose_file.getPath()));
@@ -48,7 +52,7 @@ public class TestCausalCluster
         int i = 0;
 
         for (String line : contentLines) {
-            editedLines[i] = line.replaceAll("%%IMAGE%%", TestSettings.IMAGE_ID);
+            editedLines[i] = line.replaceAll("%%IMAGE%%", TestSettings.IMAGE_ID.asCanonicalNameString());
             editedLines[i] = editedLines[i].replaceAll("%%LOGS_DIR%%", tmpDir.toAbsolutePath().toString());
             editedLines[i] = editedLines[i].replaceAll("%%USERIDGROUPID%%", SetContainerUser.getNonRootUserString());
             i++;

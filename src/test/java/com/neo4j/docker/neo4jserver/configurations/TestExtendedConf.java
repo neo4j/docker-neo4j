@@ -1,13 +1,14 @@
 package com.neo4j.docker.neo4jserver.configurations;
 
-import com.neo4j.docker.utils.HostFileSystemOperations;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -20,20 +21,15 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TestExtendedConf
@@ -41,6 +37,8 @@ public class TestExtendedConf
 	private static final Logger log = LoggerFactory.getLogger( TestExtendedConf.class );
     private static Path testConfsFolder;
     private static Configuration logRotationConfig;
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
 	@BeforeAll
 	static void ensureFeaturePresent()
@@ -69,7 +67,7 @@ public class TestExtendedConf
 
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "secretN30"})
+	@ValueSource(strings = {"", "supersecretpassword"})
 	public void shouldStartWithExtendedConf(String password)
 	{
         try(GenericContainer container = createContainer(password))
@@ -94,19 +92,19 @@ public class TestExtendedConf
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "secretN30"})
+	@ValueSource(strings = {"", "supersecretpassword"})
 	void testReadsTheExtendedConfFile_defaultUser(String password) throws Exception
 	{
 		// set up test folders
-		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
-		Path confFolder = HostFileSystemOperations.createTempFolder( "conf-", testOutputFolder );
-		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
+		Path testOutputFolder = temporaryFolderManager.createTempFolder( "extendedConfIsRead-" );
+		Path confFolder = temporaryFolderManager.createTempFolder( "conf-", testOutputFolder );
+		Path logsFolder = temporaryFolderManager.createTempFolder( "logs-", testOutputFolder );
 
 		// copy configuration file and set permissions
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
 		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
-		HostFileSystemOperations.setFileOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
-		chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
+        chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
+		temporaryFolderManager.setFolderOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
 
 		// start  container
 		try(GenericContainer container = createContainer(password))
@@ -116,12 +114,12 @@ public class TestExtendedConf
 	}
 
     @ParameterizedTest
-    @ValueSource( strings = {"", "secretN30"} )
+    @ValueSource( strings = {"", "supersecretpassword"} )
     void testInvalidExtendedConfFile_nonRootUser( String password ) throws Exception
     {
         // set up test folders
-        Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
-        Path confFolder = HostFileSystemOperations.createTempFolder( "conf-", testOutputFolder );
+        Path testOutputFolder = temporaryFolderManager.createTempFolder( "extendedConfIsRead-" );
+        Path confFolder = temporaryFolderManager.createTempFolder( "conf-", testOutputFolder );
 
         // copy configuration file and set permissions
         Path confFile = testConfsFolder.resolve( "InvalidExtendedConf.conf" );
@@ -133,7 +131,7 @@ public class TestExtendedConf
             SetContainerUser.nonRootUser( container );
             container.withFileSystemBind( "/etc/passwd", "/etc/passwd", BindMode.READ_ONLY );
             container.withFileSystemBind( "/etc/group", "/etc/group", BindMode.READ_ONLY );
-            HostFileSystemOperations.mountHostFolderAsVolume( container, confFolder, "/conf" );
+            temporaryFolderManager.mountHostFolderAsVolume( container, confFolder, "/conf" );
             container.setStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 30 ) ) );
             container.setWaitStrategy(
                     Wait.forLogMessage( ".*this is an error message from inside neo4j config command expansion.*", 1 )
@@ -165,13 +163,13 @@ public class TestExtendedConf
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "secretN30"})
+	@ValueSource(strings = {"", "supersecretpassword"})
 	void testReadsTheExtendedConfFile_nonRootUser(String password) throws Exception
 	{
 		// set up test folders
-		Path testOutputFolder = HostFileSystemOperations.createTempFolder( "extendedConfIsRead-" );
-		Path confFolder = HostFileSystemOperations.createTempFolder( "conf-", testOutputFolder );
-		Path logsFolder = HostFileSystemOperations.createTempFolder( "logs-", testOutputFolder );
+		Path testOutputFolder = temporaryFolderManager.createTempFolder( "extendedConfIsRead-" );
+		Path confFolder = temporaryFolderManager.createTempFolder( "conf-", testOutputFolder );
+		Path logsFolder = temporaryFolderManager.createTempFolder( "logs-", testOutputFolder );
 
 		// copy configuration file and set permissions
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
@@ -189,8 +187,8 @@ public class TestExtendedConf
 
 	private void runContainerAndVerify(GenericContainer container, Path confFolder, Path logsFolder, String password) throws Exception
 	{
-		HostFileSystemOperations.mountHostFolderAsVolume( container, confFolder, "/conf" );
-		HostFileSystemOperations.mountHostFolderAsVolume( container, logsFolder, "/logs" );
+		temporaryFolderManager.mountHostFolderAsVolume( container, confFolder, "/conf" );
+		temporaryFolderManager.mountHostFolderAsVolume( container, logsFolder, "/logs" );
 
 		container.start();
 
