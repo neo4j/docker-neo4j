@@ -12,8 +12,17 @@ all: tag
 .PHONY: all
 
 ## tagging the images ##
-tag: tag-community tag-enterprise
+tag: tag-community tag-enterprise tag-alpine
 .PHONY: tag
+
+tag-alpine-community: build-community-alpine
+> docker tag $$(cat tmp/.image-id-alpine-community) neo4j:$(NEO4JVERSION)-alpine
+
+tag-alpine-enterprise: build-enterprise-alpine
+> docker tag $$(cat tmp/.image-id-alpine-enterprise) neo4j:$(NEO4JVERSION)-alpine-enterprise
+
+tag-alpine: tag-alpine-community tag-alpine-enterprise
+.PHONY: tag-alpine
 
 tag-community: build-community
 > docker tag $$(cat tmp/.image-id-community) neo4j:$(NEO4JVERSION)
@@ -25,8 +34,19 @@ tag-enterprise: build-enterprise
 
 
 # create release images and loadable images
-package: package-community package-enterprise
+package: package-community package-enterprise package-alpine
 .PHONY: package
+
+package-alpine: package-alpine-community package-alpine-enterprise
+.PHONY: package-alpine
+
+package-alpine-community: tag-alpine-community
+> mkdir -p out
+> docker save neo4j:$(NEO4JVERSION)-alpine > out/neo4j-community-$(NEO4JVERSION)-alpine-docker-loadable.tar
+
+package-alpine-enterprise: tag-alpine-enterprise
+> mkdir -p out
+> docker save neo4j:$(NEO4JVERSION)-alpine-enterprise > out/neo4j-enterprise-$(NEO4JVERSION)-alpine-docker-loadable.tar
 
 package-community:  tag-community out/community/.sentinel out/neo4j-admin-community/.sentinel
 > mkdir -p out
