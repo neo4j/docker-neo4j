@@ -30,7 +30,7 @@ public class DatabaseIO
 	public DatabaseIO( GenericContainer container )
 	{
 		this.container = container;
-        this.boltUri = "bolt://"+container.getContainerIpAddress()+":"+container.getMappedPort( 7687 );
+        this.boltUri = "bolt://"+container.getHost()+":"+container.getMappedPort( 7687 );
 	}
 
 

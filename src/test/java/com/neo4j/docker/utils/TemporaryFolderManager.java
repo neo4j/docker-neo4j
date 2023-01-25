@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class TemporaryFolderManager implements AfterAllCallback
 {
@@ -56,7 +57,7 @@ public class TemporaryFolderManager implements AfterAllCallback
                   TarArchiveOutputStream archiver = new TarArchiveOutputStream( gzo ) )
             {
                 archiver.setLongFileMode( TarArchiveOutputStream.LONGFILE_POSIX );
-                List<Path> files = Files.walk( p ).toList();
+                List<Path> files = Files.walk( p ).collect( Collectors.toList());
                 for(Path fileToBeArchived : files)
                 {
                     // don't archive directories...

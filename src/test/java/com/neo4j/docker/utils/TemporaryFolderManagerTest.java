@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 // This is a test for a test utility. It does not actually test anything to do with the docker image.
 // This is disabled unless we're actually trying to develop/fix the TemporaryFolderManager utility.
@@ -48,7 +49,7 @@ class TemporaryFolderManagerTest
         Path p = manager.createTempFolder( folderPrefix, outFolder );
         verifyTempFolder( p, folderPrefix, outFolder );
         // should NOT have created something under unusedFolder
-        List<Path> f = Files.list( unusedFolder ).toList();
+        List<Path> f = Files.list( unusedFolder ).collect( Collectors.toList());
         Assertions.assertEquals( 0, f.size(),
                                  "Folder should not have been created under "+unusedFolder );
     }
