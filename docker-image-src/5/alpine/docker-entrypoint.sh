@@ -167,7 +167,7 @@ function load_plugin_from_location
   # Now we install the plugin that is shipped with Neo4j
   for filename in ${_location}; do
     echo "Installing Plugin '${_plugin_name}' from ${_location} to ${_destination}"
-    cp --preserve "${filename}" "${_destination}"
+    cp -p "${filename}" "${_destination}"
   done
 
   if ! is_readable "${_destination}"; then
@@ -201,7 +201,7 @@ function load_plugin_from_github
     exit 1
   fi
   echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
-  wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
+  wget -q -T 300 -O="${_destination}" "${_plugin_jar_url}"
 
   if ! is_readable "${_destination}"; then
     echo >&2 "Plugin at '${_destination}' is not readable"
@@ -225,13 +225,13 @@ function apply_plugin_default_configuration
         debug_msg "${_plugin_name} requires setting ${_property}=${_value}"
 
         # the first grep strips out comments
-        if grep -o "^[^#]*" "${_reference_conf}" | grep -q --fixed-strings "${_property}=" ; then
+        if grep -o "^[^#]*" "${_reference_conf}" | grep -q -F "${_property}=" ; then
             # property is already set in the user provided config. In this case we don't override what has been set explicitly by the user.
             echo "Skipping ${_property} for plugin ${_plugin_name} because it is already set."
             echo "You may need to add ${_value} to the ${_property} setting in your configuration file."
         else
-            if grep -o "^[^#]*" "${_neo4j_conf}" | grep -q --fixed-strings "${_property}=" ; then
-                sed --in-place "s/${_property}=/&${_value},/" "${_neo4j_conf}"
+            if grep -o "^[^#]*" "${_neo4j_conf}" | grep -q -F "${_property}=" ; then
+                sed -i "s/${_property}=/&${_value},/" "${_neo4j_conf}"
                 debug_msg "${_property} was already in the configuration file, so ${_value} was added to it."
             else
                 echo "${_property}=${_value}" >> "${_neo4j_conf}"
@@ -300,7 +300,7 @@ function add_env_setting_to_conf
     if [ -e "${_conf_file}" ] && grep -q -F "${_setting}=" "${_conf_file}"; then
         # Remove any lines containing the setting already
         debug_msg "Removing existing setting for ${_setting} in ${_conf_file}"
-        sed --in-place "/^${_setting}=.*/d" "${_conf_file}"
+        sed -i "/^${_setting}=.*/d" "${_conf_file}"
     fi
     # Then always append setting to file
     debug_msg "Appended ${_setting}=${_value} to ${_conf_file}"
@@ -459,7 +459,7 @@ if [ -d /conf ]; then
     check_mounted_folder_readable "/conf"
     rm -rf "${NEO4J_HOME}"/conf/*
     debug_msg "Copying contents of /conf to ${NEO4J_HOME}/conf/*"
-    find /conf -type f -exec cp --preserve=ownership,mode {} "${NEO4J_HOME}"/conf \;
+    find /conf -type f -exec cp -p {} "${NEO4J_HOME}"/conf \;
 fi
 
 if [ -d /ssl ]; then
@@ -602,7 +602,7 @@ if [ "${cmd}" == "dump-config" ]; then
         exit 1
     fi
     check_mounted_folder_writable_with_chown "/conf"
-    cp --recursive "${NEO4J_HOME}"/conf/* /conf
+    cp -r "${NEO4J_HOME}"/conf/* /conf
     echo "Config Dumped"
     exit 0
 fi
