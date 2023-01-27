@@ -71,7 +71,7 @@ public class TestBasic
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
                                 "No license checks before version 3.3.0");
-        testLicenseAcceptance( TestSettings.IMAGE_ID );
+        testLicenseAcceptanceRequired( TestSettings.IMAGE_ID );
     }
 
     @Test
@@ -79,10 +79,10 @@ public class TestBasic
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 ) ),
                                 "No Neo4j admin image before version 4.4.0");
-        testLicenseAcceptance( TestSettings.ADMIN_IMAGE_ID );
+        testLicenseAcceptanceRequired( TestSettings.ADMIN_IMAGE_ID );
     }
 
-    private void testLicenseAcceptance( DockerImageName image )
+    private void testLicenseAcceptanceRequired( DockerImageName image )
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "No license checks for community edition");
@@ -123,6 +123,27 @@ public class TestBasic
             Assertions.assertTrue( stdout.contains( "The license agreement was accepted with environment variable " +
                                                     "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes when the Software was started." ),
             "Neo4j did not register that the license was agreed to.");
+        }
+    }
+
+    @Test
+    void testLicenseAcceptanceAvoidsWarning_evaluation() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
+                                "No license checks for community edition");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,0,0 ) ),
+                                "No unified license acceptance method before 5.0.0");
+        try(GenericContainer container = createBasicContainer())
+        {
+            container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "eval" );
+            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.start();
+            Assertions.assertTrue( container.isRunning() );
+
+            String stdout = container.getLogs(OutputFrame.OutputType.STDOUT);
+            Assertions.assertTrue( stdout.contains( "The license agreement was accepted with environment variable " +
+                                                    "NEO4J_ACCEPT_LICENSE_AGREEMENT=eval when the Software was started." ),
+            "Neo4j did not register that the evaluation license was agreed to.");
         }
     }
 

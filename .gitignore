@@ -1,4 +1,5 @@
 .idea
+.java-version
 *.iml
 /tmp/
 /out/

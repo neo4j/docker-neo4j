@@ -412,11 +412,13 @@ fi
 # Only prompt for license agreement if command contains "neo4j" in it
 if [[ "${cmd}" == *"neo4j"* ]]; then
   if [ "${NEO4J_EDITION}" == "enterprise" ]; then
-    if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
+    : ${NEO4J_ACCEPT_LICENSE_AGREEMENT:="not accepted"}
+    if [[ "$NEO4J_ACCEPT_LICENSE_AGREEMENT" != "yes" && "$NEO4J_ACCEPT_LICENSE_AGREEMENT" != "eval" ]]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-The license agreement is available https://neo4j.com/terms/licensing/
+The license agreement is available at https://neo4j.com/terms/licensing/
+If you have a support contract the following terms apply https://neo4j.com/terms/support-terms/
 
 If you do not have a commercial license and want to evaluate the Software
 please read the terms of the evaluation agreement before you accept.
@@ -427,17 +429,18 @@ Use of this Software without a proper commercial license, or evaluation license
 with Neo4j,Inc. or its affiliates is prohibited.
 Neo4j has the right to terminate your usage if you are not compliant.
 
-Email inquiries can be directed to: licensing@neo4j.com
-
 More information is also available at: https://neo4j.com/licensing/
+If you have further inquiries about licensing, please contact us via https://neo4j.com/contact-us/
 
-
-To accept the license agreement set the environment variable
+To accept the commercial license agreement set the environment variable
 NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+
+To accept the terms of the evaluation agreement set the environment variable
+NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
 
 To do this you can use the following docker argument:
 
-        --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+        --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=<yes|eval>
 "
       exit 1
     fi
