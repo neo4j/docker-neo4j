@@ -53,6 +53,7 @@ public class TestPluginInstallation
 
         container.withEnv( "NEO4J_AUTH", DB_USER+"/"+ DB_PASSWORD)
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                .withEnv( "NEO4J_DEBUG", "yes" )
                 .withEnv( Neo4jPluginEnv.get(), "[\"_testing\"]" )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );
@@ -77,8 +78,7 @@ public class TestPluginInstallation
 
     private void setupTestPlugin( Path pluginsDir, File versionsJson ) throws Exception
     {
-       File myPluginJar = pluginsDir.resolve( PLUGIN_JAR ).toFile();
-        new JarBuilder().createJarFor( myPluginJar, ExampleNeo4jPlugin.class, ExampleNeo4jPlugin.PrimitiveOutput.class );
+       File myPluginJar = new File(getClass().getClassLoader().getResource( "testplugin/"+PLUGIN_JAR ).toURI());
 
         httpServer.registerHandler( versionsJson.getName(), new HostFileHttpHandler( versionsJson, "application/json" ) );
         httpServer.registerHandler( PLUGIN_JAR, new HostFileHttpHandler( myPluginJar, "application/java-archive" ) );
@@ -94,12 +94,12 @@ public class TestPluginInstallation
         // Then the procedure from the test plugin should be listed
         Assertions.assertTrue( procedures.stream()
                                 .anyMatch(x -> x.get( "name" ).asString()
-                                    .equals( "com.neo4j.docker.neo4jserver.plugins.defaultValues" ) ),
+                                    .equals( "com.neo4j.docker.test.myplugin.defaultValues" ) ),
                 "Missing procedure provided by our plugin" );
 
         // When we call the procedure from the plugin
         List<Record> pluginResponse = db.runCypherQuery(DB_USER, DB_PASSWORD,
-                "CALL com.neo4j.docker.neo4jserver.plugins.defaultValues" );
+                "CALL com.neo4j.docker.test.myplugin.defaultValues" );
 
         // Then we get the response we expect
         Assertions.assertEquals(1, pluginResponse.size(), "Our procedure should only return a single result");

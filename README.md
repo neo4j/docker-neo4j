@@ -1,5 +1,5 @@
 *NOTE:* Supported images are available in the [official image library](https://hub.docker.com/_/neo4j/) on Docker Hub.
-Please use those for production use.
+Please use those in production.
 
 # Using the Neo4j Docker Image
 
@@ -31,7 +31,9 @@ but it means that data can persist between closing and reopening Neo4j container
 
 # Neo4j images for ARM64
 
-We provide unsupported and untested builds of ARM64 Neo4j community edition from 4.0.0 and onwards. 
+From 4.4.0 and onwards, Neo4j images have been available for ARM64 architectures through [Docker Hub](https://hub.docker.com/_/neo4j/).
+
+For earlier versions, we provide unsupported and untested builds of ARM64 Neo4j community edition from 4.0.0 to 4.3.23. 
 These are unsuitable for production use, but may be useful for experimentation or hobbyists. 
 
 They are available on Docker hub at:

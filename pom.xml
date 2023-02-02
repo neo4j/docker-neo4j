@@ -10,11 +10,10 @@
 	<packaging>jar</packaging>
 
 	<properties>
-        <neo4j.version>${env.NEO4JVERSION}</neo4j.version>
-        <!-- set java.version to either 1.8, 11 or 17 but don't commit with it set to 11 or 17 -->
-        <java.version>1.8</java.version>
+        <neo4j.driver.version>4.4.16</neo4j.driver.version>
+        <java.version>17</java.version>
         <testcontainers.version>1.17.5</testcontainers.version>
-	</properties>
+    </properties>
 
 	<build>
 		<plugins>
@@ -35,22 +34,22 @@
 	</build>
 
 	<dependencies>
-		<dependency>
-			<!-- This gives us the Procedure API our runtime code uses.
-                 We have a `provided` scope on it, because when this is
-                 deployed in a Neo4j Instance, the API will be provided
-                 by Neo4j. -->
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j</artifactId>
-			<version>${neo4j.version}</version>
-			<scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-nop</artifactId>
-                </exclusion>
-            </exclusions>
-		</dependency>
+<!--		<dependency>-->
+<!--			&lt;!&ndash; This gives us the Procedure API our runtime code uses.-->
+<!--                 We have a `provided` scope on it, because when this is-->
+<!--                 deployed in a Neo4j Instance, the API will be provided-->
+<!--                 by Neo4j. &ndash;&gt;-->
+<!--			<groupId>org.neo4j</groupId>-->
+<!--			<artifactId>neo4j</artifactId>-->
+<!--			<version>${neo4j.version}</version>-->
+<!--			<scope>provided</scope>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.slf4j</groupId>-->
+<!--                    <artifactId>slf4j-nop</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--		</dependency>-->
 		<dependency>
 			<!-- logging library -->
 			<groupId>org.slf4j</groupId>
@@ -101,7 +100,7 @@
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>4.3.6</version>
+            <version>${neo4j.driver.version}</version>
             <scope>test</scope>
         </dependency>
         <!--  Gson: Java to Json conversion -->
