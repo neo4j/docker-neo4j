@@ -1,6 +1,7 @@
-package com.neo4j.docker.neo4jserver.plugins;
+package com.neo4j.docker.test.myplugin;
 
 import java.util.stream.Stream;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;

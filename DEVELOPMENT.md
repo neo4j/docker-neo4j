@@ -1,7 +1,6 @@
 # Supported platforms
 
-Development is supported on Ubuntu and OSX. It will probably work on
-other Linuxes. Pull requests welcomed for other platforms.
+Development is tested on Ubuntu and OSX. It will probably work on other Linuxes.
 
 # Prerequisites
 
@@ -25,12 +24,6 @@ You just need to specify the **full** Neo4j version including major, minor and p
 NEO4JVERSION=3.5.11 make clean build
 ```
 
-If you want to build an alpha/beta release, this will still work:
-
-```bash
-NEO4JVERSION=3.5.0-alpha01 make clean build
-```
-
 When the make script is complete, the image name will be written to file in `tmp/.image-id-community` and `tmp/.image-id-enterprise`:
 
 ```bash
@@ -43,7 +36,7 @@ test/13909
 
 ## Building ARM64 based images
 
-From Neo4j 4.4.0 onwards, the Neo4j image should be buildable on any architecture using the same build commands as [Building the Image](#building-the-image).
+From Neo4j 4.3.0 onwards, the Neo4j image should be buildable on any architecture using the same build commands as [Building the Image](#building-the-image).
 
 For earlier versions of Neo4j, you may need to set the variable `NEO4J_BASE_IMAGE` to your architecture specific version of `openjdk:11-jdk-slim` (or `openjdk:8-jdk-slim` for versions before 4.0.0).
 
@@ -73,9 +66,19 @@ $ ls $NEO4J_DOCKER_ROOT/in
 $ NEO4JVERSION=4.0.0-alpha05 make clean build
 ``` 
 
+### If building an image from your local Neo4j repository
+
+1. Clone the Neo4j github repository and checkout the branch you want.
+3. Run `mvn install` plus whatever maven build flags you like. This should install the latest neo4j jars into the maven cache.
+4. Copy the community and enterprise tar.gz files to `$NEO4J_DOCKER_ROOT/in`.
+5. Use the `NEO4JVERSION` that is in the pom file of your Neo4j repository clone to build the docker image, e.g.:
+```shell
+$ NEO4JVERSION=5.5.0-SNAPSHOT make clean build
+```
+
 # Running the Tests
 
-The tests are written in java, and require Maven plus jdk 11 for Neo4j version 4.0 onwards or jdk 8 for earlier Neo4j versions.
+The tests are written in java, and require Maven plus JDK 17 (any JDK distributions should work, we use OpenJDK).
 
 The tests require some information about the image before they can test it. 
 These can be passed as an environment variable or a command line parameter when invoking maven:
@@ -89,11 +92,33 @@ These can be passed as an environment variable or a command line parameter when 
 
 <!-- prettified with http://www.tablesgenerator.com/markdown_tables -->
 
+## Using Maven
+The Makefile can run the entire test suite.
+1. Make sure `java --version` is java 17.
+2. `NEO4JVERSION=<VERSION> make test` This is a make target that will run these commands:
+```bash
+mvn test -Dimage=$(cat tmp/.image-id-community) -Dedition=community -Dversion=${NEO4JVERSION}
+mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=${NEO4JVERSION}
+```
 
-### Running with podman
+## In Intellij
+
+1. Make sure the project SDK is java 17.
+3. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
+5. Under Run Configurations edit the Template JUnit configuration:
+   1. Select the "EnvFile" tab
+   2. Make sure "Enable EnvFile" is checked.
+   3. Click the `+` then click to add a `.env` file.
+   4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
+   5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
+
+You should now be able to run unit tests straight from the IDE.
+
+
+## Running with podman
 
 Tests in this module are using testcontainers. The framework expects you to have docker available on your system.
-And there are some issues like described here: https://github.com/testcontainers/testcontainers-java/issues/2088 
+And there are some issues like described here: https://github.com/testcontainers/testcontainers-java/issues/2088
 
 TLDR on what you need to do to be able to use podman:
 
@@ -106,50 +131,10 @@ TESTCONTAINERS_RYUK_DISABLED=true;
 TESTCONTAINERS_CHECKS_DISABLE=true 
 ```
 
-## Using Maven
-The Makefile can run the entire test suite.
-1. Make sure `java --version` is java 11 or java 8 as necessary.
-2. `NEO4JVERSION=<VERSION> make test` This is a make target that will run these commands:
-```bash
-mvn test -Dimage=$(cat tmp/.image-id-community) -Dedition=community -Dversion=${NEO4JVERSION}
-mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=${NEO4JVERSION}
-```
+# Troubleshooting
+## cannot find symbol `com.sun.security.auth.module.UnixSystem`
 
-## In Intellij
+This can happen if you switch from java 17 to java 11 (or the other way) and then try to rebuild the tests in Intellij.
 
-1. Make sure the project SDK is java 17, 11 or 8 as necessary.
-2. Edit the [pom.xml file](../master/pom.xml) to replace  `${env.NEO4JVERSION}` with the `NEO4JVERSION` you used to build the image.
-*(Yes this is terrible, and we need to think of an alternative to this)*. 
-
-    For example:
-    ```xml
-    <neo4j.version>${env.NEO4JVERSION}</neo4j.version>
-    ```
-    becomes
-    ```xml
-    <neo4j.version>4.0.0-alpha05</neo4j.version>
-    ```
-3. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
-5. Under Run Configurations edit the Template JUnit configuration:
-   1. Select the "EnvFile" tab
-   2. Make sure "Enable EnvFile" is checked.
-   3. Click the `+` then click to add a `.env` file.
-   4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
-   5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
-
-
-### If building an image from your local Neo4j repository
-
-1. Clone the Neo4j github repository and checkout the branch you want. 
-2. Make sure `java --version` returns java 11 if you're building Neo4j 4.0+, or java 8 if building an earlier branch.
-1. Run `mvn install` plus whatever maven build flags you like. This should install the latest neo4j jars into the maven cache.
-1. Follow instructions for [running tests in Intellij](#in-intellij), 
-use the `NEO4JVERSION` that is in the pom file of your Neo4j repository clone.
-
-### cannot find symbol `com.sun.security.auth.module.UnixSystem`
-
-This can happen if you switch from java 8 to java 11 and then try to rebuild the tests in Intellij.
-
-Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 11 instead of 1.8.
-DO NOT commit this set to 11 (yes this is a terrible solution).
+Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 17.
 
