@@ -10,7 +10,7 @@
 	<packaging>jar</packaging>
 
 	<properties>
-        <neo4j.driver.version>4.4.16</neo4j.driver.version>
+        <neo4j.driver.version>4.4.11</neo4j.driver.version>
         <java.version>17</java.version>
         <testcontainers.version>1.17.5</testcontainers.version>
     </properties>
@@ -115,6 +115,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.22</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.11.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -78,7 +78,7 @@ $ NEO4JVERSION=5.5.0-SNAPSHOT make clean build
 
 # Running the Tests
 
-The tests are written in java, and require Maven plus jdk 17 for Neo4j version 5.0 onwards or jdk 11 for earlier Neo4j versions.
+The tests are written in java, and require Maven plus JDK 17 (any JDK distributions should work, we use OpenJDK).
 
 The tests require some information about the image before they can test it. 
 These can be passed as an environment variable or a command line parameter when invoking maven:
@@ -94,7 +94,7 @@ These can be passed as an environment variable or a command line parameter when 
 
 ## Using Maven
 The Makefile can run the entire test suite.
-1. Make sure `java --version` is java 17, 11 or 8 as necessary.
+1. Make sure `java --version` is java 17.
 2. `NEO4JVERSION=<VERSION> make test` This is a make target that will run these commands:
 ```bash
 mvn test -Dimage=$(cat tmp/.image-id-community) -Dedition=community -Dversion=${NEO4JVERSION}
@@ -103,18 +103,7 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
 
 ## In Intellij
 
-1. Make sure the project SDK is java 17, 11 or 8 as necessary.
-2. Edit the [pom.xml file](../master/pom.xml) to replace  `${env.NEO4JVERSION}` with the `NEO4JVERSION` you used to build the image.
-*(Yes this is terrible, and we need to think of an alternative to this)*. 
-
-    For example:
-    ```xml
-    <neo4j.version>${env.NEO4JVERSION}</neo4j.version>
-    ```
-    becomes
-    ```xml
-    <neo4j.version>4.0.0-alpha05</neo4j.version>
-    ```
+1. Make sure the project SDK is java 17.
 3. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
 5. Under Run Configurations edit the Template JUnit configuration:
    1. Select the "EnvFile" tab
@@ -122,6 +111,8 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
    3. Click the `+` then click to add a `.env` file.
    4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
    5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
+
+You should now be able to run unit tests straight from the IDE.
 
 
 ## Running with podman
@@ -145,6 +136,5 @@ TESTCONTAINERS_CHECKS_DISABLE=true
 
 This can happen if you switch from java 17 to java 11 (or the other way) and then try to rebuild the tests in Intellij.
 
-Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 17 or 11 instead of 1.8.
-DO NOT commit this set to 11 or 17 (yes this is a terrible solution).
+Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 17.
 
