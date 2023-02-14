@@ -7,7 +7,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-// https://repo1.maven.org/maven2/org/neo4j/driver/neo4j-java-driver/5.4.0/neo4j-java-driver-5.4.0.jar
+
 /*
 This class is a basic Neo4J plugin that defines a procedure which can be called via Cypher.
  */

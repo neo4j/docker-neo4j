@@ -8,4 +8,3 @@
  */
 
 rootProject.name = "myPlugin"
-//include("testplugins")
