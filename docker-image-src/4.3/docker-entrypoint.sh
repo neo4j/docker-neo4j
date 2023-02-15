@@ -181,7 +181,7 @@ function load_plugin_from_github
   if [ -d /plugins ]; then
     local _plugins_dir="/plugins"
   fi
-  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /startup/neo4jlabs-plugins.json )"
+  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /startup/neo4j-plugins.json )"
   # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
   local _destination="${_plugins_dir}/${_plugin_name}.jar"
   local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
@@ -213,7 +213,7 @@ function apply_plugin_default_configuration
 
   local _property _value
   echo "Applying default values for plugin ${_plugin_name} to neo4j.conf"
-  for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /startup/neo4jlabs-plugins.json); do
+  for _entry in $(jq  --compact-output --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.properties | to_entries[]" /startup/neo4j-plugins.json); do
     _property="$(jq --raw-output '.key' <<< "${_entry}")"
     _value="$(jq --raw-output '.value' <<< "${_entry}")"
 
@@ -237,7 +237,7 @@ function install_neo4j_labs_plugins
   local _old_config="$(mktemp)"
   cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
   for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
-    local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
+    local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4j-plugins.json )"
     if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
         load_plugin_from_location "${plugin_name}" "${_location}"
     else
