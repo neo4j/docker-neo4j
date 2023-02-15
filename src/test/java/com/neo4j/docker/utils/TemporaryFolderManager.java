@@ -22,8 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TemporaryFolderManager implements AfterAllCallback
@@ -32,7 +34,7 @@ public class TemporaryFolderManager implements AfterAllCallback
     // if we ever run parallel tests, random number generator and
     // list of folders to compress need to be made thread safe
     private Random rng = new Random(  );
-    private List<Path> toCompressAfterAll = new ArrayList<>();
+    private Set<Path> toCompressAfterAll = new HashSet<>();
     private final Path testOutputParentFolder;
 
     public TemporaryFolderManager( )
@@ -78,6 +80,7 @@ public class TemporaryFolderManager implements AfterAllCallback
             }
         }
         // delete original folders
+        log.debug( "Re owning folders: {}", toCompressAfterAll.stream().map( Path::toString ).collect( Collectors.joining(", ")));
         setFolderOwnerTo( SetContainerUser.getNonRootUserString(),
                           toCompressAfterAll.toArray(new Path[toCompressAfterAll.size()]) );
 
@@ -153,11 +156,11 @@ public class TemporaryFolderManager implements AfterAllCallback
     {
         // uses docker privileges to set file owner, since probably the current user is not a sudoer.
 
-        // Using an nginx because it's easy to verify that the image started.
+        // Using nginx because it's easy to verify that the image started.
         try(GenericContainer container = new GenericContainer( DockerImageName.parse( "nginx:latest")))
         {
             container.withExposedPorts( 80 )
-                     .waitingFor( Wait.forHttp( "/" ).withStartupTimeout( Duration.ofSeconds( 5 ) ) );
+                     .waitingFor( Wait.forHttp( "/" ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
             for(Path p : files)
             {
                 mountHostFolderAsVolume( container, p, p.toAbsolutePath().toString() );

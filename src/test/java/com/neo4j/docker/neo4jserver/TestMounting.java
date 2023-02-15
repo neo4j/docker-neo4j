@@ -89,7 +89,6 @@ public class TestMounting
 
 	private void verifyDataFolderContentsArePresentOnHost( Path dataMount, boolean shouldBeWritable )
 	{
-		//verifySingleFolder( dataMount.resolve( "dbms" ), shouldBeWritable );
 		verifySingleFolder( dataMount.resolve( "databases" ), shouldBeWritable );
 
 		if(TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400 ))
@@ -331,17 +330,17 @@ public class TestMounting
         Assumptions.assumeTrue(
                 TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 0, 0)),
                 "User checks not valid before 4.0");
-        Path logMount;
-        Path debugLog;
+
+        Path logMount = temporaryFolderManager.createTempFolder( "subfileownership-" );
+        Path debugLog = logMount.resolve("debug.log");
+        // put file in logMount
+        Files.write(debugLog, "some log words".getBytes());
+        // make neo4j own the conf folder but NOT the neo4j.conf
+        temporaryFolderManager.setFolderOwnerToNeo4j( logMount );
+        temporaryFolderManager.setFolderOwnerToCurrentUser( debugLog );
 
         try (GenericContainer container = setupBasicContainer(false, false)) {
-            logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(container, "subfileownership-", "/logs");
-            debugLog = logMount.resolve("debug.log");
-            // put file in logMount
-            Files.write(debugLog, "some log words".getBytes());
-            // make neo4j own the conf folder but NOT the neo4j.conf
-            temporaryFolderManager.setFolderOwnerToNeo4j( logMount );
-            temporaryFolderManager.setFolderOwnerToCurrentUser( debugLog );
+            temporaryFolderManager.mountHostFolderAsVolume( container, logMount, "/logs" );
             container.start();
             // if debug.log doesn't get re-owned, neo4j will not start and this test will fail here
         }
