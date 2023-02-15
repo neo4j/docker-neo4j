@@ -35,7 +35,7 @@ public class TestBackupRestore44
     @BeforeAll
     static void beforeAll()
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 )),
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440),
                                 "Neo4j admin image not available before 4.4.0");
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
                                 "These Neo4j admin tests are only for 4.4");

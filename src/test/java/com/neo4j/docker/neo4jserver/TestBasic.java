@@ -77,7 +77,7 @@ public class TestBasic
     @Test
     void testLicenseAcceptanceRequired_Neo4jAdmin()
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,0 ) ),
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
                                 "No Neo4j admin image before version 4.4.0");
         testLicenseAcceptanceRequired( TestSettings.ADMIN_IMAGE_ID );
     }

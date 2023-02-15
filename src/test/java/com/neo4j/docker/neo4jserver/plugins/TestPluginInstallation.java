@@ -15,8 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.shaded.com.google.common.io.Files;
 
 import java.io.File;
@@ -76,7 +78,7 @@ public class TestPluginInstallation
         return outputJsonFile;
     }
 
-    private void setupTestPlugin( Path pluginsDir, File versionsJson ) throws Exception
+    private void setupTestPlugin( File versionsJson ) throws Exception
     {
        File myPluginJar = new File(getClass().getClassLoader().getResource( "testplugin/"+PLUGIN_JAR ).toURI());
 
@@ -113,12 +115,11 @@ public class TestPluginInstallation
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
     public void testPlugin() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
-        setupTestPlugin( pluginsDir, versionsJson );
+        setupTestPlugin( versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             container.start();
@@ -128,14 +129,13 @@ public class TestPluginInstallation
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
     public void testPlugin_50BackwardsCompatibility() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                                "NEO4JLABS_PLUGIN backwards compatibility does not need checking");
+                                "NEO4JLABS_PLUGIN backwards compatibility does not need checking pre 5.x");
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-backcompat-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
-        setupTestPlugin( pluginsDir, versionsJson );
+        setupTestPlugin( versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             container.withEnv( Neo4jPluginEnv.PLUGIN_ENV_5X, "" );
@@ -147,12 +147,11 @@ public class TestPluginInstallation
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
     public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-noOverride-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
-        setupTestPlugin( pluginsDir, versionsJson );
+        setupTestPlugin( versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             // When we set a config value explicitly
@@ -172,11 +171,32 @@ public class TestPluginInstallation
     }
 
     @Test
+    void invalidPluginNameShouldGiveOptionsAndError()
+    {
+        Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
+        try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID ))
+        {
+            // if we try to set a plugin that doesn't exist
+            container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
+                     .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                     .withEnv( "NEO4J_DEBUG", "yes" )
+                     .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
+                                                        .withTimeout( Duration.ofSeconds( 10 ) ) )
+                     .withLogConsumer( new Slf4jLogConsumer( log ) );
+            Assertions.assertThrows( ContainerLaunchException.class, container::start );
+            // the container should output a helpful message and quit
+            String stdout = container.getLogs();
+            Assertions.assertTrue( stdout.contains("\"notarealplugin\" is not a known Neo4j plugin. Options are:") );
+            Assertions.assertFalse( stdout.contains( "_testing" ), "Fake _testing plugin is exposed." );
+        }
+    }
+
+    @Test
     void testSemanticVersioningPlugin_catchesMatchWithX() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesX-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x");
-        setupTestPlugin( pluginsDir, versionsJson );
+        setupTestPlugin( versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             container.start();
@@ -190,7 +210,7 @@ public class TestPluginInstallation
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesStar-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".*");
-        setupTestPlugin( pluginsDir, versionsJson );
+        setupTestPlugin( versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             container.start();
@@ -207,7 +227,7 @@ public class TestPluginInstallation
                                  "/docker-entrypoint.sh is permanently moved from 5.0 onwards");
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-oldEntrypoint-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x" );
-        setupTestPlugin( pluginsDir, versionsJson );
+        setupTestPlugin( versionsJson );
         try(GenericContainer container = createContainerWithTestingPlugin())
         {
             container.withCreateContainerCmdModifier(
