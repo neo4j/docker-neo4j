@@ -54,14 +54,29 @@ public class TestUpgrade
 	private static List<Neo4jVersion> upgradableNeo4jVersions()
 	{
 		return Arrays.asList( new Neo4jVersion( 5, 1, 0),
-                              new Neo4jVersion( 5, 2, 0));
+                              new Neo4jVersion( 5, 2, 0),
+                              new Neo4jVersion( 5, 3, 0),
+                              new Neo4jVersion( 5, 4, 0));
 	}
+
+    private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
+    {
+        assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( upgradeFrom ),
+                    "cannot upgrade from " + upgradeFrom + " to " + TestSettings.NEO4J_VERSION);
+        if(isArm()) assumeTrue( upgradeFrom.isAtLeastVersion( new Neo4jVersion( 4, 4, 0 ) ), "ARM only supported since 4.4" );
+    }
+
+    private static boolean isArm()
+    {
+        return System.getProperty( "os.arch" ).equals( "aarch64" );
+    }
 
 	@ParameterizedTest(name = "upgrade from {0}")
     @MethodSource( "upgradableNeo4jVersionsPre5" )
 	void canUpgradeNeo4j_fileMountsPre5( Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ), "this test only for upgrades before 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
+                    "this test only for upgrades before 5.0: " + TestSettings.NEO4J_VERSION );
 		testUpgradeFileMounts( upgradeFrom );
 	}
 
@@ -69,7 +84,8 @@ public class TestUpgrade
 	@MethodSource( "upgradableNeo4jVersionsPre5" )
 	void canUpgradeNeo4j_namedVolumesPre5(Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ), "this test only for upgrades before 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
+                    "this test only for upgrades before 5.0: " + TestSettings.NEO4J_VERSION );
 		testUpgradeNamedVolumes( upgradeFrom );
 	}
 
@@ -77,7 +93,8 @@ public class TestUpgrade
     @MethodSource( "upgradableNeo4jVersions" )
 	void canUpgradeNeo4j_fileMounts( Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ), "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
 		testUpgradeFileMounts( upgradeFrom );
 	}
 
@@ -85,7 +102,8 @@ public class TestUpgrade
 	@MethodSource( "upgradableNeo4jVersions" )
 	void canUpgradeNeo4j_namedVolumes(Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ), "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
 		testUpgradeNamedVolumes( upgradeFrom );
 	}
 
@@ -93,7 +111,7 @@ public class TestUpgrade
 	{
 		assumeUpgradeSupported( upgradeFrom );
 
-		Path tmpMountFolder = temporaryFolderManager.createTempFolder( "upgrade-" + upgradeFrom.major + upgradeFrom.minor + "-" );
+		Path tmpMountFolder = temporaryFolderManager.createTempFolder( "upgrade-" + upgradeFrom.toString() + "-" );
 		Path data, logs, imports, metrics;
 
 		try(GenericContainer container = makeContainer( getUpgradeFromImage( upgradeFrom ) ))
@@ -132,17 +150,6 @@ public class TestUpgrade
 			DatabaseIO db = new DatabaseIO( container );
 			db.verifyInitialDataInContainer( user, password );
 		}
-	}
-
-	private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
-	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( upgradeFrom ), "cannot upgrade from newer version " + upgradeFrom );
-		assumeTrue( !isArm() || upgradeFrom.isNewerThan( new Neo4jVersion( 4, 4, 0 ) ), "ARM only supported since 4.4" );
-	}
-
-	private static boolean isArm()
-	{
-		return System.getProperty( "os.arch" ).equals( "aarch64" );
 	}
 
 	private void testUpgradeNamedVolumes( Neo4jVersion upgradeFrom )
