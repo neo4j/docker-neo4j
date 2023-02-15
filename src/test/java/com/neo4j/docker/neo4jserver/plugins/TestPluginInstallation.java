@@ -147,6 +147,27 @@ public class TestPluginInstallation
     }
 
     @Test
+    public void testPlugin_44ForwardsCompatibility() throws Exception
+    {
+        Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,18 ) ),
+                                "NEO4JLABS_PLUGIN did not work in 4.4 before 4.4.18");
+        Assumptions.assumeTrue( NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
+                                "Only checking forwards compatibility in 4.4" );
+
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-forwardcompat-" );
+        File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
+        setupTestPlugin( versionsJson );
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.withEnv( Neo4jPluginEnv.PLUGIN_ENV_5X, "[\"_testing\"]" );
+            container.withEnv( Neo4jPluginEnv.PLUGIN_ENV_4X, "" );
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            verifyTestPluginLoaded(db);
+        }
+    }
+
+    @Test
     public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-noOverride-" );
@@ -179,7 +200,26 @@ public class TestPluginInstallation
             // if we try to set a plugin that doesn't exist
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                     .withEnv( "NEO4J_DEBUG", "yes" )
+                     .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
+                                                        .withTimeout( Duration.ofSeconds( 10 ) ) )
+                     .withLogConsumer( new Slf4jLogConsumer( log ) );
+            Assertions.assertThrows( ContainerLaunchException.class, container::start );
+            // the container should output a helpful message and quit
+            String stdout = container.getLogs();
+            Assertions.assertTrue( stdout.contains("\"notarealplugin\" is not a known Neo4j plugin. Options are:") );
+            Assertions.assertFalse( stdout.contains( "_testing" ), "Fake _testing plugin is exposed." );
+        }
+    }
+
+    @Test
+    void invalidPluginNameShouldGiveOptionsAndError_mulitpleplugins()
+    {
+        Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
+        try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID ))
+        {
+            // if we try to set a plugin that doesn't exist
+            container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )
+                     .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
                                                         .withTimeout( Duration.ofSeconds( 10 ) ) )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );

@@ -243,22 +243,39 @@ function apply_plugin_default_configuration
 
 function install_neo4j_labs_plugins
 {
-  # We store a copy of the config before we modify it for the plugins to allow us to see if there are user-set values in the input config that we shouldn't override
-  local _old_config="$(mktemp)"
-  cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
-  for plugin_name in $(echo "${NEO4JLABS_PLUGINS}" | jq --raw-output '.[]'); do
-    local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
-    if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
-        debug_msg "$plugin_name is already in the container at ${_location}"
-        load_plugin_from_location "${plugin_name}" "${_location}"
+    # first verify that the requested plugins are valid.
+    debug_msg "One or more NEO4J_PLUGINS have been requested."
+    local _known_plugins=($(jq --raw-output "keys[]" /startup/neo4jlabs-plugins.json))
+    debug_msg "Checking requested plugins are known and can be installed."
+    for plugin_name in $(echo "${NEO4J_PLUGINS}" | jq --raw-output '.[]'); do
+        if ! containsElement "${plugin_name}" "${_known_plugins[@]}"; then
+            printf >&2 "\"%s\" is not a known Neo4j plugin. Options are:\n%s" "${plugin_name}" "$(jq --raw-output "keys[1:][]" /startup/neo4jlabs-plugins.json)"
+            exit 1
+        fi
+    done
+
+    # We store a copy of the config before we modify it for the plugins to allow us to see if there are user-set values in the input config that we shouldn't override
+    local _old_config="$(mktemp)"
+    if [ -e "${NEO4J_HOME}"/conf/neo4j.conf ]; then
+        cp "${NEO4J_HOME}"/conf/neo4j.conf "${_old_config}"
     else
-        debug_msg "$plugin_name must be downloaded."
-        load_plugin_from_github "${plugin_name}"
+        touch "${NEO4J_HOME}"/conf/neo4j.conf
+        touch "${_old_config}"
     fi
-    debug_msg "Applying plugin specific configurations"
-    apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
-  done
-  rm "${_old_config}"
+    for plugin_name in $(echo "${NEO4J_PLUGINS}" | jq --raw-output '.[]'); do
+        debug_msg "Plugin ${plugin_name} has been requested"
+        local _location="$(jq --raw-output "with_entries( select(.key==\"${plugin_name}\") ) | to_entries[] | .value.location" /startup/neo4jlabs-plugins.json )"
+        if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
+            debug_msg "$plugin_name is already in the container at ${_location}"
+            load_plugin_from_location "${plugin_name}" "${_location}"
+        else
+            debug_msg "$plugin_name must be downloaded."
+            load_plugin_from_github "${plugin_name}"
+        fi
+        debug_msg "Applying plugin specific configurations."
+        apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
+    done
+    rm "${_old_config}"
 }
 
 function add_docker_default_to_conf
@@ -417,6 +434,12 @@ To do this you can use the following docker argument:
   fi
 fi
 
+# NEO4JLABS_PLUGINS is renamed to NEO4J_PLUGINS in 5.x, but we want the new name to work against 4.4 images too
+if [ -n "${NEO4JLABS_PLUGINS:-}" ];
+then
+    : ${NEO4J_PLUGINS:=${NEO4JLABS_PLUGINS:-}}
+fi
+
 # ==== RENAME LEGACY ENVIRONMENT CONF VARIABLES ====
 
 # Env variable naming convention:
@@ -474,7 +497,7 @@ if [ -d /ssl ]; then
 fi
 
 if [ -d /plugins ]; then
-    if [[ -n "${NEO4JLABS_PLUGINS:-}" ]]; then
+    if [[ -n "${NEO4J_PLUGINS:-}" ]]; then
         # We need write permissions to write the required plugins to /plugins
         debug_msg "Extra plugins were requested. Ensuring the mounted /plugins folder has the required write permissions."
         check_mounted_folder_writable_with_chown "/plugins"
@@ -568,8 +591,8 @@ done
 set_initial_password "${NEO4J_AUTH:-}"
 
 
-if [[ ! -z "${NEO4JLABS_PLUGINS:-}" ]]; then
-  # NEO4JLABS_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
+if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
+  # NEO4J_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
   install_neo4j_labs_plugins
 fi
 
