@@ -112,6 +112,7 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(
 > mkdir -p $(@D)/local-package
 > cp docker-image-src/common/* $(@D)/local-package
 > cp $(filter %.sh,$^) $(@D)/local-package
+> cp $(filter %.json,$^) $(@D)/local-package
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
 > <$(filter %/Dockerfile,$^) sed \
     -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \
