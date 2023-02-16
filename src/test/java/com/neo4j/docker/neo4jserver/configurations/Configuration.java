@@ -71,11 +71,11 @@ public class Configuration
 
     public static Path getConfigurationResourcesFolder( Neo4jVersion version )
     {
-        if(version.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ))
+        if(version.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ))
         {
-            return Paths.get( "src", "test", "resources", "confs", "before50");
+        return Paths.get("src", "test", "resources", "confs");
         }
-        else return Paths.get("src", "test", "resources", "confs");
+        else return Paths.get( "src", "test", "resources", "confs", "before50");
     }
     
     public String name;

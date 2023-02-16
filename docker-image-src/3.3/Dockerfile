@@ -32,7 +32,7 @@ RUN apt update \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
-    && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
+    && mv /tmp/neo4j-plugins.json /neo4j-plugins.json \
     && rm -rf /tmp/* \
     && rm -rf /var/lib/apt/lists/*
 

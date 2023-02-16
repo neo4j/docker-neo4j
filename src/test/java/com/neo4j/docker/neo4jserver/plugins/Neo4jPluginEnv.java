@@ -15,10 +15,10 @@ public class Neo4jPluginEnv
 
     public static String get( Neo4jVersion version )
     {
-        if( version.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ) )
+        if( version.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) )
         {
-            return PLUGIN_ENV_4X;
+            return PLUGIN_ENV_5X;
         }
-        else return PLUGIN_ENV_5X;
+        else return PLUGIN_ENV_4X;
     }
 }
