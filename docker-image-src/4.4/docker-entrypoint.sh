@@ -413,16 +413,18 @@ if [[ "${cmd}" == *"neo4j"* ]]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-(c) Neo4j Sweden AB. 2022.  All Rights Reserved.
-Use of this Software without a proper commercial license with Neo4j,
-Inc. or its affiliates is prohibited.
+The license agreement is available at https://neo4j.com/terms/licensing/
+If you have a support contract the following terms apply https://neo4j.com/terms/support-terms/
 
-Email inquiries can be directed to: licensing@neo4j.com
+(c) Neo4j Sweden AB. All Rights Reserved.
+Use of this Software without a proper commercial license
+with Neo4j,Inc. or its affiliates is prohibited.
+Neo4j has the right to terminate your usage if you are not compliant.
 
 More information is also available at: https://neo4j.com/licensing/
+If you have further inquiries about licensing, please contact us via https://neo4j.com/contact-us/
 
-
-To accept the license agreement set the environment variable
+To accept the commercial license agreement set the environment variable
 NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
 
 To do this you can use the following docker argument:
