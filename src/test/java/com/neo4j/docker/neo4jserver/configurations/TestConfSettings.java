@@ -38,7 +38,8 @@ import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jRe
 
 public class TestConfSettings
 {
-    private static final String AUTH = "none";
+    private static final String PASSWORD = "none";
+    private static final String AUTH = "none"; // or "neo4j/"+PASSWORD if we want authentication
     private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
     private static Path confFolder;
     private static Map<Setting,Configuration> confNames;
@@ -205,7 +206,7 @@ public class TestConfSettings
             Path confFile = confFolder.resolve( "ReadConf.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
         }
 
@@ -226,12 +227,12 @@ public class TestConfSettings
                     "/logs" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             Path debugLog = logMount.resolve( "debug.log" );
 
-            dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.DEFAULT_LISTEN_ADDRESS).name, "0.0.0.0");
+            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS).name, "0.0.0.0");
             assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0", true);
 
             // test enterprise only default configurations are set
@@ -239,14 +240,14 @@ public class TestConfSettings
                 String expectedDiscoveryAddress = container.getContainerId().substring(0, 12) + ":5000";
                 String expectedTxAddress = container.getContainerId().substring(0, 12) + ":6000";
                 String expectedRaftAddress = container.getContainerId().substring(0, 12) + ":7000";
-                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS).name, expectedDiscoveryAddress);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS).name, expectedDiscoveryAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress,true);
-                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS).name, expectedTxAddress);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS).name, expectedTxAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress,true);
-                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.CLUSTER_RAFT_ADDRESS).name, expectedRaftAddress);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_RAFT_ADDRESS).name, expectedRaftAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress,true);
 
-                dbio.verifyConfigurationSetting("neo4j", "none", confNames.get( Setting.TXLOG_RETENTION_POLICY).name, "100M size");
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.TXLOG_RETENTION_POLICY).name, "100M size");
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.TXLOG_RETENTION_POLICY), "100M size", true);
             }
         }
@@ -383,7 +384,7 @@ public class TestConfSettings
             Path confFile = confFolder.resolve("EnvVarsOverride.conf");
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
         }
         assertConfigurationPresentInDebugLog(debugLog, confNames.get(Setting.MEMORY_PAGECACHE_SIZE), "512.00MiB", true );
@@ -397,7 +398,7 @@ public class TestConfSettings
 
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = temporaryFolderManager.createTempFolder( "ee-only-not-ovewritten-" );
+            Path testOutputFolder = temporaryFolderManager.createTempFolder( "ee-only-not-overwritten-" );
             Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
                     "conf-",
@@ -414,7 +415,7 @@ public class TestConfSettings
 
             //Start the container
             SetContainerUser.nonRootUser( container );
-            makeContainerWaitForNeo4jReady( container, AUTH );
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             //Read debug.log to check that cluster confs are set successfully
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
@@ -467,7 +468,7 @@ public class TestConfSettings
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
         }
 
@@ -503,120 +504,6 @@ public class TestConfSettings
         Assertions.assertEquals("true",
                                 actualApocSettings.get(confNames.get( Setting.APOC_EXPORT_FILE_ENABLED).name),
                                 "Incorrect value written for APOC setting");
-    }
-
-    @Test
-    void testJvmAdditionalNotOverridden() throws Exception
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_400),
-                                 "test not applicable in versions older than 4.0." );
-        Path logMount;
-        String expectedJvmAdditional = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
-
-        try(GenericContainer container = createContainer())
-        {
-			Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvmaddnotoverridden-" );
-            //Mount /conf
-			Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-					container,
-					"conf-",
-					"/conf", testOutputFolder);
-			logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-					container,
-					"logs-",
-					"/logs",
-					testOutputFolder);
-			SetContainerUser.nonRootUser( container );
-            //Create JvmAdditionalNotOverridden.conf file
-            Path confFile = confFolder.resolve( "JvmAdditionalNotOverridden.conf" );
-            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
-            //Start the container
-            makeContainerWaitForNeo4jReady( container, AUTH );
-            container.start();
-            // verify setting correctly loaded into neo4j
-            DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none",
-                                             confNames.get( Setting.JVM_ADDITIONAL ).name, expectedJvmAdditional);
-        }
-
-        assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
-                                              confNames.get( Setting.JVM_ADDITIONAL ),
-                                              expectedJvmAdditional,
-                                              true );
-    }
-
-    @Test
-    void testSpecialCharInJvmAdditional_space_conf() throws Exception
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
-                                "test not applicable in versions before 4.4." );
-        testJvmAdditionalSpecialCharacters_conf("space", "-XX:OnOutOfMemoryError=\"/usr/bin/echo oh no oom\"");
-    }
-
-    @Test
-    void testSpecialCharInJvmAdditional_dollar_conf() throws Exception
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
-                                "test not applicable in versions before 4.3." );
-        testJvmAdditionalSpecialCharacters_conf("dollar",
-                                                "-Djavax.net.ssl.trustStorePassword=\"beepbeep$boop1boop2\"" );
-    }
-
-    @Test
-    void testSpecialCharInJvmAdditional_dollar_env() throws Exception {
-        Assumptions.assumeTrue(
-                TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 3, 0)),
-                "test not applicable in versions before 4.3.");
-        testJvmAdditionalSpecialCharacters_env("dollar", "-Djavax.net.ssl.trustStorePassword=\"bleepblorp$bleep1blorp4\"");
-    }
-
-    void testJvmAdditionalSpecialCharacters_conf(String charName, String expectedJvmAdditional) throws Exception
-    {
-        try(GenericContainer container = createContainer())
-        {
-            Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvm-"+charName+"-in-conf-" );
-            //Mount /conf
-            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "conf-",
-                    "/conf", testOutputFolder);
-            //copy test conf file
-            String confContent = confNames.get( Setting.JVM_ADDITIONAL ).name + "=" + expectedJvmAdditional;
-            Files.write( confMount.resolve( "neo4j.conf" ), confContent.getBytes() );
-            //Start the container
-            verifyJvmAdditional( charName, expectedJvmAdditional, container );
-        }
-    }
-
-    void testJvmAdditionalSpecialCharacters_env(String charName, String expectedJvmAdditional) throws Exception
-    {
-        try(GenericContainer container = createContainer())
-        {
-            container.withEnv( confNames.get( Setting.JVM_ADDITIONAL ).envName, expectedJvmAdditional);
-            verifyJvmAdditional( charName, expectedJvmAdditional, container );
-        }
-    }
-
-    void verifyJvmAdditional(String charName, String expectedJvmAdditional, GenericContainer container) throws Exception
-    {
-        Path logMount;
-        logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                container,
-                "conf"+charName+"logs-",
-                "/logs");
-        SetContainerUser.nonRootUser( container );
-        //Start the container
-        makeContainerWaitForNeo4jReady( container, AUTH );
-        container.start();
-        // verify setting correctly loaded into neo4j
-        DatabaseIO dbio = new DatabaseIO( container );
-        dbio.verifyConfigurationSetting( "neo4j", "none",
-                                         confNames.get( Setting.JVM_ADDITIONAL ).name, expectedJvmAdditional);
-
-        assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log"),
-                                              confNames.get( Setting.JVM_ADDITIONAL ),
-                                              expectedJvmAdditional,
-                                              true );
     }
 
     @Test

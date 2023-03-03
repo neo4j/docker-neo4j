@@ -53,7 +53,7 @@ NEO4JVERSION=4.3.7 make clean build
 The make script cannot automatically download unreleased source files, so you need to manually download them before building the images.
 
 1. Assuming you cloned this repository to `$NEO4J_DOCKER_ROOT`, 
-download the community and enterprise unix tar.gz files and copy them to `$NEO4J_DOCKER_ROOT/in`.
+download the community and enterprise unix tar.gz files from the `packaging` build in our pipeline, and copy them to `$NEO4J_DOCKER_ROOT/in`.
 1. Run the make script setting `NEO4JVERSION` to the version number in the files downloaded into the `in/` folder.
 
 For example: 
@@ -67,6 +67,8 @@ $ NEO4JVERSION=4.0.0-alpha05 make clean build
 ``` 
 
 ### If building an image from your local Neo4j repository
+
+This isn't recommended since you will need to package your Neo4j tar with the browser so that neo4j will be responsive on 7474 and 7687.
 
 1. Clone the Neo4j github repository and checkout the branch you want.
 3. Run `mvn install` plus whatever maven build flags you like. This should install the latest neo4j jars into the maven cache.

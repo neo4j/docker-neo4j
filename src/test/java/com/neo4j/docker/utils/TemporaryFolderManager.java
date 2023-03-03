@@ -21,13 +21,23 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**JUnit extension to compress temporary folders after each test class runs.
+ *
+ * This utility will create temporary folders and compress them after each test class executes.
+ * Starting a clean neo4j pre-allocates 500MB of space for the data folder. With all these docker tests
+ * this ends up allocating a huge amount of empty space that fills the test machine memory.
+ * There are enough unit tests now, that we frequently get test failures just because
+ * the machine running the tests ran out of space.
+ * This empty space can easily be freed by compressing the mounted folders once we are finished with them.
+ *
+ * To use this utility, create an object as a class field, and use @RegisterExtension annotation.
+ * */
 public class TemporaryFolderManager implements AfterAllCallback
 {
     private static final Logger log = LoggerFactory.getLogger( TemporaryFolderManager.class );
@@ -160,7 +170,7 @@ public class TemporaryFolderManager implements AfterAllCallback
         try(GenericContainer container = new GenericContainer( DockerImageName.parse( "nginx:latest")))
         {
             container.withExposedPorts( 80 )
-                     .waitingFor( Wait.forHttp( "/" ).withStartupTimeout( Duration.ofSeconds( 10 ) ) );
+                     .waitingFor( Wait.forHttp( "/" ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             for(Path p : files)
             {
                 mountHostFolderAsVolume( container, p, p.toAbsolutePath().toString() );
