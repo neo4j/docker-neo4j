@@ -297,6 +297,7 @@ function add_env_setting_to_conf
     local _setting=${1}
     local _value=${2}
     local _conf_file
+    local _append_not_replace_configs=("server.jvm.additional")
 
     # different settings need to go in different files now.
     case "$(echo ${_setting} | cut -d . -f 1)" in
@@ -309,9 +310,13 @@ function add_env_setting_to_conf
     esac
 
     if [ -e "${_conf_file}" ] && grep -q -F "${_setting}=" "${_conf_file}"; then
-        # Remove any lines containing the setting already
-        debug_msg "Removing existing setting for ${_setting} in ${_conf_file}"
-        sed --in-place "/^${_setting}=.*/d" "${_conf_file}"
+        if containsElement "${_setting}" "${_append_not_replace_configs[@]}"; then
+            debug_msg "${_setting} will be appended to ${_conf_file} without replacing existing settings."
+        else
+            # Remove any lines containing the setting already
+            debug_msg "Removing existing setting for ${_setting} in ${_conf_file}"
+            sed --in-place "/^${_setting}=.*/d" "${_conf_file}"
+        fi
     fi
     # Then always append setting to file
     debug_msg "Appended ${_setting}=${_value} to ${_conf_file}"
@@ -532,7 +537,7 @@ fi
 
 # ==== LOAD PLUGINS ====
 
-if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
+if [[ -n "${NEO4J_PLUGINS:-}" ]]; then
   # NEO4J_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
   install_neo4j_plugins
 fi

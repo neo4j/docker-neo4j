@@ -79,6 +79,16 @@ public class DatabaseIO
         }
 	}
 
+    public String getConfigurationSettingAsString(String user, String password, String confName)
+    {
+        List<Record> confRecord = runCypherQuery( user, password,
+                                                  "CALL dbms.listConfig() YIELD name, value " +
+                                                  "WHERE name='" + confName + "' " +
+                                                  "RETURN value" );
+        Assertions.assertEquals(1, confRecord.size(), "Configuration "+confName+" was not set." );
+        return confRecord.get( 0 ).get( 0 ).asString();
+    }
+
     public void verifyConfigurationSetting(String user, String password, String confName, String expectedValue)
     {
         verifyConfigurationSetting(user, password, confName, expectedValue, "");
@@ -86,14 +96,10 @@ public class DatabaseIO
 
     public void verifyConfigurationSetting(String user, String password, String confName, String expectedValue, String extraFailureMsg)
     {
-            List<Record> confRecord = runCypherQuery( user, password,
-                                                      "CALL dbms.listConfig() YIELD name, value " +
-                                                      "WHERE name='" + confName + "' " +
-                                                      "RETURN value" );
-            Assertions.assertEquals(1, confRecord.size(), "Configuration "+confName+" was not set." );
-            Assertions.assertEquals(expectedValue, confRecord.get( 0 ).get( 0 ).asString(),
-                                    String.format("Expected %s to be %s but it was %s.%s",
-                                                  confName, expectedValue, confRecord.get( 0 ).get( 0 ).asString(), extraFailureMsg));
+        String actualConf = getConfigurationSettingAsString( user, password, confName );
+        Assertions.assertEquals(expectedValue, actualConf,
+                                String.format("Expected %s to be %s but it was %s.%s",
+                                              confName, expectedValue, actualConf, extraFailureMsg));
     }
 
 	public void changePassword(String user, String oldPassword, String newPassword)

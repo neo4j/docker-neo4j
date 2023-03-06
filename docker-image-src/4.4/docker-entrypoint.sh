@@ -296,11 +296,16 @@ function add_env_setting_to_conf
     # settings from environment variables should overwrite values already in the conf
     local _setting=${1}
     local _value=${2}
+    local _append_not_replace_configs=("dbms.jvm.additional")
 
     if grep -q -F "${_setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
-        # Remove any lines containing the setting already
-        debug_msg "Removing existing setting for ${_setting}"
-        sed --in-place "/^${_setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
+        if containsElement "${_setting}" "${_append_not_replace_configs[@]}"; then
+            debug_msg "${_setting} will be appended to neo4j.conf without replacing existing settings."
+        else
+            # Remove any lines containing the setting already
+            debug_msg "Removing existing setting for ${_setting}"
+            sed --in-place "/^${_setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
+        fi
     fi
     # Then always append setting to file
     debug_msg "Appended ${_setting}=${_value} to ${NEO4J_HOME}/conf/neo4j.conf"
