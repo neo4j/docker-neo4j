@@ -36,6 +36,8 @@ public class TestJVMAdditionalConfig
     static void getVersionSpecificConfigurationSettings()
     {
         confFolder = Configuration.getConfigurationResourcesFolder( TestSettings.NEO4J_VERSION );
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
+                                "JVM Additional tests not applicable before 4.4.0");
     }
 
     private GenericContainer createContainer()
@@ -98,39 +100,29 @@ public class TestJVMAdditionalConfig
             container.withEnv( JVM_ADDITIONAL_CONFIG.envName, expectedJvmAdditional );
             verifyJvmAdditional( container, expectedJvmAdditional, DEFAULT_JVM_CONF );
         }
-
     }
 
     @Test
     void testSpecialCharInJvmAdditional_space_conf() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
-                                "test not applicable in versions before 4.4." );
         testJvmAdditionalSpecialCharacters_conf("space", "-XX:OnOutOfMemoryError=\"/usr/bin/echo oh no oom\"");
     }
 
     @Test
     void testSpecialCharInJvmAdditional_space_env() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
-                                "test not applicable in versions before 4.4." );
         testJvmAdditionalSpecialCharacters_env( "-XX:OnOutOfMemoryError=\"/usr/bin/echo oh no oom\"");
     }
 
     @Test
     void testSpecialCharInJvmAdditional_dollar_conf() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,3,0 ) ),
-                                "test not applicable in versions before 4.3." );
         testJvmAdditionalSpecialCharacters_conf("dollar",
                                                 "-Djavax.net.ssl.trustStorePassword=\"beepbeep$boop1boop2\"" );
     }
 
     @Test
     void testSpecialCharInJvmAdditional_dollar_env() throws Exception {
-        Assumptions.assumeTrue(
-                TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 3, 0)),
-                "test not applicable in versions before 4.3.");
         testJvmAdditionalSpecialCharacters_env( "-Djavax.net.ssl.trustStorePassword=\"bleepblorp$bleep1blorp4\"");
     }
 
