@@ -176,37 +176,41 @@ function load_plugin_from_location
   fi
 }
 
-function load_plugin_from_github
+function load_plugin_from_url
 {
-  # Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
-  # correct format.
-  local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
+    # Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
+    # correct format.
+    local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
 
-  local _plugins_dir="${NEO4J_HOME}/plugins"
-  if [ -d /plugins ]; then
-    local _plugins_dir="/plugins"
-  fi
-  local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /startup/neo4j-plugins.json )"
-  debug_msg "Will read ${_plugin_name} versions.json from ${_versions_json_url}"
-  # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
-  local _destination="${_plugins_dir}/${_plugin_name}.jar"
-  local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
+    local _plugins_dir="${NEO4J_HOME}/plugins"
+    if [ -d /plugins ]; then
+        local _plugins_dir="/plugins"
+    fi
+    local _versions_json_url="$(jq --raw-output "with_entries( select(.key==\"${_plugin_name}\") ) | to_entries[] | .value.versions" /startup/neo4j-plugins.json )"
+    debug_msg "Will read ${_plugin_name} versions.json from ${_versions_json_url}"
+    # Using the same name for the plugin irrespective of version ensures we don't end up with different versions of the same plugin
+    local _destination="${_plugins_dir}/${_plugin_name}.jar"
+    local _neo4j_version="$(neo4j --version | cut -d' ' -f2)"
 
-  # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
-  echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
-  local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
-  local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
-  if [[ -z "${_plugin_jar_url}" ]]; then
-    echo >&2 "Error: No jar URL found for version '${_neo4j_version}' in versions.json from '${_versions_json_url}'"
-    exit 1
-  fi
-  echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
-  wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
+    # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
+    echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
+    local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
+    local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
+    if [[ -z "${_plugin_jar_url}" ]] || [[ "${_plugin_jar_url}" == "null" ]]; then
+        debug_msg "ERROR: '${_versions_json_url}' does not contain an entry for ${_neo4j_version}"
+        echo >&2 "ERROR: No compatible \"${_plugin_name}\" plugin found for Neo4j ${_neo4j_version}."
+        echo >&2 "This can happen with the newest Neo4j versions when a compatible plugin has not yet been released."
+        echo >&2 "You can either use an older version of Neo4j, or continue without ${_plugin_name}."
+        echo >&2 "Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."
+    else
+        echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
+        wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
 
-  if ! is_readable "${_destination}"; then
-    echo >&2 "Plugin at '${_destination}' is not readable"
-    exit 1
-  fi
+        if ! is_readable "${_destination}"; then
+            echo >&2 "Plugin at '${_destination}' is not readable"
+        exit 1
+        fi
+    fi
 }
 
 function apply_plugin_default_configuration
@@ -270,7 +274,7 @@ function install_neo4j_plugins
             load_plugin_from_location "${plugin_name}" "${_location}"
         else
             debug_msg "$plugin_name must be downloaded."
-            load_plugin_from_github "${plugin_name}"
+            load_plugin_from_url "${plugin_name}"
         fi
         debug_msg "Applying plugin specific configurations."
         apply_plugin_default_configuration "${plugin_name}" "${_old_config}"

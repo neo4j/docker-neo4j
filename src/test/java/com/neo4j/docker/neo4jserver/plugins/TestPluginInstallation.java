@@ -8,7 +8,6 @@ import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.slf4j.Logger;
@@ -17,6 +16,7 @@ import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.shaded.com.google.common.io.Files;
@@ -25,8 +25,10 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -65,13 +67,25 @@ public class TestPluginInstallation
         return container;
     }
 
-    private File createTestVersionsJson(Path destinationFolder, String... versions) throws Exception
+    private File createTestVersionsJson(Path destinationFolder, String version) throws Exception
     {
-        List<VersionsJsonEntry> entryList = Arrays.stream( versions )
-                                                  .map( VersionsJsonEntry::new )
-                                                  .collect( Collectors.toList() );
+        List<VersionsJsonEntry> jsonEntry = Collections.singletonList( new VersionsJsonEntry(version) );
         Gson jsonBuilder = new Gson();
-        String jsonStr = jsonBuilder.toJson( entryList );
+        String jsonStr = jsonBuilder.toJson( jsonEntry );
+
+        File outputJsonFile = destinationFolder.resolve( "versions.json" ).toFile();
+        Files.write( jsonStr, outputJsonFile, StandardCharsets.UTF_8 );
+        return outputJsonFile;
+    }
+
+    private File createTestVersionsJson(Path destinationFolder, Map<String, String> versionAndJar) throws Exception
+    {
+        List<VersionsJsonEntry> jsonEntries = versionAndJar.keySet()
+                                                           .stream()
+                                                           .map( key -> new VersionsJsonEntry( key, versionAndJar.get( key ) ) )
+                                                           .collect( Collectors.toList());
+        Gson jsonBuilder = new Gson();
+        String jsonStr = jsonBuilder.toJson( jsonEntries );
 
         File outputJsonFile = destinationFolder.resolve( "versions.json" ).toFile();
         Files.write( jsonStr, outputJsonFile, StandardCharsets.UTF_8 );
@@ -115,7 +129,7 @@ public class TestPluginInstallation
     }
 
     @Test
-    public void testPlugin() throws Exception
+    public void testPluginLoads() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
@@ -129,10 +143,11 @@ public class TestPluginInstallation
     }
 
     @Test
-    public void testPlugin_50BackwardsCompatibility() throws Exception
+    public void test_NEO4JLABS_PLUGIN_envWorksIn5() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
                                 "NEO4JLABS_PLUGIN backwards compatibility does not need checking pre 5.x");
+
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-backcompat-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( versionsJson );
@@ -147,7 +162,7 @@ public class TestPluginInstallation
     }
 
     @Test
-    public void testPlugin_44ForwardsCompatibility() throws Exception
+    public void test_NEO4J_PLUGIN_envWorksIn44() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4,4,18 ) ),
                                 "NEO4JLABS_PLUGIN did not work in 4.4 before 4.4.18");
@@ -232,6 +247,30 @@ public class TestPluginInstallation
     }
 
     @Test
+    public void testBrokenVersionsJsonCausesHelpfulError() throws Exception
+    {
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-broken-versionsjson-" );
+        // create a versions.json that DOES NOT contain the current neo4j version in its mapping
+        File versionsJson = createTestVersionsJson( pluginsDir, "50.0.0");
+        setupTestPlugin( versionsJson );
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.start();
+            String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR);
+            Assertions.assertTrue( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j "+NEO4J_VERSION ),
+                                   "Did not error about plugin compatibility.");
+            DatabaseIO db = new DatabaseIO(container);
+            // make sure plugin did not load
+            List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
+                                                         "SHOW PROCEDURES YIELD name, signature RETURN name, signature" );
+            Assertions.assertFalse( procedures.stream()
+                                              .anyMatch(x -> x.get( "name" ).asString()
+                                                             .equals( "com.neo4j.docker.test.myplugin.defaultValues" ) ),
+                                   "Incompatible test plugin was loaded." );
+        }
+    }
+
+    @Test
     void testSemanticVersioningPlugin_catchesMatchWithX() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesX-" );
@@ -260,10 +299,29 @@ public class TestPluginInstallation
     }
 
     @Test
-    @DisabledIfEnvironmentVariable(named = "NEO4J_DOCKER_TESTS_TestPluginInstallation", matches = "ignore")
+    void testSemanticVersioningPlugin_prefersExactMatch() throws Exception
+    {
+        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverPrefersExact-" );
+        File versionsJson = createTestVersionsJson( pluginsDir, new HashMap<String,String>()
+        {{
+            put( NEO4J_VERSION.toString(), PLUGIN_JAR );
+            put( NEO4J_VERSION.getBranch() + ".x", "notareal.jar" );
+            put( NEO4J_VERSION.major+ ".x.x", "notareal.jar" );
+        }});
+        setupTestPlugin( versionsJson );
+        try(GenericContainer container = createContainerWithTestingPlugin())
+        {
+            container.start();
+            DatabaseIO db = new DatabaseIO(container);
+            // if semver did not pick exact version match then it will load a non-existent plugin instead and fail.
+            verifyTestPluginLoaded(db);
+        }
+    }
+
+    @Test
     public void testPlugin_originalEntrypointLocation() throws Exception
     {
-        Assumptions.assumeFalse( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+        Assumptions.assumeTrue( NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
                                  "/docker-entrypoint.sh is permanently moved from 5.0 onwards");
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-oldEntrypoint-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch()+".x" );
@@ -277,7 +335,6 @@ public class TestPluginInstallation
             verifyTestPluginLoaded(db);
         }
     }
-
 
 
     @Test
@@ -362,6 +419,13 @@ public class TestPluginInstallation
             this.neo4j = neo4j;
             this._testing = "SNAPSHOT";
             this.jar = "http://host.testcontainers.internal:3000/"+PLUGIN_JAR;
+        }
+
+        VersionsJsonEntry(String neo4j, String jar)
+        {
+            this.neo4j = neo4j;
+            this._testing = "SNAPSHOT";
+            this.jar = "http://host.testcontainers.internal:3000/"+jar;
         }
     }
 }
