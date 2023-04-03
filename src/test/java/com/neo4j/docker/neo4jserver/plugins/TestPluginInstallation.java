@@ -249,6 +249,7 @@ public class TestPluginInstallation
     @Test
     public void testBrokenVersionsJsonCausesHelpfulError() throws Exception
     {
+        Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-broken-versionsjson-" );
         // create a versions.json that DOES NOT contain the current neo4j version in its mapping
         File versionsJson = createTestVersionsJson( pluginsDir, "50.0.0");
