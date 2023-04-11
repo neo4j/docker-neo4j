@@ -247,8 +247,8 @@ public class TestConfSettings
                 dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_RAFT_ADDRESS).name, expectedRaftAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress,true);
 
-                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.TXLOG_RETENTION_POLICY).name, "100M size");
-                assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.TXLOG_RETENTION_POLICY), "100M size", true);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.TXLOG_RETENTION_POLICY).name, "2 days");
+                assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.TXLOG_RETENTION_POLICY), "2 days", true);
             }
         }
     }
