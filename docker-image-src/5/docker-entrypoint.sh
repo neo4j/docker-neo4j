@@ -574,7 +574,6 @@ fi
 ## these should not override *any* configurations set by the user
 
 debug_msg "Setting docker specific configuration overrides"
-add_docker_default_to_conf "db.tx_log.rotation.retention_policy" "100M size"
 add_docker_default_to_conf "server.memory.pagecache.size" "512M"
 add_docker_default_to_conf "server.default_listen_address" "0.0.0.0"
 # set enterprise only docker defaults
