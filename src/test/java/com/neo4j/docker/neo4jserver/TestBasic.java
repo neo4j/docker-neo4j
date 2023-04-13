@@ -213,12 +213,14 @@ public class TestBasic
     @Test
     void testStartsWithHealthyStatus()
     {
-        var container = createBasicContainer()
-                .withStartupTimeout( Duration.ofMinutes( 1 ) );
+        try ( var container = createBasicContainer()
+                .withStartupTimeout( Duration.ofMinutes( 1 ) ); )
+        {
 
-        container.setWaitStrategy( Wait.forHealthcheck() );
+            container.setWaitStrategy( Wait.forHealthcheck() );
 
-        container.start();
-        Assertions.assertTrue( container.isRunning() );
+            container.start();
+            Assertions.assertTrue( container.isRunning() );
+        }
     }
 }
