@@ -10,45 +10,50 @@ import java.util.Map;
 
 public class Configuration
 {
-    private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<Setting,Configuration>( Setting.class ) {{
-        put( Setting.APOC_EXPORT_FILE_ENABLED, new Configuration( "apoc.export.file.enabled"));
-        put( Setting.BACKUP_ENABLED, new Configuration("server.backup.enabled"));
-        put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("server.backup.listen_address"));
-        put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("server.discovery.advertised_address"));
-        put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("server.cluster.raft.advertised_address"));
-        put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("server.cluster.advertised_address"));
-        put( Setting.DEFAULT_LISTEN_ADDRESS, new Configuration("server.default_listen_address"));
-        put( Setting.DIRECTORIES_DATA, new Configuration("server.directories.data"));
-        put( Setting.DIRECTORIES_LOGS, new Configuration("server.directories.logs"));
-        put( Setting.DIRECTORIES_METRICS, new Configuration("server.directories.metrics"));
-        put( Setting.JVM_ADDITIONAL, new Configuration("server.jvm.additional"));
-        put( Setting.LOGS_GC_ROTATION_KEEPNUMBER, new Configuration( "server.logs.gc.rotation.keep_number"));
-        put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration("server.memory.heap.initial_size"));
-        put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration( "server.memory.heap.max_size"));
-        put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("server.memory.pagecache.size"));
-        put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
-        put( Setting.TXLOG_RETENTION_POLICY, new Configuration("db.tx_log.rotation.retention_policy"));
+    private static Map<Setting,Configuration> CONFIGURATIONS_5X = new EnumMap<Setting,Configuration>( Setting.class )
+    {{
+        put( Setting.APOC_EXPORT_FILE_ENABLED, new Configuration( "apoc.export.file.enabled" ) );
+        put( Setting.BACKUP_ENABLED, new Configuration( "server.backup.enabled" ) );
+        put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration( "server.backup.listen_address" ) );
+        put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration( "server.discovery.advertised_address" ) );
+        put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration( "server.cluster.raft.advertised_address" ) );
+        put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration( "server.cluster.advertised_address" ) );
+        put( Setting.DEFAULT_LISTEN_ADDRESS, new Configuration( "server.default_listen_address" ) );
+        put( Setting.DIRECTORIES_DATA, new Configuration( "server.directories.data" ) );
+        put( Setting.DIRECTORIES_LOGS, new Configuration( "server.directories.logs" ) );
+        put( Setting.DIRECTORIES_METRICS, new Configuration( "server.directories.metrics" ) );
+        put( Setting.JVM_ADDITIONAL, new Configuration( "server.jvm.additional" ) );
+        put( Setting.LOGS_GC_ROTATION_KEEPNUMBER, new Configuration( "server.logs.gc.rotation.keep_number" ) );
+        put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration( "server.memory.heap.initial_size" ) );
+        put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration( "server.memory.heap.max_size" ) );
+        put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration( "server.memory.pagecache.size" ) );
+        put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration( "dbms.security.procedures.unrestricted" ) );
+        put( Setting.TXLOG_RETENTION_POLICY, new Configuration( "db.tx_log.rotation.retention_policy" ) );
+        put( Setting.NEO4J_HTTP_LISTENING_ADDRESS, new Configuration( "server.http.advertised_address" ) );
     }};
 
-    private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class ) {{
-        put( Setting.APOC_EXPORT_FILE_ENABLED, new Configuration( "apoc.export.file.enabled"));
-        put( Setting.BACKUP_ENABLED, new Configuration("dbms.backup.enabled"));
-        put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("dbms.backup.listen_address"));
-        put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("causal_clustering.discovery_advertised_address"));
-        put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("causal_clustering.raft_advertised_address"));
-        put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("causal_clustering.transaction_advertised_address"));
-        put( Setting.DEFAULT_LISTEN_ADDRESS, new Configuration("dbms.default_listen_address"));
-        put( Setting.DIRECTORIES_DATA, new Configuration("dbms.directories.data"));
-        put( Setting.DIRECTORIES_LOGS, new Configuration("dbms.directories.logs"));
-        put( Setting.DIRECTORIES_METRICS, new Configuration("dbms.directories.metrics"));
-        put( Setting.JVM_ADDITIONAL, new Configuration("dbms.jvm.additional"));
-        put( Setting.LOGS_GC_ROTATION_KEEPNUMBER, new Configuration( "dbms.logs.gc.rotation.keep_number"));
-        put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration("dbms.memory.heap.initial_size"));
-        put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration("dbms.memory.heap.max_size"));
-        put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("dbms.memory.pagecache.size"));
-        put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
-        put( Setting.TXLOG_RETENTION_POLICY, new Configuration("dbms.tx_log.rotation.retention_policy"));
+    private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class )
+    {{
+        put( Setting.APOC_EXPORT_FILE_ENABLED, new Configuration( "apoc.export.file.enabled" ) );
+        put( Setting.BACKUP_ENABLED, new Configuration( "dbms.backup.enabled" ) );
+        put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration( "dbms.backup.listen_address" ) );
+        put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration( "causal_clustering.discovery_advertised_address" ) );
+        put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration( "causal_clustering.raft_advertised_address" ) );
+        put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration( "causal_clustering.transaction_advertised_address" ) );
+        put( Setting.DEFAULT_LISTEN_ADDRESS, new Configuration( "dbms.default_listen_address" ) );
+        put( Setting.DIRECTORIES_DATA, new Configuration( "dbms.directories.data" ) );
+        put( Setting.DIRECTORIES_LOGS, new Configuration( "dbms.directories.logs" ) );
+        put( Setting.DIRECTORIES_METRICS, new Configuration( "dbms.directories.metrics" ) );
+        put( Setting.JVM_ADDITIONAL, new Configuration( "dbms.jvm.additional" ) );
+        put( Setting.LOGS_GC_ROTATION_KEEPNUMBER, new Configuration( "dbms.logs.gc.rotation.keep_number" ) );
+        put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration( "dbms.memory.heap.initial_size" ) );
+        put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration( "dbms.memory.heap.max_size" ) );
+        put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration( "dbms.memory.pagecache.size" ) );
+        put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration( "dbms.security.procedures.unrestricted" ) );
+        put( Setting.TXLOG_RETENTION_POLICY, new Configuration( "dbms.tx_log.rotation.retention_policy" ) );
+        put( Setting.NEO4J_HTTP_LISTENING_ADDRESS, new Configuration( "dbms.connector.http.listen_address" ) );
     }};
+
     public static Map<Setting,Configuration> getConfigurationNameMap()
     {
         return getConfigurationNameMap( TestSettings.NEO4J_VERSION );
@@ -71,13 +76,16 @@ public class Configuration
 
     public static Path getConfigurationResourcesFolder( Neo4jVersion version )
     {
-        if(version.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ))
+        if ( version.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) )
         {
-        return Paths.get("src", "test", "resources", "confs");
+            return Paths.get( "src", "test", "resources", "confs" );
         }
-        else return Paths.get( "src", "test", "resources", "confs", "before50");
+        else
+        {
+            return Paths.get( "src", "test", "resources", "confs", "before50" );
+        }
     }
-    
+
     public String name;
     public String envName;
 
@@ -85,7 +93,7 @@ public class Configuration
     {
         this.name = name;
         this.envName = "NEO4J_" + name.replace( '_', '-' )
-                                      .replace( '.', '_')
+                                      .replace( '.', '_' )
                                       .replace( "-", "__" );
     }
 }

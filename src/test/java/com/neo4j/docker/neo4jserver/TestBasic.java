@@ -1,6 +1,8 @@
 package com.neo4j.docker.neo4jserver;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.neo4j.docker.neo4jserver.configurations.Configuration;
+import com.neo4j.docker.neo4jserver.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.StartupDetector;
@@ -13,6 +15,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -21,7 +24,11 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.function.Consumer;
+
+import static java.lang.String.format;
 
 public class TestBasic
 {
@@ -211,16 +218,33 @@ public class TestBasic
     }
 
     @Test
-    void testStartsWithHealthyStatus()
+    void testContainerIsHealthyWhenNeo4jIsListeningAtPort7474()
     {
-        try ( var container = createBasicContainer()
-                .withStartupTimeout( Duration.ofMinutes( 1 ) ); )
+        try ( var container = createBasicContainer() )
         {
+            container.setWaitStrategy( Wait.forHealthcheck() );
+            container.start();
+
+            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
+        }
+    }
+
+    @Test
+    void testContainerIsUnhealthyWhenNeo4jIsNotListeningAtPort7474()
+    {
+        try ( var container = createBasicContainer() )
+        {
+            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
+            var containerEnvVars = new ArrayList<String>();
+            containerEnvVars.add( format( "%s=%s", confNames.get( Setting.NEO4J_HTTP_LISTENING_ADDRESS ).name, "4747" ) );
+            container.setEnv( containerEnvVars );
 
             container.setWaitStrategy( Wait.forHealthcheck() );
+            Assertions.assertThrows( ContainerLaunchException.class, container::start );
+            Assertions.assertFalse( container.isRunning() );
 
-            container.start();
-            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "unhealthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
         }
     }
 }
