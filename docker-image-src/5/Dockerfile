@@ -41,7 +41,7 @@ VOLUME /data /logs
 
 EXPOSE 7474 7473 7687
 
-HEALTHCHECK --retries=3 --interval=10s --timeout=10s CMD wget --accept=application/json http://localhost:7474/ --output-document=tempfile || exit 1
+HEALTHCHECK --retries=3 --interval=10s --timeout=10s CMD /startup/docker-health-check.sh
 
 ENTRYPOINT ["tini", "-g", "--", "/startup/docker-entrypoint.sh"]
 CMD ["neo4j"]
