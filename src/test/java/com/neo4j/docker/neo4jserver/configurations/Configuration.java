@@ -29,7 +29,7 @@ public class Configuration
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration( "server.memory.pagecache.size" ) );
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration( "dbms.security.procedures.unrestricted" ) );
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration( "db.tx_log.rotation.retention_policy" ) );
-        put( Setting.NEO4J_HTTP_LISTENING_ADDRESS, new Configuration( "server.http.advertised_address" ) );
+        put( Setting.HTTP_LISTEN_ADDRESS, new Configuration( "server.http.listen_address" ) );
     }};
 
     private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class )
@@ -51,7 +51,7 @@ public class Configuration
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration( "dbms.memory.pagecache.size" ) );
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration( "dbms.security.procedures.unrestricted" ) );
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration( "dbms.tx_log.rotation.retention_policy" ) );
-        put( Setting.NEO4J_HTTP_LISTENING_ADDRESS, new Configuration( "dbms.connector.http.listen_address" ) );
+        put( Setting.HTTP_LISTEN_ADDRESS, new Configuration( "dbms.connector.http.listen_address" ) );
     }};
 
     public static Map<Setting,Configuration> getConfigurationNameMap()

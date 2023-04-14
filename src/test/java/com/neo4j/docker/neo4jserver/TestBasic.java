@@ -24,11 +24,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import static java.lang.String.format;
 
 public class TestBasic
 {
@@ -236,13 +233,11 @@ public class TestBasic
         try ( var container = createBasicContainer() )
         {
             Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            var containerEnvVars = new ArrayList<String>();
-            containerEnvVars.add( format( "%s=%s", confNames.get( Setting.NEO4J_HTTP_LISTENING_ADDRESS ).name, "4747" ) );
-            container.setEnv( containerEnvVars );
+            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, ":4747" );
 
             container.setWaitStrategy( Wait.forHealthcheck() );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
-            Assertions.assertFalse( container.isRunning() );
+            Assertions.assertTrue( container.isRunning() );
 
             Assertions.assertEquals( "unhealthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
         }
