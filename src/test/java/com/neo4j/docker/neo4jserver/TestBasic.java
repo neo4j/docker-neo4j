@@ -228,7 +228,7 @@ public class TestBasic
     }
 
     @Test
-    void testContainerIsUnhealthyWhenNeo4jIsNotListeningAtPort7474()
+    void testContainerIsHealthyWhenListenAddressContainsPortNumber()
     {
         try ( var container = createBasicContainer() )
         {
@@ -236,10 +236,10 @@ public class TestBasic
             container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, ":4747" );
 
             container.setWaitStrategy( Wait.forHealthcheck() );
-            Assertions.assertThrows( ContainerLaunchException.class, container::start );
-            Assertions.assertTrue( container.isRunning() );
+            container.start();
 
-            Assertions.assertEquals( "unhealthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
+            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
         }
     }
 }
