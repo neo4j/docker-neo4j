@@ -232,6 +232,7 @@ public class TestBasic
         assertContainerWithListenAddressIsHealthy( ":4747" );
         assertContainerWithListenAddressIsHealthy( "127.0.0.1:7474" );
         assertContainerWithListenAddressIsHealthy( "localhost:7474" );
+        assertContainerWithListenAddressIsHealthy( "localhost" );
     }
 
     void assertContainerWithListenAddressIsHealthy( String listenAddress )
