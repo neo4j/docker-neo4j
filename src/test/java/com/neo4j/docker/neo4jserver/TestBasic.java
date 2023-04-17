@@ -227,44 +227,19 @@ public class TestBasic
     }
 
     @Test
-    void testContainerIsHealthyWhenListenAddressContainsPortNumber()
+    void testContainerIsHealthyWhenListenAddressIsModifiedByUser()
     {
-        try ( var container = createBasicContainer() )
-        {
-            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, ":4747" );
-
-            container.setWaitStrategy( Wait.forHealthcheck() );
-            container.start();
-
-            Assertions.assertTrue( container.isRunning() );
-            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
-        }
+        assertContainerWithListenAddressIsHealthy( ":4747" );
+        assertContainerWithListenAddressIsHealthy( "127.0.0.1:7474" );
+        assertContainerWithListenAddressIsHealthy( "localhost:7474" );
     }
 
-    @Test
-    void testCointainerIsHealthyWhenListenAddressContainsFullIPAddress()
+    void assertContainerWithListenAddressIsHealthy( String listenAddress )
     {
         try ( var container = createBasicContainer() )
         {
             Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, "127.0.0.1:7474" );
-
-            container.setWaitStrategy( Wait.forHealthcheck() );
-            container.start();
-
-            Assertions.assertTrue( container.isRunning() );
-            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
-        }
-    }
-
-    @Test
-    void testCointainerIsHealthyWhenListenAddressContainsFullHostnameAddress()
-    {
-        try ( var container = createBasicContainer() )
-        {
-            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, "localhost:7474" );
+            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, listenAddress );
 
             container.setWaitStrategy( Wait.forHealthcheck() );
             container.start();
