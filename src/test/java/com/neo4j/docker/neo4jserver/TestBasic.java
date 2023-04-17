@@ -15,7 +15,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
-import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -234,6 +233,38 @@ public class TestBasic
         {
             Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
             container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, ":4747" );
+
+            container.setWaitStrategy( Wait.forHealthcheck() );
+            container.start();
+
+            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
+        }
+    }
+
+    @Test
+    void testCointainerIsHealthyWhenListenAddressContainsFullIPAddress()
+    {
+        try ( var container = createBasicContainer() )
+        {
+            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
+            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, "127.0.0.1:7474" );
+
+            container.setWaitStrategy( Wait.forHealthcheck() );
+            container.start();
+
+            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
+        }
+    }
+
+    @Test
+    void testCointainerIsHealthyWhenListenAddressContainsFullHostnameAddress()
+    {
+        try ( var container = createBasicContainer() )
+        {
+            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
+            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, "localhost:7474" );
 
             container.setWaitStrategy( Wait.forHealthcheck() );
             container.start();
