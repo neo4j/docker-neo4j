@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 
+: ${NEO4J_server_http_listen__address:=${NEO4J_dbms_connector_http_listen__address:-}}
+
 if [ -z "${NEO4J_server_http_listen__address-}" ]
 then
   LISTEN_ADDRESS="http://localhost:7474/"
