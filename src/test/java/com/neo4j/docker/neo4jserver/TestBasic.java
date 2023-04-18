@@ -226,16 +226,9 @@ public class TestBasic
         }
     }
 
-    @Test
-    void testContainerIsHealthyWhenListenAddressIsModifiedByUser()
-    {
-        assertContainerWithListenAddressIsHealthy( ":4747" );
-        assertContainerWithListenAddressIsHealthy( "127.0.0.1:7474" );
-        assertContainerWithListenAddressIsHealthy( "localhost:7474" );
-        assertContainerWithListenAddressIsHealthy( "localhost" );
-    }
-
-    void assertContainerWithListenAddressIsHealthy( String listenAddress )
+    @ParameterizedTest
+    @ValueSource( strings = {":4747", "127.0.0.1:7474", "localhost:7474", "localhost"} )
+    void testContainerIsHealthyWhenListenAddressIsModifiedByUser( String listenAddress )
     {
         try ( var container = createBasicContainer() )
         {
