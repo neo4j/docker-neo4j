@@ -1,21 +1,26 @@
 #!/bin/bash -eu
 
-_conf_file="${NEO4J_HOME}"/conf/neo4j.conf
+CONFIG_FILE_PATH="${NEO4J_HOME}"/conf/neo4j.conf
+LISTEN_ADDRESS_SETTING_NAME="server.http.listen_address"
+LISTEN_ADDRESS_SETTING_NAME_PRE_5="dbms.connector.http.listen_address"
 
-while [ ! -e $_conf_file ]
+while [ ! -e $CONFIG_FILE_PATH ]
 do
   sleep 1
 done
 
-if [ $(grep -P "^(?!#)server.http.listen_address" $_conf_file) ]
+if [ $(grep -P "^(?!#)"$LISTEN_ADDRESS_SETTING_NAME $CONFIG_FILE_PATH) ]
 then
-  LISTEN_ADDRESS_SETTING_STRING=$(grep -P "^(?!#)server.http.listen_address" $_conf_file)
-  LISTEN_ADDRESS_VALUE=${LISTEN_ADDRESS_SETTING_STRING#*=}
+  LISTEN_ADDRESS_SETTING_STRING=$(grep -P "^(?!#)"$LISTEN_ADDRESS_SETTING_NAME $CONFIG_FILE_PATH)
+  LISTEN_ADDRESS_SETTING_VALUE=${LISTEN_ADDRESS_SETTING_STRING#*=}
+elif [ $(grep -P "^(?!#)"$LISTEN_ADDRESS_SETTING_NAME_PRE_5 $CONFIG_FILE_PATH) ]
+then
+  LISTEN_ADDRESS_SETTING_STRING=$(grep -P "^(?!#)"$LISTEN_ADDRESS_SETTING_NAME_PRE_5 $CONFIG_FILE_PATH)
+    LISTEN_ADDRESS_SETTING_VALUE=${LISTEN_ADDRESS_SETTING_STRING#*=}
 else
-  LISTEN_ADDRESS_VALUE=""
+  LISTEN_ADDRESS_SETTING_VALUE=""
 fi
 
-LISTEN_ADDRESS_SETTING_VALUE=${LISTEN_ADDRESS_VALUE}
 if [ -z "${LISTEN_ADDRESS_SETTING_VALUE}" ]
 then
   LISTEN_ADDRESS="http://localhost:7474/"

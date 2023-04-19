@@ -238,7 +238,7 @@ public class TestBasic
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {":4747", "127.0.0.1:7474", "localhost:7474", "localhost"} )
+    @ValueSource( strings = {":4747", "127.0.0.1:4747", "localhost:4747", "localhost"} )
     void testContainerIsHealthyWhenListenAddressIsModifiedByUser( String listenAddress )
     {
         try ( var container = createBasicContainer() )
@@ -255,9 +255,8 @@ public class TestBasic
     }
 
     @Test
-    void testContainerIsHealthyWhenConfigIsModifiedByMounting() throws IOException, InterruptedException
+    void testContainerIsHealthyWhenConfigIsModifiedByMounting() throws IOException
     {
-
         try ( var container = createBasicContainer() )
         {
             var tempConfigDir = temporaryFolderManager.createTempFolder( "temp_neo4j_config" );
@@ -271,8 +270,6 @@ public class TestBasic
 
             container.setWaitStrategy( Wait.forHealthcheck() );
             container.start();
-
-            var containerInfo = container.getCurrentContainerInfo().getState();
 
             Assertions.assertTrue( container.isRunning() );
             Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
