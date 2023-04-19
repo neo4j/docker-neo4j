@@ -6,10 +6,12 @@ import com.neo4j.docker.neo4jserver.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -22,13 +24,22 @@ import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static java.lang.String.format;
+
 public class TestBasic
 {
     private static Logger log = LoggerFactory.getLogger( TestBasic.class );
+
+    @RegisterExtension
+    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     private GenericContainer createBasicContainer()
     {
@@ -237,6 +248,31 @@ public class TestBasic
 
             container.setWaitStrategy( Wait.forHealthcheck() );
             container.start();
+
+            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
+        }
+    }
+
+    @Test
+    void testContainerIsHealthyWhenConfigIsModifiedByMounting() throws IOException, InterruptedException
+    {
+
+        try ( var container = createBasicContainer() )
+        {
+            var tempConfigDir = temporaryFolderManager.createTempFolder( "temp_neo4j_config" );
+
+            var neo4jConfig = new File( tempConfigDir.toAbsolutePath() + File.separator + "neo4j.conf" );
+            var writer = new BufferedWriter( new FileWriter( neo4jConfig ) );
+            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
+            writer.write( format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, ":4747" ) );
+            writer.close();
+            temporaryFolderManager.mountHostFolderAsVolume( container, tempConfigDir, "/conf" );
+
+            container.setWaitStrategy( Wait.forHealthcheck() );
+            container.start();
+
+            var containerInfo = container.getCurrentContainerInfo().getState();
 
             Assertions.assertTrue( container.isRunning() );
             Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
