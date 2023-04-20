@@ -254,8 +254,9 @@ public class TestBasic
         }
     }
 
-    @Test
-    void testContainerIsHealthyWhenConfigIsModifiedByMounting() throws IOException
+    @ParameterizedTest
+    @ValueSource( strings = {":4747", "127.0.0.1:4747", "localhost:4747", "localhost"} )
+    void testContainerIsHealthyWhenConfigIsModifiedByMounting(String listenAddress) throws IOException
     {
         try ( var container = createBasicContainer() )
         {
@@ -264,7 +265,7 @@ public class TestBasic
             var neo4jConfig = new File( tempConfigDir.toAbsolutePath() + File.separator + "neo4j.conf" );
             var writer = new BufferedWriter( new FileWriter( neo4jConfig ) );
             Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            writer.write( format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, ":4747" ) );
+            writer.write( format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, listenAddress ) );
             writer.close();
             temporaryFolderManager.mountHostFolderAsVolume( container, tempConfigDir, "/conf" );
 
