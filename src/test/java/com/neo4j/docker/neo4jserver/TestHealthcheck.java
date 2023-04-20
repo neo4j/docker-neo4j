@@ -15,10 +15,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Map;
 
 import static java.lang.String.format;
@@ -37,33 +35,41 @@ public class TestHealthcheck
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
+        container.setWaitStrategy( Wait.forHealthcheck() );
         return container;
     }
 
     private GenericContainer createContainerWithEnvVarListenAddress( String listenAddress )
     {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-        container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, listenAddress )
-                 .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        var container = createContainerWithDefaultListenAddress();
+        container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, listenAddress );
+
         return container;
     }
 
     private GenericContainer createContainerWithConfigListenAddress( String listenAddress ) throws IOException
     {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-        container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        var container = createContainerWithDefaultListenAddress();
 
-        var tempConfigDir = temporaryFolderManager.createTempFolder( "temp_neo4j_config" );
+        var tempConfigDir = temporaryFolderManager.createTempFolder( "healthcheck_listen_address_config" );
 
-        var neo4jConfig = new File( tempConfigDir.toAbsolutePath() + File.separator + "neo4j.conf" );
-        var writer = new BufferedWriter( new FileWriter( neo4jConfig ) );
-        Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-        writer.write( format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, listenAddress ) );
-        writer.close();
+        Files.write( tempConfigDir.resolve( "neo4j.conf" ),
+                     format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, listenAddress ).getBytes() );
+        temporaryFolderManager.mountHostFolderAsVolume( container, tempConfigDir, "/conf" );
+
+        return container;
+    }
+
+    private GenericContainer createContainerWithConfigAndEnvVarListenAddress( String listenAddress ) throws IOException
+    {
+        var container = createContainerWithDefaultListenAddress();
+
+        container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, listenAddress );
+
+        var tempConfigDir = temporaryFolderManager.createTempFolder( "healthcheck_listen_address_config" );
+
+        Files.write( tempConfigDir.resolve( "neo4j.conf" ),
+                     format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, "incorrecthostname:12345" ).getBytes() );
         temporaryFolderManager.mountHostFolderAsVolume( container, tempConfigDir, "/conf" );
 
         return container;
@@ -74,7 +80,6 @@ public class TestHealthcheck
     {
         try ( var container = createContainerWithDefaultListenAddress() )
         {
-            container.setWaitStrategy( Wait.forHealthcheck() );
             container.start();
 
             Assertions.assertTrue( container.isRunning() );
@@ -88,7 +93,6 @@ public class TestHealthcheck
     {
         try ( var container = createContainerWithEnvVarListenAddress( listenAddress ) )
         {
-            container.setWaitStrategy( Wait.forHealthcheck() );
             container.start();
 
             Assertions.assertTrue( container.isRunning() );
@@ -102,7 +106,19 @@ public class TestHealthcheck
     {
         try ( var container = createContainerWithConfigListenAddress( listenAddress ) )
         {
-            container.setWaitStrategy( Wait.forHealthcheck() );
+            container.start();
+
+            Assertions.assertTrue( container.isRunning() );
+            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {":4747", "127.0.0.1:4747", "localhost:4747", "localhost"} )
+    void testHealthCheckListenAddressUsesEnvVarOver( String listenAddress ) throws IOException
+    {
+        try ( var container = createContainerWithConfigAndEnvVarListenAddress( listenAddress ) )
+        {
             container.start();
 
             Assertions.assertTrue( container.isRunning() );

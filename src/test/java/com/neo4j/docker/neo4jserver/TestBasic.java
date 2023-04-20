@@ -1,17 +1,13 @@
 package com.neo4j.docker.neo4jserver;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import com.neo4j.docker.neo4jserver.configurations.Configuration;
-import com.neo4j.docker.neo4jserver.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.StartupDetector;
-import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -24,15 +20,8 @@ import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.Consumer;
-
-import static java.lang.String.format;
 
 public class TestBasic
 {
