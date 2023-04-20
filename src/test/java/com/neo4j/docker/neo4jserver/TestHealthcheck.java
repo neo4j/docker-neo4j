@@ -115,7 +115,7 @@ public class TestHealthcheck
 
     @ParameterizedTest
     @ValueSource( strings = {":4747", "127.0.0.1:4747", "localhost:4747", "localhost"} )
-    void testHealthCheckListenAddressUsesEnvVarOver( String listenAddress ) throws IOException
+    void testHealthCheckListenAddressUsesEnvVarOverConfig( String listenAddress ) throws IOException
     {
         try ( var container = createContainerWithConfigAndEnvVarListenAddress( listenAddress ) )
         {
