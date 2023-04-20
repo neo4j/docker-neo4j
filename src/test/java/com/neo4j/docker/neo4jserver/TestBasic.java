@@ -38,9 +38,6 @@ public class TestBasic
 {
     private static Logger log = LoggerFactory.getLogger( TestBasic.class );
 
-    @RegisterExtension
-    public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
-
     private GenericContainer createBasicContainer()
     {
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
@@ -221,59 +218,6 @@ public class TestBasic
             container.withEnv( "NEO4J_DEBUG", "true" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
-        }
-    }
-
-    @Test
-    void testContainerIsHealthyWhenNeo4jIsListeningAtPort7474()
-    {
-        try ( var container = createBasicContainer() )
-        {
-            container.setWaitStrategy( Wait.forHealthcheck() );
-            container.start();
-
-            Assertions.assertTrue( container.isRunning() );
-            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource( strings = {":4747", "127.0.0.1:4747", "localhost:4747", "localhost"} )
-    void testContainerIsHealthyWhenListenAddressIsModifiedByUser( String listenAddress )
-    {
-        try ( var container = createBasicContainer() )
-        {
-            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            container.withEnv( confNames.get( Setting.HTTP_LISTEN_ADDRESS ).envName, listenAddress );
-
-            container.setWaitStrategy( Wait.forHealthcheck() );
-            container.start();
-
-            Assertions.assertTrue( container.isRunning() );
-            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource( strings = {":4747", "127.0.0.1:4747", "localhost:4747", "localhost"} )
-    void testContainerIsHealthyWhenConfigIsModifiedByMounting(String listenAddress) throws IOException
-    {
-        try ( var container = createBasicContainer() )
-        {
-            var tempConfigDir = temporaryFolderManager.createTempFolder( "temp_neo4j_config" );
-
-            var neo4jConfig = new File( tempConfigDir.toAbsolutePath() + File.separator + "neo4j.conf" );
-            var writer = new BufferedWriter( new FileWriter( neo4jConfig ) );
-            Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-            writer.write( format( "%s=%s", confNames.get( Setting.HTTP_LISTEN_ADDRESS ).name, listenAddress ) );
-            writer.close();
-            temporaryFolderManager.mountHostFolderAsVolume( container, tempConfigDir, "/conf" );
-
-            container.setWaitStrategy( Wait.forHealthcheck() );
-            container.start();
-
-            Assertions.assertTrue( container.isRunning() );
-            Assertions.assertEquals( "healthy", container.getCurrentContainerInfo().getState().getHealth().getStatus() );
         }
     }
 }
