@@ -36,14 +36,15 @@ test/13909
 
 ## Building ARM64 based images
 
-From Neo4j 4.3.0 onwards, the Neo4j image should be buildable on any architecture using the same build commands as [Building the Image](#building-the-image).
+From Neo4j 4.4.0 onwards, the Neo4j image should be buildable on any architecture using the same build commands as [Building the Image](#building-the-image).
 
+### Building ARM versions before 4.4
 For earlier versions of Neo4j, you may need to set the variable `NEO4J_BASE_IMAGE` to your architecture specific version of `openjdk:11-jdk-slim` (or `openjdk:8-jdk-slim` for versions before 4.0.0).
 
 Like with `amd64` images, you must still specify the **full** Neo4j version including major, minor and patch numbers. For example:
 
 ```bash
-NEO4J_BASE_IMAGE=arm64v8/openjdk:11-jdk-slim
+NEO4J_BASE_IMAGE=arm64v8/eclipse-temurin:11-jammy
 NEO4JVERSION=4.3.7 make clean build
 ```
 
