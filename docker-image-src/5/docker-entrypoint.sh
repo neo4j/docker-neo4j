@@ -446,7 +446,7 @@ https://neo4j.com/terms/enterprise_us/
 
 (c) Neo4j Sweden AB. All Rights Reserved.
 Use of this Software without a proper commercial license, or evaluation license
-with Neo4j,Inc. or its affiliates is prohibited.
+with Neo4j, Inc. or its affiliates is prohibited.
 Neo4j has the right to terminate your usage if you are not compliant.
 
 More information is also available at: https://neo4j.com/licensing/
