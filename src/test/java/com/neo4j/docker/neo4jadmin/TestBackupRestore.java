@@ -107,75 +107,81 @@ public class TestBackupRestore
     private void testCanBackupAndRestore(boolean asDefaultUser, String password) throws Exception
     {
         final String dbUser = "neo4j";
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "backupRestore-" );
+        Path testOutputFolder = temporaryFolderManager.createTempFolder( "backupRestore-" +
+                                                                         (asDefaultUser? "defaultUser": "nonDefaultUser") +
+                                                                         "-auth"+password +"-");
+        Path backupDir;
 
         // BACKUP
         // start a database and populate data
-        GenericContainer neo4j = createDBContainer( asDefaultUser, password );
-        Path dataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                neo4j, "data-", "/data", testOutputFolder );
-        neo4j.start();
-        DatabaseIO dbio = new DatabaseIO( neo4j );
-        dbio.putInitialDataIntoContainer( dbUser, password );
-        dbio.verifyInitialDataInContainer( dbUser, password );
+        try(GenericContainer neo4j = createDBContainer( asDefaultUser, password ))
+        {
+            Path dataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
+                    neo4j, "data-", "/data", testOutputFolder );
+            neo4j.start();
+            DatabaseIO dbio = new DatabaseIO( neo4j );
+            dbio.putInitialDataIntoContainer( dbUser, password );
+            dbio.verifyInitialDataInContainer( dbUser, password );
 
-        // start admin container to initiate backup
-        String neoDBAddress = neo4j.getHost()+":"+neo4j.getMappedPort( 6362 );
-        GenericContainer adminBackup = createAdminContainer( asDefaultUser )
-                .withNetworkMode( "host" )
-                .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup command completed.*" ) )
-                .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 15 ) ) )
-                .withCommand("neo4j-admin",
-                             "database",
-                             "backup",
-                             "--to-path=/backups",
-                             "--include-metadata=all",
-                             "--from=" + neoDBAddress,
-                             "neo4j");
+            // start admin container to initiate backup
+            String neoDBAddress = neo4j.getHost() + ":" + neo4j.getMappedPort( 6362 );
+            try(GenericContainer adminBackup = createAdminContainer( asDefaultUser ))
+            {
+                adminBackup.withNetworkMode( "host" )
+                           .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup command completed.*" ) )
+                           .withStartupCheckStrategy(
+                                   new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 15 ) ) )
+                           .withCommand( "neo4j-admin",
+                                         "database",
+                                         "backup",
+                                         "--to-path=/backups",
+                                         "--include-metadata=all",
+                                         "--from=" + neoDBAddress,
+                                         "neo4j" );
+
+                backupDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
+                        adminBackup, "backup-", "/backups", testOutputFolder );
+                adminBackup.start();
+
+                Assertions.assertTrue( neo4j.isRunning(), "neo4j container should still be running" );
+                dbio.verifyInitialDataInContainer( dbUser, password );
+            } //adminBackup goes out of scope here
+
+            // find backup file name and verify its existence.
+            List<Path> backupFolder = Files.list( backupDir )
+                                           .filter( p -> p.toFile().getName().startsWith( "neo4j" ) )
+                                           .toList();
+            Assertions.assertEquals( 1, backupFolder.size(), "No backup file was created" );
+            File backupFile = backupFolder.get( 0 ).toFile();
 
 
-        Path backupDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                adminBackup, "backup-", "/backups", testOutputFolder );
-        adminBackup.start();
+            // RESTORE
 
-        Assertions.assertTrue( neo4j.isRunning(), "neo4j container should still be running" );
-        dbio.verifyInitialDataInContainer( dbUser, password );
-        adminBackup.stop();
+            // write more stuff
+            dbio.putMoreDataIntoContainer( dbUser, password );
+            dbio.verifyMoreDataIntoContainer( dbUser, password, true );
+            // stop database in preparation for restore
+            dbio.runCypherQuery( dbUser, password, "STOP DATABASE neo4j", "system" );
 
-        // find backup file name and verify its existence.
-        List<Path> backupFolder = Files.list( backupDir )
-                                       .filter( p -> p.toFile().getName().startsWith( "neo4j" ) )
-                                       .collect( Collectors.toList());
-        Assertions.assertEquals( 1, backupFolder.size(), "No backup file was created" );
-        File backupFile = backupFolder.get( 0 ).toFile();
+            // do restore
+            try(GenericContainer adminRestore = createAdminContainer( asDefaultUser ))
+            {
+                adminRestore.waitingFor( Wait.forLogMessage( ".*Restore of database .* completed successfully.*", 1 )
+                                             .withStartupTimeout( Duration.ofSeconds( 30 ) ) )
+                            .withCommand( "neo4j-admin",
+                                          "database",
+                                          "restore",
+                                          "--overwrite-destination=true",
+                                          "--from-path=/backups/" + backupFile.getName(),
+                                          "neo4j" );
+                temporaryFolderManager.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
+                temporaryFolderManager.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
+                adminRestore.start();
+                dbio.runCypherQuery( dbUser, password, "START DATABASE neo4j", "system" );
 
-        // RESTORE
-
-        // write more stuff
-        dbio.putMoreDataIntoContainer( dbUser, password );
-        dbio.verifyMoreDataIntoContainer( dbUser, password, true );
-
-        // do restore
-        dbio.runCypherQuery( dbUser, password, "STOP DATABASE neo4j", "system" );
-        GenericContainer adminRestore = createAdminContainer( asDefaultUser )
-                .waitingFor( Wait.forLogMessage( ".*Restore of database .* completed successfully.*", 1 )
-                                 .withStartupTimeout( Duration.ofSeconds( 30 ) ) )
-                .withCommand("neo4j-admin",
-                        "database",
-                        "restore",
-                        "--overwrite-destination=true",
-                        "--from-path=/backups/"+backupFile.getName(),
-                        "neo4j");
-        temporaryFolderManager.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
-        temporaryFolderManager.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
-        adminRestore.start();
-        dbio.runCypherQuery( dbUser, password, "START DATABASE neo4j", "system" );
-
-        // verify new stuff is missing
-        dbio.verifyMoreDataIntoContainer( dbUser, password, false );
-
-        // clean up
-        adminRestore.stop();
-        neo4j.stop();
+                // verify new stuff is missing
+                dbio.verifyMoreDataIntoContainer( dbUser, password, false );
+            } //adminRestore out of scope here
+        } // neo4j container goes out of scope here
     }
 }

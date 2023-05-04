@@ -140,11 +140,11 @@ public class TemporaryFolderManager implements AfterAllCallback
         }
         catch ( IOException e )
         {
-            log.error( "could not create directory: {}", hostFolder.toAbsolutePath().toString() );
+            log.error( "could not create directory: {}", hostFolder.toAbsolutePath() );
             e.printStackTrace();
             throw e;
         }
-        log.info( "Created folder {}", hostFolder.toString() );
+        log.info( "Created folder {}", hostFolder );
         if(parentFolder.equals( testOutputParentFolder ))
         {
             toCompressAfterAll.add( hostFolder );

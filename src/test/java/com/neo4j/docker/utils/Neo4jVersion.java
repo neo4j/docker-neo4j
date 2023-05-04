@@ -20,7 +20,7 @@ public class Neo4jVersion
         // Could be one of the forms:
         // A.B.C, A.B.C-alphaDD, A.B.C-betaDD, A.B.C-rcDD
         // (?<major>\d)\.(?<minor>\d)\.(?<patch>[\d]+)(?<label>-(alpha|beta|[Rr][Cc])[\d]{1,2})?
-        Pattern pattern = Pattern.compile( "(?<major>\\d)\\.(?<minor>\\d)\\.(?<patch>[\\d]+)(?<label>-(.*))?" );
+        Pattern pattern = Pattern.compile( "(?<major>[\\d]+)\\.(?<minor>[\\d]+)\\.(?<patch>[\\d]+)(?<label>-(.*))?" );
         Matcher x = pattern.matcher( version );
         x.find();
         return new Neo4jVersion(
