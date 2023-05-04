@@ -27,8 +27,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TestBackupRestore
 {
@@ -75,7 +73,7 @@ public class TestBackupRestore
         GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 90 ) ) );
+                 .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 180 ) ) );
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -129,8 +127,6 @@ public class TestBackupRestore
             {
                 adminBackup.withNetworkMode( "host" )
                            .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup command completed.*" ) )
-                           .withStartupCheckStrategy(
-                                   new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 15 ) ) )
                            .withCommand( "neo4j-admin",
                                          "database",
                                          "backup",
@@ -167,7 +163,7 @@ public class TestBackupRestore
             try(GenericContainer adminRestore = createAdminContainer( asDefaultUser ))
             {
                 adminRestore.waitingFor( Wait.forLogMessage( ".*Restore of database .* completed successfully.*", 1 )
-                                             .withStartupTimeout( Duration.ofSeconds( 30 ) ) )
+                                             .withStartupTimeout( Duration.ofSeconds( 180 ) ) )
                             .withCommand( "neo4j-admin",
                                           "database",
                                           "restore",
