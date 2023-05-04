@@ -59,6 +59,7 @@ tmp/devenv-%.env:  tmp/.image-id-% tmp/.image-id-neo4j-admin-%
 > echo "NEO4J_IMAGE=$$(cat tmp/.image-id-${*})" >> ${@}
 > echo "NEO4JADMIN_IMAGE=$$(cat tmp/.image-id-neo4j-admin-${*})" >> ${@}
 > echo "NEO4J_EDITION=${*}" >> ${@}
+> echo "NEO4J_SKIP_MOUNTED_FOLDER_TARBALLING=true" >> ${@}
 
 # copy the releaseable version of the image to the output folder.
 out/%/.sentinel: tmp/image-%/.sentinel

@@ -14,6 +14,7 @@ public class TestSettings
     public static final DockerImageName ADMIN_IMAGE_ID = getNeo4jAdminImageFromPropertyOrEnv();
     public static final Path TEST_TMP_FOLDER = Paths.get("local-mounts" );
     public static final Edition EDITION = getEditionFromPropertyOrEnv();
+    public static final boolean SKIP_MOUNTED_FOLDER_TARBALLING = getSkipTarballingFromEnv();
 
     public enum Edition
     {
@@ -71,5 +72,13 @@ public class TestSettings
             Assert.fail( "Neo4j edition has not been specified, either use mvn argument -Dedition or set env NEO4J_EDITION" );
         }
         return null;
+    }
+
+    private static boolean getSkipTarballingFromEnv()
+    {
+        // defaults to false. Tarballing test artifacts must be opt-out not opt-in.
+        String skipTar = System.getenv( "NEO4J_SKIP_MOUNTED_FOLDER_TARBALLING" );
+        if(skipTar == null)  return false;
+        else return (skipTar.equals( "true" ));
     }
 }

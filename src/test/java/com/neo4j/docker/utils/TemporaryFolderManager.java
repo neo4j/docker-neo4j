@@ -59,6 +59,11 @@ public class TemporaryFolderManager implements AfterAllCallback
     @Override
     public void afterAll( ExtensionContext extensionContext ) throws Exception
     {
+        if(TestSettings.SKIP_MOUNTED_FOLDER_TARBALLING)
+        {
+            log.info( "Cleanup of test artifacts skipped by request" );
+            return;
+        }
         log.info( "Performing cleanup of {}", testOutputParentFolder );
         // create tar archive of data
         for(Path p : toCompressAfterAll)
