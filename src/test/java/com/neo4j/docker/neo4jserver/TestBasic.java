@@ -39,7 +39,7 @@ public class TestBasic
     @Test
     void testListensOn7474()
     {
-        try ( GenericContainer container = createBasicContainer() )
+        try(GenericContainer container = createBasicContainer())
         {
             StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
@@ -53,13 +53,13 @@ public class TestBasic
     @Test
     void testNoUnexpectedErrors() throws Exception
     {
-        try ( GenericContainer container = createBasicContainer() )
+        try(GenericContainer container = createBasicContainer())
         {
             StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
-            String stderr = container.getLogs( OutputFrame.OutputType.STDERR );
+			String stderr = container.getLogs(OutputFrame.OutputType.STDERR);
             Assertions.assertEquals( "", stderr,
                                      "Unexpected errors in stderr from container!\n" +
                                      stderr );
@@ -69,8 +69,8 @@ public class TestBasic
     @Test
     void testLicenseAcceptanceRequired_Neo4jServer()
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3, 3, 0 ) ),
-                                "No license checks before version 3.3.0" );
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
+                                "No license checks before version 3.3.0");
         testLicenseAcceptanceRequired( TestSettings.IMAGE_ID );
     }
 
@@ -78,25 +78,25 @@ public class TestBasic
     void testLicenseAcceptanceRequired_Neo4jAdmin()
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
-                                "No Neo4j admin image before version 4.4.0" );
+                                "No Neo4j admin image before version 4.4.0");
         testLicenseAcceptanceRequired( TestSettings.ADMIN_IMAGE_ID );
     }
 
     private void testLicenseAcceptanceRequired( DockerImageName image )
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                                "No license checks for community edition" );
+                                "No license checks for community edition");
 
         String logsOut;
-        try ( GenericContainer container = new GenericContainer( image )
+        try(GenericContainer container = new GenericContainer( image )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
             container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )
                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-            container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-            // container start should fail due to licensing.
+			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+			// container start should fail due to licensing.
             Assertions.assertThrows( Exception.class, () -> container.start(),
-                                     "Neo4j did not notify about accepting the license agreement" );
+									 "Neo4j did not notify about accepting the license agreement" );
             logsOut = container.getLogs();
         }
         // double check the container didn't warn and start neo4j anyway
@@ -110,19 +110,19 @@ public class TestBasic
     void testLicenseAcceptanceAvoidsWarning() throws Exception
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                                "No license checks for community edition" );
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5, 0, 0 ) ),
-                                "No unified license acceptance method before 5.0.0" );
-        try ( GenericContainer container = createBasicContainer() )
+                                "No license checks for community edition");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,0,0 ) ),
+                                "No unified license acceptance method before 5.0.0");
+        try(GenericContainer container = createBasicContainer())
         {
             StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
-            String stdout = container.getLogs( OutputFrame.OutputType.STDOUT );
+            String stdout = container.getLogs(OutputFrame.OutputType.STDOUT);
             Assertions.assertTrue( stdout.contains( "The license agreement was accepted with environment variable " +
                                                     "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes when the Software was started." ),
-                                   "Neo4j did not register that the license was agreed to." );
+            "Neo4j did not register that the license was agreed to.");
         }
     }
 
@@ -130,20 +130,20 @@ public class TestBasic
     void testLicenseAcceptanceAvoidsWarning_evaluation() throws Exception
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                                "No license checks for community edition" );
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5, 0, 0 ) ),
-                                "No unified license acceptance method before 5.0.0" );
-        try ( GenericContainer container = createBasicContainer() )
+                                "No license checks for community edition");
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,0,0 ) ),
+                                "No unified license acceptance method before 5.0.0");
+        try(GenericContainer container = createBasicContainer())
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "eval" );
             StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
-            String stdout = container.getLogs( OutputFrame.OutputType.STDOUT );
+            String stdout = container.getLogs(OutputFrame.OutputType.STDOUT);
             Assertions.assertTrue( stdout.contains( "The license agreement was accepted with environment variable " +
                                                     "NEO4J_ACCEPT_LICENSE_AGREEMENT=eval when the Software was started." ),
-                                   "Neo4j did not register that the evaluation license was agreed to." );
+            "Neo4j did not register that the evaluation license was agreed to.");
         }
     }
 
@@ -151,7 +151,7 @@ public class TestBasic
     void testCypherShellOnPath() throws Exception
     {
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
-        try ( GenericContainer container = createBasicContainer() )
+        try(GenericContainer container = createBasicContainer())
         {
             StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.start();
@@ -165,7 +165,7 @@ public class TestBasic
     @Test
     void testCanChangeWorkDir() throws Exception
     {
-        try ( GenericContainer container = createBasicContainer() )
+        try(GenericContainer container = createBasicContainer())
         {
             StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
             container.setWorkingDirectory( "/tmp" );
@@ -174,18 +174,18 @@ public class TestBasic
         }
     }
 
-    @ParameterizedTest( name = "ShutsDownCorrectly_{0}" )
-    @ValueSource( strings = {"SIGTERM", "SIGINT"} )
-    void testShutsDownCleanly( String signal ) throws Exception
+    @ParameterizedTest(name = "ShutsDownCorrectly_{0}")
+    @ValueSource(strings = {"SIGTERM", "SIGINT"})
+    void testShutsDownCleanly(String signal) throws Exception
     {
-        try ( GenericContainer container = createBasicContainer() )
+        try(GenericContainer container = createBasicContainer())
         {
             container.withEnv( "NEO4J_AUTH", "none" );
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+            StartupDetector.makeContainerWaitForNeo4jReady(container, "none");
             // sets sigterm as the stop container signal
-            container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd ->
+            container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
                     cmd.withStopSignal( signal )
-                       .withStopTimeout( 60 ) );
+                       .withStopTimeout( 60 ));
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", "none" );
@@ -202,7 +202,7 @@ public class TestBasic
     @Test
     void testStartsWhenDebuggingEnabled()
     {
-        try ( GenericContainer container = createBasicContainer() )
+        try(GenericContainer container = createBasicContainer())
         {
             container.withEnv( "NEO4J_DEBUG", "true" );
             container.start();
