@@ -85,7 +85,7 @@ function is_writable
 
 function print_permissions_advice_and_fail
 {
-    _directory=${1}
+    local _directory=${1}
     echo >&2 "
 Folder ${_directory} is not accessible for user: ${userid} or group ${groupid} or groups ${groups[@]}, this is commonly a file permissions issue on the mounted folder.
 

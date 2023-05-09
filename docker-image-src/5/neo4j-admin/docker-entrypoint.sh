@@ -5,6 +5,18 @@ function running_as_root
     test "$(id -u)" = "0"
 }
 
+function debugging_enabled
+{
+    test "${NEO4J_DEBUG+yes}" = "yes"
+}
+
+function debug_msg
+{
+    if debugging_enabled; then
+        echo "$@"
+    fi
+}
+
 function is_writable
 {
     ${exec_cmd} test -w "${1}"
@@ -29,6 +41,7 @@ If the folder is owned by the current user, this can be done by adding this flag
 function check_mounted_folder_writable_with_chown
 {
     local mountFolder=${1}
+    debug_msg "checking ${mountFolder} is writable"
     if running_as_root; then
         # check folder permissions
         if ! is_writable "${mountFolder}" ;  then
@@ -48,48 +61,64 @@ function check_mounted_folder_writable_with_chown
 }
 
 # ==== SETUP WHICH USER TO RUN AS ====
+debug_msg "DEBUGGING ENABLED"
 
 if running_as_root; then
   userid="neo4j"
   groupid="neo4j"
   groups=($(id -G neo4j))
   exec_cmd="runuser -p -u neo4j -g neo4j --"
+  debug_msg "Running as root user inside neo4j-admin image"
 else
   userid="$(id -u)"
   groupid="$(id -g)"
   groups=($(id -G))
   exec_cmd="exec"
+  debug_msg "Running as user ${userid} inside neo4j-admin image"
 fi
 
 
 # ==== CHECK LICENSE AGREEMENT ====
 
-if [ "${NEO4J_EDITION}" == "enterprise" ]; then
-    if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
+# Only prompt for license agreement if command contains "neo4j" in it
+if [[ "${cmd}" == *"neo4j"* ]]; then
+  if [ "${NEO4J_EDITION}" == "enterprise" ]; then
+    : ${NEO4J_ACCEPT_LICENSE_AGREEMENT:="not accepted"}
+    if [[ "$NEO4J_ACCEPT_LICENSE_AGREEMENT" != "yes" && "$NEO4J_ACCEPT_LICENSE_AGREEMENT" != "eval" ]]; then
       echo >&2 "
 In order to use Neo4j Enterprise Edition you must accept the license agreement.
 
-(c) Neo4j Sweden AB. 2022.  All Rights Reserved.
-Use of this Software without a proper commercial license with Neo4j,
-Inc. or its affiliates is prohibited.
+The license agreement is available at https://neo4j.com/terms/licensing/
+If you have a support contract the following terms apply https://neo4j.com/terms/support-terms/
 
-Email inquiries can be directed to: licensing@neo4j.com
+If you do not have a commercial license and want to evaluate the Software
+please read the terms of the evaluation agreement before you accept.
+https://neo4j.com/terms/enterprise_us/
+
+(c) Neo4j Sweden AB. All Rights Reserved.
+Use of this Software without a proper commercial license, or evaluation license
+with Neo4j, Inc. or its affiliates is prohibited.
+Neo4j has the right to terminate your usage if you are not compliant.
 
 More information is also available at: https://neo4j.com/licensing/
+If you have further inquiries about licensing, please contact us via https://neo4j.com/contact-us/
 
-
-To accept the license agreement set the environment variable
+To accept the commercial license agreement set the environment variable
 NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+
+To accept the terms of the evaluation agreement set the environment variable
+NEO4J_ACCEPT_LICENSE_AGREEMENT=eval
 
 To do this you can use the following docker argument:
 
-    --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+        --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=<yes|eval>
 "
       exit 1
     fi
 fi
 
 # ==== ENSURE MOUNT FOLDER READ/WRITABILITY ====
+debug_msg "Checking for mounted folder writability"
 
 if [ -d /data ]; then
     check_mounted_folder_writable_with_chown "/data"
@@ -106,6 +135,10 @@ fi
 if [ -d /backups ]; then
     check_mounted_folder_writable_with_chown "/backups"
 fi
+if [ -d /reports ]; then
+    check_mounted_folder_writable_with_chown "/reports"
+    ln -s /reports /tmp/reports
+fi
 
 # ==== MAKE SURE NEO4J CANNOT BE RUN FROM THIS CONTAINER ====
 
@@ -121,5 +154,9 @@ docker run ${correct_image}
 fi
 
 # ==== START NEO4J-ADMIN COMMAND ====
-
-${exec_cmd} "${@}"
+if debugging_enabled; then
+    echo ${exec_cmd} "${@}" --verbose
+    ${exec_cmd} "${@}" --verbose
+else
+    ${exec_cmd} "${@}"
+fi
