@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver.configurations;
+package com.neo4j.docker.coredb.configurations;
 
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;

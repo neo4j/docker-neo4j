@@ -13,7 +13,7 @@ RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-creat
 COPY ./local-package/* /startup/
 
 RUN apt update \
-    && apt install -y curl gosu jq tini wget \
+    && apt install -y curl gosu jq procps tini wget \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -29,6 +29,7 @@ RUN apt update \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
+    && mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report \
     && apt-get -y purge --auto-remove curl \
     && rm -rf /var/lib/apt/lists/*
 

@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver.plugins;
+package com.neo4j.docker.coredb.plugins;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.google.gson.Gson;

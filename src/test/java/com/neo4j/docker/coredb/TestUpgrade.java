@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver;
+package com.neo4j.docker.coredb;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import com.github.dockerjava.api.command.CreateContainerCmd;

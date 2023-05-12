@@ -24,11 +24,6 @@ else
 	series := $(major).$(minor)
 endif
 
-out/%/.sentinel: tmp/image-%/.sentinel
-> mkdir -p $(@D)
-> cp -r $(<D)/* $(@D)
-> touch $@
-
 
 ## testing images ##
 
@@ -108,8 +103,10 @@ tmp/local-context-neo4j-admin-%/.sentinel: tmp/image-neo4j-admin-%/.sentinel in/
 # tmp/image-{community,enterprise} contains the Dockerfile, docker-entrypoint.sh and plugins.json
 # with all the variables (eg tini) filled in, but *NO Neo4j tar*. This is what gets released to dockerhub.
 # You can successfully do `docker build tmp/image-{community,enterprise}` so long as the Neo4j is a released version.
-tmp/image-%/.sentinel: docker-image-src/$(series)/Dockerfile docker-image-src/$(series)/docker-entrypoint.sh \
-                       docker-image-src/$(series)/neo4j-plugins.json in/$(call tarball,%,$(NEO4JVERSION))
+tmp/image-%/.sentinel: docker-image-src/$(series)/coredb/Dockerfile \
+                       docker-image-src/$(series)/coredb/*.sh \
+                       docker-image-src/$(series)/coredb/neo4j-plugins.json \
+                       in/$(call tarball,%,$(NEO4JVERSION))
 > mkdir -p $(@D)/local-package
 > cp docker-image-src/common/* $(@D)/local-package
 > cp $(filter %.sh,$^) $(@D)/local-package
@@ -139,6 +136,7 @@ tmp/image-neo4j-admin-%/.sentinel: docker-image-src/$(series)/neo4j-admin/Docker
     -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
     >$(@D)/Dockerfile
 > mkdir -p $(@D)/local-package
+> cp docker-image-src/common/* $(@D)/local-package
 > touch $(@D)/local-package/.sentinel
 > touch $@
 

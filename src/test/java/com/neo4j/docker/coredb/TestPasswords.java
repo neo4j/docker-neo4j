@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver;
+package com.neo4j.docker.coredb;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;

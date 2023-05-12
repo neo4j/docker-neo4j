@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver;
+package com.neo4j.docker.coredb;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
@@ -18,7 +18,6 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
 import java.util.function.Consumer;
@@ -71,24 +70,11 @@ public class TestBasic
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,3,0 ) ),
                                 "No license checks before version 3.3.0");
-        testLicenseAcceptanceRequired( TestSettings.IMAGE_ID );
-    }
-
-    @Test
-    void testLicenseAcceptanceRequired_Neo4jAdmin()
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
-                                "No Neo4j admin image before version 4.4.0");
-        testLicenseAcceptanceRequired( TestSettings.ADMIN_IMAGE_ID );
-    }
-
-    private void testLicenseAcceptanceRequired( DockerImageName image )
-    {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "No license checks for community edition");
 
         String logsOut;
-        try(GenericContainer container = new GenericContainer( image )
+        try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
             container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )

@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver;
+package com.neo4j.docker.coredb;
 
 import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 import com.github.dockerjava.api.command.CreateContainerCmd;

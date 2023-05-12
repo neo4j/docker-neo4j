@@ -1,6 +1,6 @@
-package com.neo4j.docker.neo4jserver.configurations;
+package com.neo4j.docker.coredb.configurations;
 
-import com.neo4j.docker.neo4jserver.plugins.Neo4jPluginEnv;
+import com.neo4j.docker.coredb.plugins.Neo4jPluginEnv;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
@@ -27,11 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;

@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver.configurations;
+package com.neo4j.docker.coredb.configurations;
 
 public enum Setting
 {

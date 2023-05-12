@@ -12,7 +12,7 @@
 	<properties>
         <neo4j.driver.version>4.4.11</neo4j.driver.version>
         <java.version>17</java.version>
-        <testcontainers.version>1.17.5</testcontainers.version>
+        <testcontainers.version>1.18.0</testcontainers.version>
     </properties>
 
 	<build>

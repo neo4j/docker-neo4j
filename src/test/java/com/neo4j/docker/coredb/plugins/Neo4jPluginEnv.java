@@ -1,4 +1,4 @@
-package com.neo4j.docker.neo4jserver.plugins;
+package com.neo4j.docker.coredb.plugins;
 
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;

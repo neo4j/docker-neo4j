@@ -1,42 +1,7 @@
 #!/bin/bash -eu
 
-function running_as_root
-{
-    test "$(id -u)" = "0"
-}
-
-function debugging_enabled
-{
-    test "${NEO4J_DEBUG+yes}" = "yes"
-}
-
-function debug_msg
-{
-    if debugging_enabled; then
-        echo "$@"
-    fi
-}
-
-function is_writable
-{
-    ${exec_cmd} test -w "${1}"
-}
-
-function print_permissions_advice_and_fail
-{
-    local _directory=${1}
-    echo >&2 "
-Folder ${_directory} is not accessible for user: ${userid} or group ${groupid} or groups ${groups[@]}, this is commonly a file permissions issue on the mounted folder.
-
-Hints to solve the issue:
-1) Make sure the folder exists before mounting it. Docker will create the folder using root permissions before starting the Neo4j container. The root permissions disallow Neo4j from writing to the mounted folder.
-2) Pass the folder owner's user ID and group ID to docker run, so that docker runs as that user.
-If the folder is owned by the current user, this can be done by adding this flag to your docker run command:
-  --user=\$(id -u):\$(id -g)
-       "
-    exit 1
-}
-
+# load useful utility functions
+. /startup/utilities.sh
 
 function check_mounted_folder_writable_with_chown
 {
@@ -77,9 +42,39 @@ else
   debug_msg "Running as user ${userid} inside neo4j-admin image"
 fi
 
+# ==== MAKE SURE NEO4J CANNOT BE RUN FROM THIS CONTAINER ====
+debug_msg "checking neo4j was not requested"
+if [[ "${1}" == "neo4j" ]]; then
+    correct_image="neo4j:"$(neo4j-admin --version)"-${NEO4J_EDITION}"
+    echo >&2 "
+This is a neo4j-admin only image, and usage of Neo4j server is not supported from here.
+If you wish to start a Neo4j database, use:
+
+docker run ${correct_image}
+    "
+    exit 1
+fi
+
+# ==== MAKE SURE NEO4J-ADMIN REPORT CANNOT BE RUN FROM THIS CONTAINER ====
+debug_msg "checking neo4j-admin report was not requested"
+# maybe make sure the command is neo4j-admin server report rather than just anything mentioning reports?
+if containsElement "report" "${@}"; then
+    echo >&2 \
+"neo4j-admin report must be run in the same container as neo4j
+otherwise the report tool cannot access relevant files and processes required for generating the report.
+
+To run the report tool inside a neo4j container, do:
+
+docker exec <CONTAINER NAME> neo4j-admin-report
+
+"
+    exit 1
+fi
+
 
 # ==== CHECK LICENSE AGREEMENT ====
 
+debug_msg "checking license"
 if [ "${NEO4J_EDITION}" == "enterprise" ]; then
     if [ "${NEO4J_ACCEPT_LICENSE_AGREEMENT:=no}" != "yes" ]; then
       echo >&2 "
@@ -124,23 +119,6 @@ if [ -d /data ]; then
 fi
 if [ -d /backups ]; then
     check_mounted_folder_writable_with_chown "/backups"
-fi
-if [ -d /reports ]; then
-    check_mounted_folder_writable_with_chown "/reports"
-    ln -s /reports /tmp/reports
-fi
-
-# ==== MAKE SURE NEO4J CANNOT BE RUN FROM THIS CONTAINER ====
-
-if [[ "${1}" == "neo4j" ]]; then
-    correct_image="neo4j:"$(neo4j-admin --version)"-${NEO4J_EDITION}"
-    echo >&2 "
-This is a neo4j-admin only image, and usage of Neo4j server is not supported from here.
-If you wish to start a Neo4j database, use:
-
-docker run ${correct_image}
-    "
-    exit 1
 fi
 
 # ==== START NEO4J-ADMIN COMMAND ====
