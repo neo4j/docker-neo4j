@@ -31,6 +31,7 @@ public class TestBundledPluginInstallation
     private static final int DEFAULT_BROWSER_PORT = 7474;
     private static final int DEFAULT_BOLT_PORT = 7687;
     private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
+    private static String APOC = "apoc";
     private static String APOC_CORE = "apoc-core";
     private static String BLOOM = "bloom";
     private static String GDS = "graph-data-science";
@@ -41,7 +42,8 @@ public class TestBundledPluginInstallation
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
                 // plugin name key, version it's bundled since, version bundled until, is enterprise only
-                Arguments.arguments( APOC_CORE, new Neo4jVersion(4, 3, 15), null, false ),
+                Arguments.arguments( APOC_CORE, new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
+                Arguments.arguments( APOC, new Neo4jVersion(5, 0, 0), null, false ),
                 // Arguments.arguments( GDS, Neo4jVersion.NEO4J_VERSION_440, null, true ),
                 Arguments.arguments( BLOOM, Neo4jVersion.NEO4J_VERSION_440, null, true )
         );
