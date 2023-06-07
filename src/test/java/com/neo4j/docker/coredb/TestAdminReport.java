@@ -8,7 +8,9 @@ import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,6 +35,7 @@ public class TestAdminReport
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
     private static String reportDestinationFlag;
+    private String outputFolderNamePrefix;
 
     @BeforeAll
     static void setCorrectPathFlagForVersion()
@@ -44,6 +47,21 @@ public class TestAdminReport
         else
         {
             reportDestinationFlag = "--to-path";
+        }
+    }
+
+    @BeforeEach
+    void getTestName( TestInfo info )
+    {
+        outputFolderNamePrefix = info.getTestClass().get().getName() + "_" +
+                                 info.getTestMethod().get().getName();
+        if(!info.getDisplayName().startsWith( info.getTestMethod().get().getName() ))
+        {
+            outputFolderNamePrefix += "_" + info.getDisplayName() + "-";
+        }
+        else
+        {
+            outputFolderNamePrefix += "-";
         }
     }
 
@@ -63,16 +81,18 @@ public class TestAdminReport
         return container;
     }
 
-    @ParameterizedTest(name = "as current user={0}")
+    @ParameterizedTest(name = "ascurrentuser_{0}")
     @ValueSource(booleans = {true, false})
     void testMountToTmpReports(boolean asCurrentUser) throws Exception
     {
+        Path testdir = temporaryFolderManager.createTempFolder( outputFolderNamePrefix );
         try(GenericContainer container = createNeo4jContainer(asCurrentUser))
         {
-            String hostReportFolderName = asCurrentUser? "tmpreports-currentuser-":"tmpreports-defaultuser-";
+            temporaryFolderManager.createTempFolderAndMountAsVolume( container,"logs","/logs", testdir);
             Path reportFolder = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                                                         hostReportFolderName,
-                                                                                         "/tmp/reports" );
+                                                                                         "reports",
+                                                                                         "/tmp/reports",
+                                                                                         testdir);
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", PASSWORD );
@@ -82,7 +102,7 @@ public class TestAdminReport
         }
     }
 
-    @ParameterizedTest(name = "as current user={0}")
+    @ParameterizedTest(name = "ascurrentuser_{0}")
     @ValueSource(booleans = {true, false})
     void testCanWriteReportToAnyMountedLocation_toPathWithEquals(boolean asCurrentUser) throws Exception
     {
@@ -92,7 +112,7 @@ public class TestAdminReport
                                          new String[]{"neo4j-admin-report", "--verbose", reportDestinationFlag+"=/reports"} );
     }
 
-    @ParameterizedTest(name = "as current user={0}")
+    @ParameterizedTest(name = "ascurrentuser_{0}")
     @ValueSource(booleans = {true, false})
     void testCanWriteReportToAnyMountedLocation_toPathWithSpace(boolean asCurrentUser) throws Exception
     {
@@ -104,11 +124,14 @@ public class TestAdminReport
 
     private void verifyCanWriteToMountedLocation(boolean asCurrentUser, String testFolderPrefix, String[] execArgs) throws Exception
     {
+        Path testdir = temporaryFolderManager.createTempFolder( testFolderPrefix );
         try(GenericContainer container = createNeo4jContainer(asCurrentUser))
         {
+            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "logs-", "/logs", testdir );
             Path reportFolder = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                                                         testFolderPrefix,
-                                                                                         "/reports" );
+                                                                                         "reports-",
+                                                                                         "/reports",
+                                                                                         testdir );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", PASSWORD );
@@ -138,6 +161,9 @@ public class TestAdminReport
     {
         try(GenericContainer container = createNeo4jContainer(false))
         {
+            temporaryFolderManager.createTempFolderAndMountAsVolume( container,
+                                                                     outputFolderNamePrefix,
+                                                                     "/logs" );
             container.start();
             Container.ExecResult execResult = container.execInContainer( "neo4j-admin-report", "--help" );
             // log exec results, because the results of an exec don't get logged automatically.

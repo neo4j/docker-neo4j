@@ -61,7 +61,7 @@ public class TestBundledPluginInstallation
                  .waitingFor( Wait.forHttp( "/" )
                                   .forPort( DEFAULT_BROWSER_PORT )
                                   .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 30 ) )  );
+                                  .withStartupTimeout( Duration.ofSeconds( 45 ) )  );
         return container;
     }
 
