@@ -40,8 +40,17 @@ test-community: build-community
 
 ## building the image ##
 
-build: build-community build-enterprise
+build: build-community build-enterprise build-alpine
 .PHONY: build
+
+build-alpine: build-community-alpine build-enterprise-alpine
+.PHONY: build-alpine
+
+build-community-alpine: tmp/.image-id-alpine-community  tmp/devenv-alpine-community.env
+.PHONY: build-community-alpine
+
+build-enterprise-alpine: tmp/.image-id-alpine-enterprise tmp/devenv-alpine-enterprise.env
+.PHONY: build-enterprise-alpine
 
 build-community: tmp/.image-id-community tmp/.image-id-neo4j-admin-community tmp/devenv-community.env
 .PHONY: build-community
@@ -56,6 +65,11 @@ tmp/devenv-%.env:  tmp/.image-id-% tmp/.image-id-neo4j-admin-%
 > echo "NEO4J_EDITION=${*}" >> ${@}
 > echo "NEO4J_SKIP_MOUNTED_FOLDER_TARBALLING=true" >> ${@}
 
+tmp/devenv-alpine-%.env:  tmp/.image-id-alpine-% 
+> echo "NEO4JVERSION=$(NEO4JVERSION)" > ${@}
+> echo "NEO4J_IMAGE=$$(cat tmp/.image-id-alpine-${*})" >> ${@}
+> echo "NEO4J_EDITION=${*}" >> ${@}
+
 # copy the releaseable version of the image to the output folder.
 out/%/.sentinel: tmp/image-%/.sentinel
 > mkdir -p $(@D)
@@ -64,6 +78,14 @@ out/%/.sentinel: tmp/image-%/.sentinel
 
 # create image from local build context
 tmp/.image-id-%: tmp/local-context-%/.sentinel
+> mkdir -p $(@D)
+> image=test/$$RANDOM
+> docker build --tag=$$image \
+    --build-arg="NEO4J_URI=file:///startup/$(call tarball,$*,$(NEO4JVERSION))" \
+    $(<D)
+> echo -n $$image >$@
+
+tmp/.image-id-alpine-%: tmp/local-context-alpine%/.sentinel
 > mkdir -p $(@D)
 > image=test/$$RANDOM
 > docker build --tag=$$image \
@@ -91,6 +113,13 @@ tmp/local-context-%/.sentinel: tmp/image-%/.sentinel in/$(call tarball,%,$(NEO4J
 > cp $(filter %.tar.gz,$^) $(@D)/local-package
 > touch $@
 
+tmp/local-context-alpine%/.sentinel: tmp/image-alpine%/.sentinel in/$(call tarball,%,$(NEO4JVERSION))
+> rm -rf $(@D)
+> mkdir -p $(@D)
+> cp -r $(<D)/* $(@D)
+> cp $(filter %.tar.gz,$^) $(@D)/local-package
+> touch $@
+
 tmp/local-context-neo4j-admin-%/.sentinel: tmp/image-neo4j-admin-%/.sentinel in/$(call tarball,%,$(NEO4JVERSION))
 > rm -rf $(@D)
 > mkdir -p $(@D)
@@ -111,6 +140,24 @@ tmp/image-%/.sentinel: docker-image-src/$(series)/coredb/Dockerfile \
 > cp docker-image-src/common/* $(@D)/local-package
 > cp $(filter %.sh,$^) $(@D)/local-package
 > cp $(filter %.json,$^) $(@D)/local-package
+> sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
+> <$(filter %/Dockerfile,$^) sed \
+    -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \
+    -e "s|%%NEO4J_SHA%%|$${sha}|" \
+    -e "s|%%NEO4J_TARBALL%%|$(call tarball,$*,$(NEO4JVERSION))|" \
+    -e "s|%%NEO4J_EDITION%%|$*|" \
+    -e "s|%%NEO4J_DIST_SITE%%|$(dist_site)|" \
+    >$(@D)/Dockerfile
+> touch $(@D)/local-package/.sentinel
+> touch $@
+
+tmp/image-alpine%/.sentinel: docker-image-src/$(series)/alpine/Dockerfile docker-image-src/$(series)/alpine/docker-entrypoint.sh \
+                       in/$(call tarball,%,$(NEO4JVERSION))
+> mkdir -p $(@D)/local-package
+> cp docker-image-src/common/* $(@D)/local-package
+> cp $(filter %.sh,$^) $(@D)/local-package
+> NEO4JPLUGINS_OVERRIDE=docker-image-src/$(series)/neo4jlabs-plugins.json
+> if [ -e $${NEO4JPLUGINS_OVERRIDE} ]; then cp $${NEO4JPLUGINS_OVERRIDE} $(@D)/local-package; fi
 > sha=$$(shasum --algorithm=256 $(filter %.tar.gz,$^) | cut -d' ' -f1)
 > <$(filter %/Dockerfile,$^) sed \
     -e "s|%%NEO4J_BASE_IMAGE%%|${NEO4J_BASE_IMAGE}|" \
