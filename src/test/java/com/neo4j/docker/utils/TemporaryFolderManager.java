@@ -5,6 +5,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +39,14 @@ import java.util.stream.Collectors;
  *
  * To use this utility, create an object as a class field, and use @RegisterExtension annotation.
  * */
-public class TemporaryFolderManager implements AfterAllCallback
+public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallback
 {
     private static final Logger log = LoggerFactory.getLogger( TemporaryFolderManager.class );
     // if we ever run parallel tests, random number generator and
     // list of folders to compress need to be made thread safe
     private Random rng = new Random(  );
     private Set<Path> toCompressAfterAll = new HashSet<>();
-    private final Path testOutputParentFolder;
+    private final Path folderRoot;
 
     public TemporaryFolderManager( )
     {
@@ -53,7 +54,23 @@ public class TemporaryFolderManager implements AfterAllCallback
     }
     public TemporaryFolderManager( Path testOutputParentFolder )
     {
-        this.testOutputParentFolder = testOutputParentFolder;
+        this.folderRoot = testOutputParentFolder;
+    }
+
+    @Override
+    public void beforeEach( ExtensionContext extensionContext ) throws Exception
+    {
+        String outputFolderNamePrefix = extensionContext.getTestClass().get().getName() + "_" +
+                                 extensionContext.getTestMethod().get().getName();
+        if(!extensionContext.getDisplayName().startsWith( extensionContext.getTestMethod().get().getName() ))
+        {
+            outputFolderNamePrefix += "_" + extensionContext.getDisplayName() + "-";
+        }
+        else
+        {
+            outputFolderNamePrefix += "-";
+        }
+        log.info( "Recommended folder prefix is " + outputFolderNamePrefix );
     }
 
     @Override
@@ -64,7 +81,7 @@ public class TemporaryFolderManager implements AfterAllCallback
             log.info( "Cleanup of test artifacts skipped by request" );
             return;
         }
-        log.info( "Performing cleanup of {}", testOutputParentFolder );
+        log.info( "Performing cleanup of {}", folderRoot );
         // create tar archive of data
         for(Path p : toCompressAfterAll)
         {
@@ -81,7 +98,7 @@ public class TemporaryFolderManager implements AfterAllCallback
                     if(fileToBeArchived.toFile().isDirectory()) continue;
                     try( InputStream fileStream = Files.newInputStream( fileToBeArchived ))
                     {
-                        ArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, testOutputParentFolder.relativize( fileToBeArchived ).toString() );
+                        ArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, folderRoot.relativize( fileToBeArchived ).toString() );
                         archiver.putArchiveEntry( entry );
                         IOUtils.copy( fileStream, archiver );
                         archiver.closeArchiveEntry();
@@ -112,7 +129,7 @@ public class TemporaryFolderManager implements AfterAllCallback
                                                          String containerMountPoint ) throws IOException
 	{
 		return createTempFolderAndMountAsVolume( container, hostFolderNamePrefix, containerMountPoint,
-												 testOutputParentFolder );
+                                                 folderRoot );
 	}
 
     public Path createTempFolderAndMountAsVolume( GenericContainer container, String hostFolderNamePrefix,
@@ -132,7 +149,7 @@ public class TemporaryFolderManager implements AfterAllCallback
 
     public Path createTempFolder( String folderNamePrefix ) throws IOException
     {
-    	return createTempFolder( folderNamePrefix, testOutputParentFolder );
+    	return createTempFolder( folderNamePrefix, folderRoot );
     }
 
     public Path createTempFolder( String folderNamePrefix, Path parentFolder ) throws IOException
@@ -150,7 +167,7 @@ public class TemporaryFolderManager implements AfterAllCallback
             throw e;
         }
         log.info( "Created folder {}", hostFolder );
-        if(parentFolder.equals( testOutputParentFolder ))
+        if(parentFolder.equals( folderRoot ))
         {
             toCompressAfterAll.add( hostFolder );
         }

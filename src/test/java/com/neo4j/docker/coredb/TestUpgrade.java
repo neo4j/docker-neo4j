@@ -9,6 +9,7 @@ import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -49,15 +50,17 @@ public class TestUpgrade
 							  Neo4jVersion.NEO4J_VERSION_400,
 							  new Neo4jVersion( 4, 1, 0 ),
 							  new Neo4jVersion( 4, 4, 0 ));
-	}
+    }
 
-	private static List<Neo4jVersion> upgradableNeo4jVersions()
-	{
-		return Arrays.asList( new Neo4jVersion( 5, 1, 0),
-                              new Neo4jVersion( 5, 2, 0),
-                              new Neo4jVersion( 5, 3, 0),
-                              new Neo4jVersion( 5, 4, 0));
-	}
+    private static List<Neo4jVersion> upgradableNeo4jVersions()
+    {
+        List<Neo4jVersion> out = new ArrayList<>(TestSettings.NEO4J_VERSION.minor);
+        for(int minor=1; minor < TestSettings.NEO4J_VERSION.minor; minor++ )
+        {
+            out.add( new Neo4jVersion( 5, minor, 0 ) );
+        }
+        return out;
+    }
 
     private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
     {
@@ -71,7 +74,7 @@ public class TestUpgrade
         return System.getProperty( "os.arch" ).equals( "aarch64" );
     }
 
-	@ParameterizedTest(name = "upgrade from {0}")
+	@ParameterizedTest(name = "from_{0}")
     @MethodSource( "upgradableNeo4jVersionsPre5" )
 	void canUpgradeNeo4j_fileMountsPre5( Neo4jVersion upgradeFrom) throws Exception
 	{
@@ -80,7 +83,7 @@ public class TestUpgrade
 		testUpgradeFileMounts( upgradeFrom );
 	}
 
-	@ParameterizedTest(name = "upgrade from {0}")
+	@ParameterizedTest(name = "from_{0}")
 	@MethodSource( "upgradableNeo4jVersionsPre5" )
 	void canUpgradeNeo4j_namedVolumesPre5(Neo4jVersion upgradeFrom) throws Exception
 	{
@@ -89,7 +92,7 @@ public class TestUpgrade
 		testUpgradeNamedVolumes( upgradeFrom );
 	}
 
-	@ParameterizedTest(name = "upgrade from {0}")
+	@ParameterizedTest(name = "from_{0}")
     @MethodSource( "upgradableNeo4jVersions" )
 	void canUpgradeNeo4j_fileMounts( Neo4jVersion upgradeFrom) throws Exception
 	{
@@ -98,7 +101,7 @@ public class TestUpgrade
 		testUpgradeFileMounts( upgradeFrom );
 	}
 
-	@ParameterizedTest(name = "upgrade from {0}")
+	@ParameterizedTest(name = "from_{0}")
 	@MethodSource( "upgradableNeo4jVersions" )
 	void canUpgradeNeo4j_namedVolumes(Neo4jVersion upgradeFrom) throws Exception
 	{

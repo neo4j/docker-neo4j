@@ -3,7 +3,16 @@ ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
 
 # gather pre-requisite packages
-RUN microdnf install -y findutils gzip hostname jq procps shadow-utils tar wget which; \
+RUN microdnf install -y \
+        findutils \
+        gzip \
+        hostname \
+        jq \
+        procps \
+        shadow-utils \
+        tar \
+        wget \
+        which; \
     set -eux; \
     arch="$(uname -m)"; \
     case "${arch}" in \
