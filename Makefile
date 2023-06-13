@@ -1,6 +1,18 @@
-include make-common.mk
+SHELL := bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+.DELETE_ON_ERROR:
+.SECONDEXPANSION:
+.SECONDARY:
 
-NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
+ifeq ($(origin .RECIPEPREFIX), undefined)
+  $(error This Make does not support .RECIPEPREFIX. Please use GNU Make 4.0 or later)
+endif
+.RECIPEPREFIX = >
+
+ifndef NEO4JVERSION
+  $(error NEO4JVERSION is not set)
+endif
 
 # Use make test TESTS='<pattern>' to run specific tests
 # e.g. `make test TESTS='TestCausalCluster'` or `make test TESTS='*Cluster*'`
@@ -8,32 +20,80 @@ NEO4J_BASE_IMAGE?="openjdk:11-jdk-slim"
 # by default this is empty which means all tests will be run
 TESTS?=""
 
+clean:
+> rm -rf ./build/debian/
+> rm -rf ./build/rhel8/
+> rm -rf ./out
+.PHONY: clean
+
 all: tag
 .PHONY: all
+.DEFAULT:
 
-## tagging the images ##
-tag: tag-community tag-enterprise
+## building
+
+build: build-debian build-rhel8
+.PHONY: build
+
+build-debian: build-debian-community build-debian-enterprise
+.PHONY: build-debian
+
+build-debian-%:
+> ./build/build-docker-image.sh $(NEO4JVERSION) "${*}" "debian"
+.PHONY: build-debian-%
+
+build-rhel8: build-rhel8-community build-rhel8-enterprise
+.PHONY: build-debian
+
+build-rhel8-%:
+> ./build/build-docker-image.sh $(NEO4JVERSION) "${*}" "rhel8"
+.PHONY: build-rhel8-%
+
+## tagging
+
+tag: tag-debian tag-rhel8
 .PHONY: tag
 
-tag-community: build-community
-> docker tag $$(cat tmp/.image-id-community) neo4j:$(NEO4JVERSION)
-> docker tag $$(cat tmp/.image-id-neo4j-admin-community) neo4j/neo4j-admin:$(NEO4JVERSION)
+tag-debian: tag-debian-community tag-debian-enterprise
+.PHONY: tag-debian
 
-tag-enterprise: build-enterprise
-> docker tag $$(cat tmp/.image-id-enterprise) neo4j:$(NEO4JVERSION)-enterprise
-> docker tag $$(cat tmp/.image-id-neo4j-admin-enterprise) neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise
+tag-rhel8: tag-rhel8-community tag-rhel8-enterprise
+.PHONY: tag-rhel8
 
+tag-%-community: build-%-community
+> docker tag $$(cat ./build/${*}/coredb/.image-id-community) neo4j:$(NEO4JVERSION)-${*}
+> docker tag $$(cat ./build/${*}/neo4j-admin/.image-id-community) neo4j/neo4j-admin:$(NEO4JVERSION)-${*}
+.PHONY: tag-%-community
+
+tag-%-enterprise: build-%-enterprise
+> docker tag $$(cat ./build/${*}/coredb/.image-id-enterprise) neo4j:$(NEO4JVERSION)-enterprise-${*}
+> docker tag $$(cat ./build/${*}/neo4j-admin/.image-id-enterprise) neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise-${*}
+.PHONY: tag-%-enterprise
+
+## packaging and release
 
 # create release images and loadable images
-package: package-community package-enterprise
+package: package-debian package-rhel8
 .PHONY: package
 
-package-community:  tag-community out/community/.sentinel out/neo4j-admin-community/.sentinel
-> mkdir -p out
-> docker save neo4j:$(NEO4JVERSION) > out/neo4j-community-$(NEO4JVERSION)-docker-loadable.tar
-> docker save neo4j/neo4j-admin:$(NEO4JVERSION) > out/neo4j-admin-community-$(NEO4JVERSION)-docker-loadable.tar
+package-debian: package-debian-community package-debian-enterprise package-debian-release-artifacts
+.PHONY: package-debian
 
-package-enterprise:  tag-enterprise out/enterprise/.sentinel out/neo4j-admin-enterprise/.sentinel
+package-rhel8: package-rhel8-community package-rhel8-enterprise package-rhel8-release-artifacts
+.PHONY: package-rhel8
+
+package-%-community:  tag-%-community
 > mkdir -p out
-> docker save neo4j:$(NEO4JVERSION)-enterprise > out/neo4j-enterprise-$(NEO4JVERSION)-docker-loadable.tar
-> docker save neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise > out/neo4j-admin-enterprise-$(NEO4JVERSION)-docker-loadable.tar
+> docker save neo4j:$(NEO4JVERSION)-${*} > out/neo4j-community-$(NEO4JVERSION)-${*}-docker-loadable.tar
+> docker save neo4j/neo4j-admin:$(NEO4JVERSION)-${*} > out/neo4j-admin-community-$(NEO4JVERSION)-${*}-docker-loadable.tar
+
+package-%-enterprise:  tag-%-enterprise
+> mkdir -p out
+> docker save neo4j:$(NEO4JVERSION)-enterprise-${*} > out/neo4j-enterprise-$(NEO4JVERSION)-${*}-docker-loadable.tar
+> docker save neo4j/neo4j-admin:$(NEO4JVERSION)-enterprise-${*} > out/neo4j-admin-enterprise-$(NEO4JVERSION)-${*}-docker-loadable.tar
+
+package-%-release-artifacts: build-%-community build-%-enterprise
+> mkdir -p out
+> cp --recursive --force build/${*} out/
+> find out/${*} -name "neo4j-*.tar.gz" -delete
+> find out/${*} -name ".image-id-*" -delete
