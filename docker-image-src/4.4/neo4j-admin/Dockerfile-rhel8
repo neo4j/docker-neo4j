@@ -1,6 +1,6 @@
 FROM redhat/ubi8-minimal
 ENV JAVA_HOME=/opt/java/openjdk
-COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
+COPY --from=eclipse-temurin:11 $JAVA_HOME $JAVA_HOME
 
 # gather pre-requisite packages
 RUN microdnf install -y curl gzip procps shadow-utils tar util-linux; \
