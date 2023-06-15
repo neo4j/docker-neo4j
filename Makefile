@@ -21,14 +21,21 @@ endif
 TESTS?=""
 
 clean:
-> rm -rf ./build/debian/
-> rm -rf ./build/rhel8/
+> rm -rf ./build/
 > rm -rf ./out
 .PHONY: clean
 
 all: tag
 .PHONY: all
 .DEFAULT:
+
+test-%-enterprise: build-%-enterprise
+> mvn test -Dimage=$$(cat build/${*}/coredb/.image-id-enterprise) -Dadminimage=$$(cat build/${*}/neo4j-admin/.image-id-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
+.PHONY: test-%-enterprise
+
+test-%-community: build-%-community
+> mvn test -Dimage=$$(cat build/${*}/coredb/.image-id-community) -Dadminimage=$$(cat build/${*}/neo4j-admin/.image-id-community) -Dedition=community -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
+.PHONY: test-%-community
 
 ## building
 
@@ -39,14 +46,14 @@ build-debian: build-debian-community build-debian-enterprise
 .PHONY: build-debian
 
 build-debian-%:
-> ./build/build-docker-image.sh $(NEO4JVERSION) "${*}" "debian"
+> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "debian"
 .PHONY: build-debian-%
 
 build-rhel8: build-rhel8-community build-rhel8-enterprise
 .PHONY: build-debian
 
 build-rhel8-%:
-> ./build/build-docker-image.sh $(NEO4JVERSION) "${*}" "rhel8"
+> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "rhel8"
 .PHONY: build-rhel8-%
 
 ## tagging

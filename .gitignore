@@ -7,9 +7,7 @@
 /devenv.local
 /local-mounts/
 /target/
-/build/tars/
-/build/release/
-/build/local/
+/build/
 
 # simlinks to dev scripts in https://github.com/neo-technology/teamcity-witchcraft
 download_tool.py

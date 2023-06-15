@@ -1,6 +1,11 @@
-FROM debian:bullseye-slim
+FROM redhat/ubi8-minimal
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
+
+# gather pre-requisite packages
+RUN microdnf install -y curl gzip procps shadow-utils tar util-linux; \
+    microdnf clean all
+
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
@@ -8,12 +13,9 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_HOME="/var/lib/neo4j"
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
-RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
-
 COPY ./local-package/* /startup/
 
-RUN apt update \
-    && apt install -y curl procps \
+RUN groupadd --gid 7474 --system neo4j && useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -29,17 +31,11 @@ RUN apt update \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
-    && rm -rf /tmp/* \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get -y purge --auto-remove curl
-
+    && ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
 VOLUME /data /backups
 WORKDIR "${NEO4J_HOME}"
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
-
+ENTRYPOINT ["/startup/docker-entrypoint.sh"]
 CMD ["neo4j-admin"]

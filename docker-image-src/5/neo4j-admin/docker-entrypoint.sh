@@ -20,7 +20,7 @@ function check_mounted_folder_writable_with_chown
         fi
     else
         if [[ ! -w "${mountFolder}" ]]  && [[ "$(stat -c %U ${mountFolder})" != "neo4j" ]]; then
-            print_permissions_advice_and_fail "${mountFolder}"
+            print_permissions_advice_and_fail "${mountFolder}" "${userid}" "${groupid}"
         fi
     fi
 }

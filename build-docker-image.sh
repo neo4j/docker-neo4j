@@ -5,9 +5,10 @@ SUPPORTED_IMAGE_OS=("debian" "rhel8")
 EDITIONS=("community" "enterprise")
 
 DISTRIBUTION_SITE="https://dist.neo4j.org"
-BUILD_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-SRC_DIR=${BUILD_DIR}/../docker-image-src
-TAR_CACHE=${BUILD_DIR}/tars
+ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+BUILD_DIR=${ROOT_DIR}/build
+SRC_DIR=${ROOT_DIR}/docker-image-src
+TAR_CACHE=${ROOT_DIR}/in
 
 function usage
 {
@@ -64,17 +65,13 @@ function fetch_tarball
     local tar_name=$(tarball_name "${version}" "${edition}")
     mkdir -p ${TAR_CACHE}
     if [[ ! -f $(cached_tarball "${version}" "${edition}") ]]; then
-        echo "Downloading ${tar_name} from ${DISTRIBUTION_SITE}"
+        echo "Downloading ${tar_name} from ${DISTRIBUTION_SITE} to $(cached_tarball ${version} ${edition})"
         wget ${DISTRIBUTION_SITE}/${tar_name} -O "$(cached_tarball ${version} ${edition})"
     fi
 }
 
 ## ==========================================
-## get and sanitise script inputs and paths
-
-BUILD_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-SRC_DIR=${BUILD_DIR}/../docker-image-src
-TAR_CACHE=${BUILD_DIR}/tars
+## get and sanitise script inputs
 
 if [[ $# -eq 3 ]]; then
     NEO4JVERSION=${1}

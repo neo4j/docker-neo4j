@@ -49,13 +49,11 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_HOME="/var/lib/neo4j"
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
-RUN groupadd --gid 7474 --system neo4j && useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j
-
 COPY ./local-package/* /startup/
 
-RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI}; \
+RUN groupadd --gid 7474 --system neo4j && useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j; \
+    curl --fail --silent --show-error --location --remote-name ${NEO4J_URI}; \
     echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet; \
-    ls -la /startup; \
     tar --extract --file ${NEO4J_TARBALL} --directory /var/lib; \
     mv /var/lib/neo4j-* "${NEO4J_HOME}"; \
     rm ${NEO4J_TARBALL}; \
