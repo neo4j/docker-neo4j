@@ -194,7 +194,7 @@ sed -i \
 ## Finally we are ready to do a docker build...
 
 # build coredb
-coredb_image_tag=test/${RANDOM}
+coredb_image_tag=neo4jtest:${RANDOM}
 echo "Building CoreDB docker image for neo4j-${NEO4JVERSION} ${NEO4JEDITION} on ${IMAGE_OS}."
 docker build --tag=${coredb_image_tag} \
     --build-arg="NEO4J_URI=file:///startup/$(tarball_name "${NEO4JVERSION}" "${NEO4JEDITION}")" \
@@ -203,7 +203,7 @@ echo "Tagged CoreDB image ${coredb_image_tag}"
 echo -n "${coredb_image_tag}" > ${COREDB_LOCALCXT_DIR}/../.image-id-"${NEO4JEDITION}"
 
 # build neo4j-admin
-admin_image_tag=test/${RANDOM}
+admin_image_tag=neo4jadmintest:${RANDOM}
 echo "Building neo4j-admin docker image for neo4j-admin-${NEO4JVERSION} ${NEO4JEDITION} on ${IMAGE_OS}."
 docker build --tag=${admin_image_tag} \
     --build-arg="NEO4J_URI=file:///startup/$(tarball_name "${NEO4JVERSION}" "${NEO4JEDITION}")" \

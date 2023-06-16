@@ -15,23 +15,84 @@ Development is tested on Ubuntu and OSX. It will probably work on other Linuxes.
 
 # Building the Image
 
-The build will create two images (one for Enterprise and one for Community) for a single version of Neo4j. 
+There are two supported base operating systems that the docker image can be build upon:
+ * debian, based off `debian:bullseye-slim`.
+ * RedHat UBI8, based off `redhat/ubi8-minimal`. Only available for 4.4 onwards.
 
-The make script will automatically download the source files needed to build the images. 
-You just need to specify the **full** Neo4j version including major, minor and patch numbers. For example:
+On top of that there is also the choice Neo4j version, and whether to build `community` or `enterprise` edition Neo4j.
 
+## Just give me the build TLDR
+
+You probably want to create the neo4j image with whatever base image and community/enterprise variant you need, then tag it like a released neo4j version.
+
+Here are some examples:
 ```bash
-NEO4JVERSION=3.5.11 make clean build
+# 5.9.0 community edition and debian 
+NEO4JVERSION=5.9.0 make tag-debian-community
+# creates tag neo4j:5.9.0-debian
+
+# 4.4.20 community edition and redhat ubi8
+NEO4JVERSION=4.4.20 make tag-rhel8-community
+# creates tag neo4j:4.4.20-rhel8
+
+# 5.2.0 enterprise edition and debian 
+NEO4JVERSION=5.2.0 make tag-debian-enterprise
+# creates tag neo4j:5.2.0-enterprise-debian
+
+# 4.4.0 enterprise edition and redhat ubi8
+NEO4JVERSION=4.4.0 make tag-rhel8-enterprise
+# creates tag neo4j:4.4.0-enterprise-rhel8
 ```
 
-When the make script is complete, the image name will be written to file in `tmp/.image-id-community` and `tmp/.image-id-enterprise`:
+## The build script
 
+The build script [build-docker-image.sh](./build-docker-image.sh) will take these options and produce a Neo4j image and a neo4j-admin image, for the combination you request.
+For example:
 ```bash
-$ cat tmp/.image-id-community
-test/19564
+#  debian based 4.4.22 community edition:
+./build-docker-image.sh 4.4.22 community debian
+#  redhat-ubi8 based 5.9.0 enterprise edition:
+./build-docker-image.sh 5.9.0 enterprise rhel8
+```
+The make script will automatically download the source files needed to build the images.
+You just need to specify the **full** Neo4j version including major, minor and patch numbers.
 
-$ cat tmp/.image-id-enterprise
-test/13909
+The source code (entrypoint, Dockerfile and so on) is outputted into the `build/<base OS>/coredb/<edition>` and `build/<base OS>/neo4j-admin/<edition>` folders.
+
+The resulting images will have a randomly generated tag, which is written into the files `build/<base OS>/coredb/.image-id-<edition>` and `build/<base OS>/neo4j-admin/.image-id-<edition>`.
+
+## Using the Convenience Makefile
+
+The [Makefile](./Makefile) is a wrapper around the [build-docker-image.sh](./build-docker-image.sh).
+It mostly just adds extra functionality to help you build lots of images at once, or does extra steps like tagging, testing and generating release files.
+
+The four actions it can do are:
+* `build`
+* `test`
+* `tag`
+* `package`
+
+For each action, it can be broken down by base image and community/enterprise type.
+For example `build`, has the following make targets:
+* `build`. Builds *every* variant.
+* `build-debian`. Builds debian community and enterprise.
+* `build-rhel8`. Builds redhat-ubi8 community and enterprise.
+* `build-debian-community`
+* `build-debian-enterprise`
+* `build-rhel8-community`
+* `build-rhel8-enterprise`
+
+The other actions have the same targets.
+
+This is an example of calling one of the build targets:
+```bash
+NEO4JVERSION=4.4.4 make clean build-debian
+```
+This will build community and enterprise, coredb and neo4j-admin, all based on debian.
+
+To build and then tag all debian neo4j images, use `tag`. For example:
+```bash
+NEO4JVERSION=4.4.4 make clean tag-debian
 ```
 
 ## Building ARM64 based images
@@ -39,14 +100,12 @@ test/13909
 From Neo4j 4.4.0 onwards, the Neo4j image should be buildable on any architecture using the same build commands as [Building the Image](#building-the-image).
 
 ### Building ARM versions before 4.4
-For earlier versions of Neo4j, you may need to set the variable `NEO4J_BASE_IMAGE` to your architecture specific version of `openjdk:11-jdk-slim` (or `openjdk:8-jdk-slim` for versions before 4.0.0).
+Earlier versions of Neo4j are no longer under active development and have not been tested on ARM architectures, even when those versions were under development.
 
-Like with `amd64` images, you must still specify the **full** Neo4j version including major, minor and patch numbers. For example:
+It is strongly advised that you use 4.4.0 or later on an ARM system.
 
-```bash
-NEO4J_BASE_IMAGE=arm64v8/eclipse-temurin:11-jammy
-NEO4JVERSION=4.3.7 make clean build
-```
+If you really must use an unsupported Neo4j version then in your clone of this repository, `git checkout` tag `neo4j-4.3.23` and follow development instructions there.
+https://github.com/neo4j/docker-neo4j/blob/neo4j-4.3.23/DEVELOPMENT.md#building-arm64-based-images
 
 
 ## If the Neo4j Version is not Publicly Available
@@ -91,6 +150,7 @@ These can be passed as an environment variable or a command line parameter when 
 |-----------------|-----------------|------------------------------------------------------------|
 | `NEO4JVERSION`  | `-Dversion`     | the Neo4j version of the image                             |
 | `NEO4J_IMAGE`   | `-Dimage`       | the tag of the image to test                               |
+| `NEO4JADMIN_IMAGE` | `-Dadminimage` | the tag of the neo4j-admin image to test           |
 | `NEO4J_EDITION` | `-Dedition`     | Either `community` or `enterprise` depending on the image. |
 
 <!-- prettified with http://www.tablesgenerator.com/markdown_tables -->
@@ -98,10 +158,10 @@ These can be passed as an environment variable or a command line parameter when 
 ## Using Maven
 The Makefile can run the entire test suite.
 1. Make sure `java --version` is java 17.
-2. `NEO4JVERSION=<VERSION> make test` This is a make target that will run these commands:
+2. `NEO4JVERSION=<VERSION> make test-<BASE OS>` This is a make target that will run these commands:
 ```bash
-mvn test -Dimage=$(cat tmp/.image-id-community) -Dedition=community -Dversion=${NEO4JVERSION}
-mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=${NEO4JVERSION}
+mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-enterprise) -Dadminimage=$(cat build/<BASE OS>/neo4j-admin/.image-id-enterprise) -Dedition=enterprise -Dversion=${NEO4JVERSION}
+mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-community) -Dadminimage=$(cat build/<BASE OS>/neo4j-admin/.image-id-community) -Dedition=community -Dversion=${NEO4JVERSION}
 ```
 
 ## In Intellij
@@ -112,7 +172,7 @@ mvn test -Dimage=$(cat tmp/.image-id-enterprise) -Dedition=enterprise -Dversion=
    1. Select the "EnvFile" tab
    2. Make sure "Enable EnvFile" is checked.
    3. Click the `+` then click to add a `.env` file.
-   4. In the file selection box select `./tmp/devenv-enterprise.env` or `./tmp/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
+   4. In the file selection box select `./build/<BASE OS>/devenv-enterprise.env` or `./build/<BASE OS>/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
    5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
 
 You should now be able to run unit tests straight from the IDE.

@@ -25,10 +25,6 @@ clean:
 > rm -rf ./out
 .PHONY: clean
 
-all: tag
-.PHONY: all
-.DEFAULT:
-
 test-%-enterprise: build-%-enterprise
 > mvn test -Dimage=$$(cat build/${*}/coredb/.image-id-enterprise) -Dadminimage=$$(cat build/${*}/neo4j-admin/.image-id-enterprise) -Dedition=enterprise -Dversion=$(NEO4JVERSION) -Dtest=$(TESTS)
 .PHONY: test-%-enterprise
