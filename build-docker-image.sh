@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 
-SUPPORTED_IMAGE_OS=("debian" "rhel8")
+SUPPORTED_IMAGE_OS=("debian" "ubi8")
 EDITIONS=("community" "enterprise")
 
 DISTRIBUTION_SITE="https://dist.neo4j.org"
@@ -15,11 +15,11 @@ function usage
     echo >&2 "USAGE: $0 <version> <edition> <operating system>
     For example:
         $0 4.4.10 community debian
-        $0 5.10.0 enterprise rhel8
+        $0 5.10.0 enterprise ubi8
     Version and operating system can also be set in the environment.
     For example:
         NEO4JVERSION=4.4.10 NEO4JEDITION=community IMAGE_OS=debian $0
-        NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=rhel8 $0
+        NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=ubi8 $0
     "
     exit 1
 }
@@ -52,7 +52,7 @@ function get_compatible_dockerfile_for_os_or_error
     local minor=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\2/')
     case ${major} in
         5)
-            local SUPPORTED_IMAGE_OS=("debian" "rhel8")
+            local SUPPORTED_IMAGE_OS=("debian" "ubi8")
             if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile-${requested_os}"
                 return 0
@@ -61,7 +61,7 @@ function get_compatible_dockerfile_for_os_or_error
         4)
             case ${minor} in
             4)
-                local SUPPORTED_IMAGE_OS=("debian" "rhel8")
+                local SUPPORTED_IMAGE_OS=("debian" "ubi8")
                 if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
                     echo  "Dockerfile-${requested_os}"
                     return 0

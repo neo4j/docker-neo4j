@@ -35,7 +35,7 @@ test-%-community: build-%-community
 
 ## building
 
-build: build-debian build-rhel8
+build: build-debian build-ubi8
 .PHONY: build
 
 build-debian: build-debian-community build-debian-enterprise
@@ -45,23 +45,23 @@ build-debian-%:
 > ./build-docker-image.sh $(NEO4JVERSION) "${*}" "debian"
 .PHONY: build-debian-%
 
-build-rhel8: build-rhel8-community build-rhel8-enterprise
+build-ubi8: build-ubi8-community build-ubi8-enterprise
 .PHONY: build-debian
 
-build-rhel8-%:
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "rhel8"
-.PHONY: build-rhel8-%
+build-ubi8-%:
+> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi8"
+.PHONY: build-ubi8-%
 
 ## tagging
 
-tag: tag-debian tag-rhel8
+tag: tag-debian tag-ubi8
 .PHONY: tag
 
 tag-debian: tag-debian-community tag-debian-enterprise
 .PHONY: tag-debian
 
-tag-rhel8: tag-rhel8-community tag-rhel8-enterprise
-.PHONY: tag-rhel8
+tag-ubi8: tag-ubi8-community tag-ubi8-enterprise
+.PHONY: tag-ubi8
 
 tag-%-community: build-%-community
 > docker tag $$(cat ./build/${*}/coredb/.image-id-community) neo4j:$(NEO4JVERSION)-${*}
@@ -76,14 +76,14 @@ tag-%-enterprise: build-%-enterprise
 ## packaging and release
 
 # create release images and loadable images
-package: package-debian package-rhel8
+package: package-debian package-ubi8
 .PHONY: package
 
 package-debian: package-debian-community package-debian-enterprise package-debian-release-artifacts
 .PHONY: package-debian
 
-package-rhel8: package-rhel8-community package-rhel8-enterprise package-rhel8-release-artifacts
-.PHONY: package-rhel8
+package-ubi8: package-ubi8-community package-ubi8-enterprise package-ubi8-release-artifacts
+.PHONY: package-ubi8
 
 package-%-community:  tag-%-community
 > mkdir -p out

@@ -32,16 +32,16 @@ NEO4JVERSION=5.9.0 make tag-debian-community
 # creates tag neo4j:5.9.0-debian
 
 # 4.4.20 community edition and redhat ubi8
-NEO4JVERSION=4.4.20 make tag-rhel8-community
-# creates tag neo4j:4.4.20-rhel8
+NEO4JVERSION=4.4.20 make tag-ubi8-community
+# creates tag neo4j:4.4.20-ubi8
 
 # 5.2.0 enterprise edition and debian 
 NEO4JVERSION=5.2.0 make tag-debian-enterprise
 # creates tag neo4j:5.2.0-enterprise-debian
 
 # 4.4.0 enterprise edition and redhat ubi8
-NEO4JVERSION=4.4.0 make tag-rhel8-enterprise
-# creates tag neo4j:4.4.0-enterprise-rhel8
+NEO4JVERSION=4.4.0 make tag-ubi8-enterprise
+# creates tag neo4j:4.4.0-enterprise-ubi8
 ```
 
 ## The build script
@@ -52,7 +52,7 @@ For example:
 #  debian based 4.4.22 community edition:
 ./build-docker-image.sh 4.4.22 community debian
 #  redhat-ubi8 based 5.9.0 enterprise edition:
-./build-docker-image.sh 5.9.0 enterprise rhel8
+./build-docker-image.sh 5.9.0 enterprise ubi8
 ```
 The make script will automatically download the source files needed to build the images.
 You just need to specify the **full** Neo4j version including major, minor and patch numbers.
@@ -76,11 +76,11 @@ For each action, it can be broken down by base image and community/enterprise ty
 For example `build`, has the following make targets:
 * `build`. Builds *every* variant.
 * `build-debian`. Builds debian community and enterprise.
-* `build-rhel8`. Builds redhat-ubi8 community and enterprise.
+* `build-ubi8`. Builds redhat-ubi8 community and enterprise.
 * `build-debian-community`
 * `build-debian-enterprise`
-* `build-rhel8-community`
-* `build-rhel8-enterprise`
+* `build-ubi8-community`
+* `build-ubi8-enterprise`
 
 The other actions have the same targets.
 
