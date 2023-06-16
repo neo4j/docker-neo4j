@@ -29,6 +29,7 @@ RUN apt update \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
     && ln -s /data "${NEO4J_HOME}"/data \
+    && ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh \
     && rm -rf /tmp/* \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get -y purge --auto-remove curl
@@ -38,8 +39,6 @@ ENV PATH "${NEO4J_HOME}"/bin:$PATH
 VOLUME /data /backups
 WORKDIR "${NEO4J_HOME}"
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/startup/docker-entrypoint.sh"]
 
 CMD ["neo4j-admin"]

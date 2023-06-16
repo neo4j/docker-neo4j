@@ -44,6 +44,41 @@ function get_series_from_version
     fi
 }
 
+function get_compatible_dockerfile_for_os_or_error
+{
+    local version=${1}
+    local requested_os=${2}
+    local major=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
+    local minor=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\2/')
+    case ${major} in
+        5)
+            local SUPPORTED_IMAGE_OS=("debian" "rhel8")
+            if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
+                echo  "Dockerfile-${requested_os}"
+                return 0
+            fi
+            ;;
+        4)
+            case ${minor} in
+            4)
+                local SUPPORTED_IMAGE_OS=("debian" "rhel8")
+                if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
+                    echo  "Dockerfile-${requested_os}"
+                    return 0
+                fi
+                ;;
+            esac
+    esac
+    if [[ ${requested_os} = "debian" ]]; then
+        echo "Dockerfile"
+        return 0
+    fi
+    echo >&2 "${IMAGE_OS} is not a supported operating system for ${version}."
+    usage
+    DOCKERFILE_NAME
+
+}
+
 function tarball_name
 {
     local version=${1}
@@ -70,6 +105,7 @@ function fetch_tarball
     fi
 }
 
+
 ## ==========================================
 ## get and sanitise script inputs
 
@@ -92,16 +128,13 @@ if ! contains_element "${NEO4JEDITION}" "${EDITIONS[@]}"; then
     echo >&2 "${NEO4JEDITION} is not a supported edition."
     usage
 fi
-# verify compatible OS
-if ! contains_element "${IMAGE_OS}" "${SUPPORTED_IMAGE_OS[@]}"; then
-    echo >&2 "${IMAGE_OS} is not a supported operating system at this time."
-    usage
-fi
 # verify compatible neo4j version
 if [[ ! "${NEO4JVERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then
     echo "\"${NEO4JVERSION}\" is not a valid version number."
     usage
 fi
+# verify compatible OS
+DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${NEO4JVERSION}" "${IMAGE_OS}")
 
 echo "Building docker neo4j-${NEO4JEDITION}-${NEO4JVERSION} image based on ${IMAGE_OS}."
 
@@ -133,7 +166,7 @@ coredb_sha=$(shasum --algorithm=256 "$(cached_tarball "${NEO4JVERSION}" "${NEO4J
 cp "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" ${COREDB_LOCALCXT_DIR}/local-package/
 
 # create coredb Dockerfile
-cp "${SRC_DIR}/${SERIES}/coredb/Dockerfile-${IMAGE_OS}" "${COREDB_LOCALCXT_DIR}/Dockerfile"
+cp "${SRC_DIR}/${SERIES}/coredb/${DOCKERFILE_NAME}" "${COREDB_LOCALCXT_DIR}/Dockerfile"
 sed -i \
     -e "s|%%NEO4J_SHA%%|${coredb_sha}|" \
     -e "s|%%NEO4J_TARBALL%%|$(tarball_name "${NEO4JVERSION}" "${NEO4JEDITION}")|" \
@@ -148,16 +181,13 @@ cp "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" ${ADMIN_LOCALCXT_DIR}
 cp ${SRC_DIR}/${SERIES}/neo4j-admin/*.sh ${ADMIN_LOCALCXT_DIR}/local-package
 
 # create neo4j-admin Dockerfile
-cp "${SRC_DIR}/${SERIES}/neo4j-admin/Dockerfile-${IMAGE_OS}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
+cp "${SRC_DIR}/${SERIES}/neo4j-admin/${DOCKERFILE_NAME}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i \
     -e "s|%%NEO4J_SHA%%|${coredb_sha}|" \
     -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|" \
     -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" \
     -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" \
     "${ADMIN_LOCALCXT_DIR}/Dockerfile"
-
-
-
 
 
 ## ==================================================================================
