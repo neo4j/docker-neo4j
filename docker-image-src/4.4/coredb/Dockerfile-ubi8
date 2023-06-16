@@ -20,7 +20,7 @@ RUN microdnf install -y \
             tiniurl="https://github.com/krallin/tini/releases/download/v0.19.0/tini"; \
             gosuurl="https://github.com/tianon/gosu/releases/download/1.16/gosu-amd64"; \
             ;; \
-        'arm64') \
+        'aarch64') \
             tiniurl="https://github.com/krallin/tini/releases/download/v0.19.0/tini-arm64"; \
             gosuurl="https://github.com/tianon/gosu/releases/download/1.16/gosu-arm64"; \
             ;; \
