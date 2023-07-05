@@ -70,10 +70,9 @@ public class TestAdminReport
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                 .withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
-                .withEnv( "NEO4J_DEBUG", "yes" )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitForNeo4jReady( container, PASSWORD, Duration.ofSeconds( 30 ) );
+        StartupDetector.makeContainerWaitForNeo4jReady( container, PASSWORD, Duration.ofSeconds( 40 ) );
         if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
