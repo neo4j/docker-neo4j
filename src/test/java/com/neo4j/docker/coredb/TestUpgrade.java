@@ -1,7 +1,9 @@
 package com.neo4j.docker.coredb;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.utility.DockerImageName;
 
 public class TestUpgrade
@@ -64,9 +68,23 @@ public class TestUpgrade
 
     private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
     {
-        assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( upgradeFrom ),
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isNewerThan( upgradeFrom ),
                     "cannot upgrade from " + upgradeFrom + " to " + TestSettings.NEO4J_VERSION);
-        if(isArm()) assumeTrue( upgradeFrom.isAtLeastVersion( new Neo4jVersion( 4, 4, 0 ) ), "ARM only supported since 4.4" );
+        if(isArm()) Assumptions.assumeTrue( upgradeFrom.isAtLeastVersion( new Neo4jVersion( 4, 4, 0 ) ), "ARM only supported since 4.4" );
+
+        // if we're preparing a new release, then it's possible the version we're upgrading from hasn't been released to
+        // dockerhub, so the test will fail when pulling the upgrade-from image.
+        // If this happens we should ignore rather than fail the test.
+        try
+        {
+            RemoteDockerImage img = new RemoteDockerImage( getUpgradeFromImage( upgradeFrom ) );
+            img.get(); // docker pull
+        }
+        catch ( NotFoundException nfex )
+        {
+            // purposely fail an assumption if the image was not found
+            Assumptions.assumeTrue( false, "neo4j:"+upgradeFrom+" is not available on dockerhub yet. Ignoring test.");
+        }
     }
 
     private static boolean isArm()
@@ -197,7 +215,7 @@ public class TestUpgrade
 		}
 	}
 
-	private DockerImageName getUpgradeFromImage( Neo4jVersion ver)
+	private static DockerImageName getUpgradeFromImage( Neo4jVersion ver)
 	{
 		if(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)
 		{
