@@ -72,7 +72,7 @@ public class TestAdminReport
                 .withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitForNeo4jReady( container, PASSWORD, Duration.ofSeconds( 40 ) );
+        StartupDetector.makeContainerWaitForNeo4jReady( container, PASSWORD );
         if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
