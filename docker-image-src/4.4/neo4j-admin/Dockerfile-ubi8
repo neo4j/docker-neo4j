@@ -15,7 +15,8 @@ ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
 COPY ./local-package/* /startup/
 
-RUN groupadd --gid 7474 --system neo4j; \
+RUN set -eux; \
+    groupadd --gid 7474 --system neo4j; \
     useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j; \
     curl --fail --silent --show-error --location --remote-name ${NEO4J_URI}; \
     echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet; \
