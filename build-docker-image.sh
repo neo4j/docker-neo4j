@@ -75,8 +75,6 @@ function get_compatible_dockerfile_for_os_or_error
     fi
     echo >&2 "${IMAGE_OS} is not a supported operating system for ${version}."
     usage
-    DOCKERFILE_NAME
-
 }
 
 function tarball_name
@@ -219,5 +217,6 @@ echo -n "${admin_image_tag}" > ${ADMIN_LOCALCXT_DIR}/../.image-id-"${NEO4JEDITIO
     echo "NEO4JADMIN_IMAGE=$(cat "${ADMIN_LOCALCXT_DIR}"/../.image-id-"${NEO4JEDITION}")"
     echo "NEO4J_EDITION=${NEO4JEDITION}"
     echo "NEO4J_SKIP_MOUNTED_FOLDER_TARBALLING=true"
-} > ${BUILD_DIR}/devenv-"${NEO4JEDITION}".env
+} > ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env
+ln -fT ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env ${BUILD_DIR}/devenv-"${NEO4JEDITION}".env
 

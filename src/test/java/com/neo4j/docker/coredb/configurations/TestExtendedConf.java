@@ -91,7 +91,7 @@ public class TestExtendedConf
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "default_user_password_{0}")
 	@ValueSource(strings = {"", "supersecretpassword"})
 	void testReadsTheExtendedConfFile_defaultUser(String password) throws Exception
 	{
@@ -104,11 +104,13 @@ public class TestExtendedConf
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
 		Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
         chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
-		temporaryFolderManager.setFolderOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
+		//temporaryFolderManager.setFolderOwnerToNeo4j( confFolder.resolve( "neo4j.conf" ) );
 
 		// start  container
 		try(GenericContainer container = createContainer(password))
 		{
+            container.withEnv( "NEO4J_DEBUG", "yes" )
+                     .withEnv( "NEO4J_server_cluster_listen__address", "$(hostname):6000" );
 			runContainerAndVerify( container, confFolder, logsFolder, password );
 		}
 	}
