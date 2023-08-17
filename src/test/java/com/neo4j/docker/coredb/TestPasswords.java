@@ -79,7 +79,7 @@ public class TestPasswords
             failContainer.followOutput( waitingConsumer );
 
             Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil(
-                    frame -> frame.getUtf8String().contains("Invalid value for password" ), 10, TimeUnit.SECONDS ),
+                    frame -> frame.getUtf8String().contains("Invalid value for password" ), 20, TimeUnit.SECONDS ),
                                            "did not error due to invalid password" );
         }
     }

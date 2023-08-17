@@ -287,7 +287,6 @@ function set_initial_password
             admin_user="${BASH_REMATCH[1]}"
             password="${BASH_REMATCH[2]}"
             do_reset="${BASH_REMATCH[3]}"
-            debug_msg "NEO4J_AUTH has been parsed as user \"${admin_user}\", password \"${password}\", do_reset \"${do_reset}\""
 
             if [ "${password}" == "neo4j" ]; then
                 echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
