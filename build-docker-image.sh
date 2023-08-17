@@ -75,8 +75,6 @@ function get_compatible_dockerfile_for_os_or_error
     fi
     echo >&2 "${IMAGE_OS} is not a supported operating system for ${version}."
     usage
-    DOCKERFILE_NAME
-
 }
 
 function tarball_name

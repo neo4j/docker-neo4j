@@ -64,7 +64,7 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
                                  extensionContext.getTestMethod().get().getName();
         if(!extensionContext.getDisplayName().startsWith( extensionContext.getTestMethod().get().getName() ))
         {
-            outputFolderNamePrefix += "_" + extensionContext.getDisplayName() + "-";
+            outputFolderNamePrefix += "_" + extensionContext.getDisplayName().replace( "/", "\\/" ) + "-";
         }
         else
         {
