@@ -287,6 +287,8 @@ function add_env_setting_to_conf
 
 function set_initial_password
 {
+    # this has an inbuilt assumption that any configuration settings from the environment have already been applied to neo4j.conf
+    # This is for the logic to test whether password length is too short.
     local _neo4j_auth="${1}"
 
     # set the neo4j initial password only if you run the database server
@@ -303,7 +305,8 @@ function set_initial_password
                 echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
                 exit 1
             fi
-            if [ "${#password}" -lt 8 ]; then
+            local _min_password_length=$(cat "${NEO4J_HOME}"/conf/neo4j.conf | grep dbms.security.auth_minimum_password_length | sed -E 's/.*=(.*)/\1/')
+            if [ "${#password}" -lt "${_min_password_length:-"8"}" ]; then
                 echo >&2 "Invalid value for password. The minimum password length is 8 characters.
 If Neo4j fails to start, you can:
   1) Use a stronger password.

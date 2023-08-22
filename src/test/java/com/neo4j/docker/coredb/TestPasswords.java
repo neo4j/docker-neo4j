@@ -1,5 +1,7 @@
 package com.neo4j.docker.coredb;
 
+import com.neo4j.docker.coredb.configurations.Configuration;
+import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
@@ -21,6 +23,8 @@ import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -81,25 +85,6 @@ public class TestPasswords
             Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil(
                     frame -> frame.getUtf8String().contains("Invalid value for password" ), 20, TimeUnit.SECONDS ),
                                            "did not error due to invalid password" );
-        }
-    }
-
-	@Test
-    void testWarnAndFailIfPasswordLessThan8Chars() throws Exception
-    {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
-                                "Minimum password length introduced in 5.2.0");
-        try(GenericContainer failContainer = createContainer( false ))
-        {
-            failContainer.withEnv( "NEO4J_AUTH", "neo4j/123" )
-                         .withStartupCheckStrategy( new OneShotStartupCheckStrategy() );
-            Assertions.assertThrows( ContainerLaunchException.class, () -> failContainer.start(),
-                                     "Neo4j started even though initial password was too short" );
-            String logsOut = failContainer.getLogs();
-            Assertions.assertTrue( logsOut.contains( "Invalid value for password" ),
-                                   "did not error due to too short password");
-            Assertions.assertFalse( logsOut.contains( "Remote interface available at http://localhost:7474/" ),
-                                   "Neo4j started even though an invalid password was set");
         }
     }
 
@@ -238,6 +223,87 @@ public class TestPasswords
             db.changePassword( user, intialPass, resetPass );
             db.putInitialDataIntoContainer( user, resetPass );
             db.verifyInitialDataInContainer( user, resetPass );
+        }
+    }
+
+    @Test
+    void testWarnAndFailIfPasswordLessThan8Chars() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
+                                "Minimum password length introduced in 5.2.0");
+        try(GenericContainer failContainer = createContainer( false ))
+        {
+            failContainer.withEnv( "NEO4J_AUTH", "neo4j/123" )
+                         .withStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            Assertions.assertThrows( ContainerLaunchException.class, () -> failContainer.start(),
+                                     "Neo4j started even though initial password was too short" );
+            String logsOut = failContainer.getLogs();
+            Assertions.assertTrue( logsOut.contains( "Invalid value for password" ),
+                                   "did not error due to too short password");
+            Assertions.assertFalse( logsOut.contains( "Remote interface available at http://localhost:7474/" ),
+                                    "Neo4j started even though an invalid password was set");
+        }
+    }
+
+    @Test
+    void testWarnAndFailIfPasswordLessThanOverride() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
+                                "Minimum password length introduced in 5.2.0");
+        try(GenericContainer failContainer = createContainer( false ))
+        {
+            failContainer.withEnv( "NEO4J_AUTH", "neo4j/123" )
+                         .withEnv(Configuration.getConfigurationNameMap().get( Setting.MINIMUM_PASSWORD_LENGTH ).envName, "20")
+                         .withStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            Assertions.assertThrows( ContainerLaunchException.class, () -> failContainer.start(),
+                                     "Neo4j started even though initial password was too short" );
+            String logsOut = failContainer.getLogs();
+            Assertions.assertTrue( logsOut.contains( "Invalid value for password" ),
+                                   "did not error due to too short password");
+            Assertions.assertFalse( logsOut.contains( "Remote interface available at http://localhost:7474/" ),
+                                    "Neo4j started even though an invalid password was set");
+        }
+    }
+
+    @Test
+    void shouldNotWarnAboutMinimumPasswordLengthIfSettingOverridden_env() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
+                                "Minimum password length introduced in 5.2.0");
+        try(GenericContainer container = createContainer( false ))
+        {
+            container.withEnv( "NEO4J_AUTH", "neo4j/123" )
+                     .withEnv(Configuration.getConfigurationNameMap().get( Setting.MINIMUM_PASSWORD_LENGTH ).envName, "2");
+            container.start();
+            String logs = container.getLogs();
+            Assertions.assertFalse( logs.contains( "Invalid value for password. The minimum password length is 8 characters." ),
+                                    "Should not error about minimum password length if overridden.");
+            DatabaseIO db = new DatabaseIO( container );
+            db.putInitialDataIntoContainer( "neo4j", "123" );
+        }
+    }
+
+    @Test
+    void shouldNotWarnAboutMinimumPasswordLengthIfSettingOverridden_conf() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
+                                "Minimum password length introduced in 5.2.0");
+        try(GenericContainer container = createContainer( false ))
+        {
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
+            		container,
+					"noMinimumPasswordLength-conf-",
+					"/conf" );
+            Files.writeString(confMount.resolve( "neo4j.conf" ),
+                              Configuration.getConfigurationNameMap().get( Setting.MINIMUM_PASSWORD_LENGTH ).name+"=2");
+
+            container.withEnv( "NEO4J_AUTH", "neo4j/123" );
+            container.start();
+            String logs = container.getLogs();
+            Assertions.assertFalse( logs.contains( "Invalid value for password. The minimum password length is 8 characters." ),
+                                    "Should not error about minimum password length if overridden.");
+            DatabaseIO db = new DatabaseIO( container );
+            db.putInitialDataIntoContainer( "neo4j", "123" );
         }
     }
 }
