@@ -32,6 +32,7 @@ public class TestBasic
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer(log) );
+        
         return container;
     }
 
