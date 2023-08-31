@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -26,12 +27,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 
 public class TestMounting
 {
@@ -345,4 +348,23 @@ public class TestMounting
             // if debug.log doesn't get re-owned, neo4j will not start and this test will fail here
         }
     }
+
+    @Test
+	void shouldLoadPluginsFromMountedFolder() throws Exception {
+		Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-plugins-only-" );
+		try(GenericContainer container = setupBasicContainer( true, false )){
+			temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
+			container.withEnv( "NEO4J_PLUGINS", "[\"apoc\"]" );
+			container.start();
+
+			assertApocIsLoaded(container);
+		}
+	}
+
+	void assertApocIsLoaded(GenericContainer container){
+		DatabaseIO databaseIO = new DatabaseIO( container );
+
+		var result = databaseIO.runCypherQuery( "neo4j", "none", "SHOW PROCEDURES YIELD name, description, signature WHERE name STARTS WITH 'apoc'" );
+		Assertions.assertFalse( result.isEmpty() );
+	}
 }
