@@ -27,12 +27,15 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.Record;
 
@@ -70,11 +73,10 @@ public class TestPluginInstallation
         return container;
     }
 
-    private GenericContainer setupBasicContainer( boolean asCurrentUser, boolean isSecurityFlagSet )
+    private GenericContainer setupContainerWithUser( boolean asCurrentUser )
     {
         log.info( "Running as user {}, {}",
-                  asCurrentUser ? "non-root" : "root",
-                  isSecurityFlagSet ? "with secure file permissions" : "with unsecured file permissions" );
+                  asCurrentUser ? "non-root" : "root");
 
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withExposedPorts( 7474, 7687 )
@@ -86,10 +88,7 @@ public class TestPluginInstallation
         {
             SetContainerUser.nonRootUser( container );
         }
-        if ( isSecurityFlagSet )
-        {
-            container.withEnv( "SECURE_FILE_PERMISSIONS", "yes" );
-        }
+
         return container;
     }
 
@@ -458,15 +457,17 @@ public class TestPluginInstallation
 
     @ParameterizedTest( name = "as current user={0}" )
     @ValueSource( booleans = {true, false} )
-    void shouldLoadPluginsFromMountedFolder(boolean asCurrentUser) throws Exception
+    void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly(boolean asCurrentUser) throws Exception
     {
         Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-plugins-only-" );
-        try ( GenericContainer container = setupBasicContainer( asCurrentUser, false ) )
+        try ( GenericContainer container = setupContainerWithUser( asCurrentUser ) )
         {
             temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
             container.withEnv( "NEO4J_PLUGINS", "[\"bloom\"]" );
             container.start();
 
+            var pluginsFolder = Arrays.stream( Objects.requireNonNull( testOutputFolder.toFile().listFiles() ) ).findFirst();
+            Assertions.assertTrue( Arrays.stream( Objects.requireNonNull( pluginsFolder.get().toPath().toFile().listFiles() ) ).findFirst().get().getName().equalsIgnoreCase( "bloom.jar" ));
             assertBloomIsLoaded( container );
         }
     }
