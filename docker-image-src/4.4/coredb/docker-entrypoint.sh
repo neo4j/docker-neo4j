@@ -126,6 +126,7 @@ function load_plugin_from_location
   for filename in ${_location}; do
     echo "Installing Plugin '${_plugin_name}' from ${_location} to ${_destination}"
     cp --preserve "${filename}" "${_destination}"
+    chmod +rw ${_destination}
   done
 
   if ! is_readable "${_destination}"; then

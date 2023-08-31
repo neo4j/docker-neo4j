@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.driver.Record;
 
+import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
 
 @EnableRuleMigrationSupport
@@ -64,6 +67,29 @@ public class TestPluginInstallation
         StartupDetector.makeContainerWaitForDatabaseReady(container, DB_USER, DB_PASSWORD, "neo4j",
                 Duration.ofSeconds(60));
         SetContainerUser.nonRootUser( container );
+        return container;
+    }
+
+    private GenericContainer setupBasicContainer( boolean asCurrentUser, boolean isSecurityFlagSet )
+    {
+        log.info( "Running as user {}, {}",
+                  asCurrentUser ? "non-root" : "root",
+                  isSecurityFlagSet ? "with secure file permissions" : "with unsecured file permissions" );
+
+        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        container.withExposedPorts( 7474, 7687 )
+                 .withLogConsumer( new Slf4jLogConsumer( log ) )
+                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                 .withEnv( "NEO4J_AUTH", "none" );
+        makeContainerWaitForNeo4jReady( container, "none" );
+        if ( asCurrentUser )
+        {
+            SetContainerUser.nonRootUser( container );
+        }
+        if ( isSecurityFlagSet )
+        {
+            container.withEnv( "SECURE_FILE_PERMISSIONS", "yes" );
+        }
         return container;
     }
 
@@ -428,5 +454,28 @@ public class TestPluginInstallation
             this._testing = "SNAPSHOT";
             this.jar = "http://host.testcontainers.internal:3000/"+jar;
         }
+    }
+
+    @ParameterizedTest( name = "as current user={0}" )
+    @ValueSource( booleans = {true, false} )
+    void shouldLoadPluginsFromMountedFolder(boolean asCurrentUser) throws Exception
+    {
+        Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-plugins-only-" );
+        try ( GenericContainer container = setupBasicContainer( asCurrentUser, false ) )
+        {
+            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
+            container.withEnv( "NEO4J_PLUGINS", "[\"bloom\"]" );
+            container.start();
+
+            assertBloomIsLoaded( container );
+        }
+    }
+
+    void assertBloomIsLoaded( GenericContainer container )
+    {
+        DatabaseIO databaseIO = new DatabaseIO( container );
+
+        var result = databaseIO.runCypherQuery( "neo4j", "none", "SHOW PROCEDURES YIELD name, description, signature WHERE name STARTS WITH 'bloom'" );
+        Assertions.assertFalse( result.isEmpty() );
     }
 }
