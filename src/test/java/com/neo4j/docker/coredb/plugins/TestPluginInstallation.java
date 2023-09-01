@@ -462,12 +462,11 @@ public class TestPluginInstallation
         Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-plugins-only-" );
         try ( GenericContainer container = setupContainerWithUser( asCurrentUser ) )
         {
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
+            var pluginsFolder = temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
             container.withEnv( "NEO4J_PLUGINS", "[\"bloom\"]" );
             container.start();
 
-            var pluginsFolder = Arrays.stream( Objects.requireNonNull( testOutputFolder.toFile().listFiles() ) ).findFirst();
-            Assertions.assertTrue( Arrays.stream( Objects.requireNonNull( pluginsFolder.get().toPath().toFile().listFiles() ) ).findFirst().get().getName().equalsIgnoreCase( "bloom.jar" ));
+            Assertions.assertTrue( pluginsFolder.resolve( "bloom.jar" ).toFile().exists(), "Did not find bloom.jar in plugins folder");
             assertBloomIsLoaded( container );
         }
     }
@@ -477,6 +476,6 @@ public class TestPluginInstallation
         DatabaseIO databaseIO = new DatabaseIO( container );
 
         var result = databaseIO.runCypherQuery( "neo4j", "none", "SHOW PROCEDURES YIELD name, description, signature WHERE name STARTS WITH 'bloom'" );
-        Assertions.assertFalse( result.isEmpty() );
+        Assertions.assertFalse( result.isEmpty(), "Bloom procedures not found in neo4j installation" );
     }
 }
