@@ -167,12 +167,10 @@ cp "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" ${COREDB_LOCALCXT_DIR
 
 # create coredb Dockerfile
 cp "${SRC_DIR}/${SERIES}/coredb/${DOCKERFILE_NAME}" "${COREDB_LOCALCXT_DIR}/Dockerfile"
-sed -i \
-    -e "s|%%NEO4J_SHA%%|${coredb_sha}|" \
-    -e "s|%%NEO4J_TARBALL%%|$(tarball_name "${NEO4JVERSION}" "${NEO4JEDITION}")|" \
-    -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" \
-    -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" \
-    "${COREDB_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_SHA%%|${coredb_sha}|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name "${NEO4JVERSION}" "${NEO4JEDITION}")|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
 
 # copy neo4j-admin sources
 mkdir -p ${ADMIN_LOCALCXT_DIR}/local-package
@@ -182,13 +180,10 @@ cp ${SRC_DIR}/${SERIES}/neo4j-admin/*.sh ${ADMIN_LOCALCXT_DIR}/local-package
 
 # create neo4j-admin Dockerfile
 cp "${SRC_DIR}/${SERIES}/neo4j-admin/${DOCKERFILE_NAME}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
-sed -i \
-    -e "s|%%NEO4J_SHA%%|${coredb_sha}|" \
-    -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|" \
-    -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" \
-    -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" \
-    "${ADMIN_LOCALCXT_DIR}/Dockerfile"
-
+sed -i -e "s|%%NEO4J_SHA%%|${coredb_sha}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
+sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 
 ## ==================================================================================
 ## Finally we are ready to do a docker build...
@@ -220,5 +215,5 @@ echo -n "${admin_image_tag}" > ${ADMIN_LOCALCXT_DIR}/../.image-id-"${NEO4JEDITIO
     echo "NEO4J_EDITION=${NEO4JEDITION}"
     echo "NEO4J_SKIP_MOUNTED_FOLDER_TARBALLING=true"
 } > ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env
-ln -fT ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env ${BUILD_DIR}/devenv-"${NEO4JEDITION}".env
+ln -f ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env ${BUILD_DIR}/devenv-"${NEO4JEDITION}".env
 

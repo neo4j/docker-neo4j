@@ -172,7 +172,7 @@ mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-community) -Dadminimage=
    1. Select the "EnvFile" tab
    2. Make sure "Enable EnvFile" is checked.
    3. Click the `+` then click to add a `.env` file.
-   4. In the file selection box select `./build/<BASE OS>/devenv-enterprise.env` or `./build/<BASE OS>/devenv-community.env` depending on which one you want to test. If you do not have the `./tmp` directory, build the docker image and it will be created.
+   4. In the file selection box select `./build/<BASE OS>/devenv-enterprise.env` or `./build/<BASE OS>/devenv-community.env` depending on which one you want to test. If you do not have the `./build` directory, build the docker image and it will be created.
    5. Rebuilding the Neo4j image will regenerate the `.env` files, so you don't need to worry about keeping the environment up to date.
 
 You should now be able to run unit tests straight from the IDE.
