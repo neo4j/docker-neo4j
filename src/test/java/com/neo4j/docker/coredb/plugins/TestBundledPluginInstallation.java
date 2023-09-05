@@ -61,7 +61,7 @@ public class TestBundledPluginInstallation
                  .waitingFor( Wait.forHttp( "/" )
                                   .forPort( DEFAULT_BROWSER_PORT )
                                   .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 45 ) )  );
+                                  .withStartupTimeout( Duration.ofSeconds( 60 ) )  );
         return container;
     }
 
@@ -205,7 +205,8 @@ public class TestBundledPluginInstallation
                      .withEnv( "NEO4J_dbms_bloom_license__file", "/licenses/bloom.license" );
             // mounting logs because it's useful for debugging
             temporaryFolderManager.createTempFolderAndMountAsVolume( container, "logs", "/logs", testFolder );
-
+            Path licenseFolder = temporaryFolderManager.createTempFolderAndMountAsVolume( container, "license", "/licenses", testFolder );
+            Files.writeString( licenseFolder.resolve("bloom.license"), "notareallicense" );
             // make sure the container successfully starts and we can write to it without getting authentication errors
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );

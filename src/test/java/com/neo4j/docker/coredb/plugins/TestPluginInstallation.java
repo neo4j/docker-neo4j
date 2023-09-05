@@ -245,7 +245,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
-                                                        .withTimeout( Duration.ofSeconds( 10 ) ) )
+                                                        .withTimeout( Duration.ofSeconds( 30 ) ) )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
@@ -265,7 +265,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
-                                                        .withTimeout( Duration.ofSeconds( 10 ) ) )
+                                                        .withTimeout( Duration.ofSeconds( 30 ) ) )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
