@@ -32,6 +32,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.exceptions.ClientException;
+
 import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 
 public class TestConfSettings
@@ -47,7 +49,7 @@ public class TestConfSettings
     @BeforeAll
     static void getVersionSpecificConfigurationSettings()
     {
-        confFolder = Configuration.getConfigurationResourcesFolder( TestSettings.NEO4J_VERSION );
+        confFolder = Configuration.getConfigurationResourcesFolder();
         confNames = Configuration.getConfigurationNameMap();
     }
 
@@ -261,9 +263,8 @@ public class TestConfSettings
 					"/conf" );
             conf = confMount.resolve( "neo4j.conf" ).toFile();
             SetContainerUser.nonRootUser( container );
-            //Create ConfsReplaced.conf file
-            Path confFile = confFolder.resolve( "ConfsReplaced.conf" );
-            Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
+            //Create ConfsReplaced.conf file in mounted folder
+            Files.copy( confFolder.resolve( "ConfsReplaced.conf" ), conf.toPath() );
             makeContainerDumpConfig( container );
             //Start the container
             container.start();
@@ -469,6 +470,94 @@ public class TestConfSettings
 
         //Read debug.log to check that cluster confs are not present
         assertConfigurationPresentInDebugLog( debugLog, confNames.get(Setting.CLUSTER_TRANSACTION_ADDRESS), "*", false );
+    }
+
+    @Test
+    void testSettingAppendsToConfFileWithoutEmptyLine_neo4jPlugins() throws Exception
+    {
+        // if a conf file is supplied without a blank line at the end, AND we have a NEO4J_PLUGINS plugin
+        // then the plugin settings should append to the conf on a new line instead of at the end of the last line.
+
+        Path debugLog;
+
+        try(GenericContainer container = createContainer())
+        {
+            Path testOutputFolder = temporaryFolderManager.createTempFolder( "confEnvVarsAppend-" );
+            //Mount /conf
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
+                    container,
+                    "conf-",
+                    "/conf",
+                    testOutputFolder);
+            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
+                    container,
+                    "logs-",
+                    "/logs",
+                    testOutputFolder);
+            debugLog = logMount.resolve("debug.log");
+            Files.copy( confFolder.resolve( "NoNewline.conf" ), confMount.resolve( "neo4j.conf" ) );
+            container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\"]" );
+            //Start the container
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
+            container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+            try
+            {
+                dbio.runCypherQuery( "neo4j", PASSWORD, "RETURN apoc.version()" );
+            }
+            catch( ClientException ex )
+            {
+                Assertions.fail("Did not load apoc plugin.", ex);
+            }
+        }
+
+        //Check if the container reads the conf file
+        assertConfigurationPresentInDebugLog( debugLog,
+                                              confNames.get(Setting.MEMORY_PAGECACHE_SIZE),
+                                              "1000.00M",
+                                              true);
+    }
+
+    @Test
+    void testSettingAppendsToConfFileWithoutEmptyLine_envSetting() throws Exception
+    {
+        // if a conf file is supplied without a blank line at the end, AND we have environment settings,
+        // then the env settings should append to the conf on a new line instead of at the end of the last line.
+
+        Path debugLog;
+
+        try(GenericContainer container = createContainer())
+        {
+            Path testOutputFolder = temporaryFolderManager.createTempFolder( "confEnvVarsAppend-" );
+            //Mount /conf
+            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
+                    container,
+                    "conf-",
+                    "/conf",
+                    testOutputFolder);
+            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
+                    container,
+                    "logs-",
+                    "/logs",
+                    testOutputFolder);
+            debugLog = logMount.resolve("debug.log");
+            Files.copy( confFolder.resolve( "NoNewline.conf" ), confMount.resolve( "neo4j.conf" ) );
+            // set an env variable
+            container.withEnv( confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).envName, "128MB" );
+            //Start the container
+            makeContainerWaitForNeo4jReady( container, PASSWORD );
+            container.start();
+        }
+
+        //Check if the container reads the conf file
+        assertConfigurationPresentInDebugLog( debugLog,
+                                              confNames.get(Setting.MEMORY_PAGECACHE_SIZE),
+                                              "1000M",
+                                              true);
+        assertConfigurationPresentInDebugLog( debugLog,
+                                              confNames.get(Setting.MEMORY_HEAP_MAXSIZE),
+                                              "128MB",
+                                              true);
     }
 
     @Test

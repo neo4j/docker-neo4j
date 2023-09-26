@@ -69,6 +69,10 @@ public class Configuration
             return CONFIGURATIONS_5X;
         }
     }
+    public static Path getConfigurationResourcesFolder()
+    {
+        return getConfigurationResourcesFolder(TestSettings.NEO4J_VERSION);
+    }
 
     public static Path getConfigurationResourcesFolder( Neo4jVersion version )
     {

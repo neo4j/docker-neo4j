@@ -167,7 +167,8 @@ public class TestBundledPluginInstallation
             // This is done in the finally block because after stopping the container, the stdout cannot be retrieved.
             if (pluginsMount != null)
             {
-                List<String> plugins = Files.list(pluginsMount).map( fname -> fname.getFileName().toString() )
+                List<String> plugins = Files.list(pluginsMount)
+                                            .map( fname -> fname.getFileName().toString() )
                                             .filter( fname -> fname.endsWith( ".jar" ) )
                                             .collect(Collectors.toList());
                 Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );

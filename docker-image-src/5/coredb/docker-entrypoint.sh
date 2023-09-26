@@ -176,7 +176,7 @@ function apply_plugin_default_configuration
 {
     # Set the correct Load a plugin at runtime. The provided github repository must have a versions.json on the master branch with the
     # correct format.
-    local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graph-ql
+    local _plugin_name="${1}" #e.g. apoc, graph-algorithms, graphql
     local _reference_conf="${2}" # used to determine if we can override properties
     local _neo4j_conf="${NEO4J_HOME}/conf/neo4j.conf"
 
@@ -197,7 +197,7 @@ function apply_plugin_default_configuration
                 sed --in-place "s/${_property}=/&${_value},/" "${_neo4j_conf}"
                 debug_msg "${_property} was already in the configuration file, so ${_value} was added to it."
             else
-                echo "${_property}=${_value}" >> "${_neo4j_conf}"
+                echo -e "\n${_property}=${_value}" >> "${_neo4j_conf}"
                 debug_msg "${_property}=${_value} has been added to the configuration file."
             fi
         fi
