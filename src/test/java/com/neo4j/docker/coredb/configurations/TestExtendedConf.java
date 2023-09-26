@@ -96,9 +96,8 @@ public class TestExtendedConf
 	void testReadsTheExtendedConfFile_defaultUser(String password) throws Exception
 	{
 		// set up test folders
-		Path testOutputFolder = temporaryFolderManager.createTempFolder( "extendedConfIsRead-" );
-		Path confFolder = temporaryFolderManager.createTempFolder( "conf-", testOutputFolder );
-		Path logsFolder = temporaryFolderManager.createTempFolder( "logs-", testOutputFolder );
+		Path confFolder = temporaryFolderManager.createFolder("conf");
+		Path logsFolder = temporaryFolderManager.createFolder("logs");
 
 		// copy configuration file and set permissions
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );
@@ -117,13 +116,11 @@ public class TestExtendedConf
     @ValueSource( strings = {"", "supersecretpassword"} )
     void testInvalidExtendedConfFile_nonRootUser( String password ) throws Exception
     {
-        // set up test folders
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "extendedConfIsRead-" );
-        Path confFolder = temporaryFolderManager.createTempFolder( "conf-", testOutputFolder );
+        // set up test folder
+        Path confFolder = temporaryFolderManager.createFolder("conf");
 
         // copy configuration file and set permissions
-        Path confFile = testConfsFolder.resolve( "InvalidExtendedConf.conf" );
-        Files.copy( confFile, confFolder.resolve( "neo4j.conf" ) );
+        Files.copy( testConfsFolder.resolve( "InvalidExtendedConf.conf" ), confFolder.resolve( "neo4j.conf" ) );
         chmodConfFilePermissions( confFolder.resolve( "neo4j.conf" ) );
 
         try(GenericContainer container = createContainer( password ))
@@ -167,9 +164,8 @@ public class TestExtendedConf
 	void testReadsTheExtendedConfFile_nonRootUser(String password) throws Exception
 	{
 		// set up test folders
-		Path testOutputFolder = temporaryFolderManager.createTempFolder( "extendedConfIsRead-" );
-		Path confFolder = temporaryFolderManager.createTempFolder( "conf-", testOutputFolder );
-		Path logsFolder = temporaryFolderManager.createTempFolder( "logs-", testOutputFolder );
+		Path confFolder = temporaryFolderManager.createFolder("conf");
+		Path logsFolder = temporaryFolderManager.createFolder("logs");
 
 		// copy configuration file and set permissions
 		Path confFile = testConfsFolder.resolve( "ExtendedConf.conf" );

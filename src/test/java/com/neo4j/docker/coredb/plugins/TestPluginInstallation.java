@@ -162,7 +162,7 @@ public class TestPluginInstallation
     @Test
     public void testPluginLoads() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -179,7 +179,7 @@ public class TestPluginInstallation
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
                                 "NEO4JLABS_PLUGIN backwards compatibility does not need checking pre 5.x" );
 
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-backcompat-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-backcompat-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -200,7 +200,7 @@ public class TestPluginInstallation
         Assumptions.assumeTrue( NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
                                 "Only checking forwards compatibility in 4.4" );
 
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-forwardcompat-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-forwardcompat-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -216,7 +216,7 @@ public class TestPluginInstallation
     @Test
     public void testPluginConfigurationDoesNotOverrideUserSetValues() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-noOverride-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-noOverride-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         Configuration securityProcedures = Configuration.getConfigurationNameMap()
                                                         .get( Setting.SECURITY_PROCEDURES_UNRESTRICTED );
@@ -283,7 +283,7 @@ public class TestPluginInstallation
     public void testBrokenVersionsJsonCausesHelpfulError() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-broken-versionsjson-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-broken-versionsjson-" );
         // create a versions.json that DOES NOT contain the current neo4j version in its mapping
         File versionsJson = createTestVersionsJson( pluginsDir, "50.0.0" );
         setupTestPlugin( versionsJson );
@@ -307,7 +307,7 @@ public class TestPluginInstallation
     @Test
     void testSemanticVersioningPlugin_catchesMatchWithX() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesX-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-semverMatchesX-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch() + ".x" );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -321,7 +321,7 @@ public class TestPluginInstallation
     @Test
     void testSemanticVersioningPlugin_catchesMatchWithStar() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverMatchesStar-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-semverMatchesStar-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch() + ".*" );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -335,7 +335,7 @@ public class TestPluginInstallation
     @Test
     void testSemanticVersioningPlugin_prefersExactMatch() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-semverPrefersExact-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-semverPrefersExact-" );
         File versionsJson = createTestVersionsJson( pluginsDir, new HashMap<String,String>()
         {{
             put( NEO4J_VERSION.toString(), PLUGIN_JAR );
@@ -357,7 +357,7 @@ public class TestPluginInstallation
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
                                 "/docker-entrypoint.sh is permanently moved from 5.0 onwards" );
-        Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-oldEntrypoint-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-oldEntrypoint-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.getBranch() + ".x" );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -463,14 +463,13 @@ public class TestPluginInstallation
         }
     }
 
-    @ParameterizedTest( name = "as current user={0}" )
+    @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource( booleans = {true, false} )
     void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly( boolean asCurrentUser ) throws Exception
     {
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-plugins-only-" );
         try ( GenericContainer container = setupContainerWithUser( asCurrentUser ) )
         {
-            var pluginsFolder = temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
+            var pluginsFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.withEnv( "NEO4J_PLUGINS", "[\"bloom\"]" );
             container.start();
 

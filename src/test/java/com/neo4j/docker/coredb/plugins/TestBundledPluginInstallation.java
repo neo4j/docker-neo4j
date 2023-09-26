@@ -86,9 +86,7 @@ public class TestBundledPluginInstallation
         try
         {
             container = createContainerWithBundledPlugin( pluginName );
-            pluginsMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                       "bundled-"+pluginName+"-plugin-",
-                                                       "/plugins" );
+            pluginsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", "none" );
@@ -150,9 +148,7 @@ public class TestBundledPluginInstallation
         try
         {
             container = createContainerWithBundledPlugin( pluginName );
-            pluginsMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                       "bundled-"+pluginName+"-plugin-unavailable-",
-                                                       "/plugins" );
+            pluginsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.start();
         }
         catch(ContainerLaunchException e)
@@ -198,15 +194,14 @@ public class TestBundledPluginInstallation
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
 
         final String PASSWORD = "12345678";
-        Path testFolder = temporaryFolderManager.createTempFolder( "plugin-with-auth-loads" );
 
         try( GenericContainer container = createContainerWithBundledPlugin(BLOOM))
         {
             container.withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
                      .withEnv( "NEO4J_dbms_bloom_license__file", "/licenses/bloom.license" );
             // mounting logs because it's useful for debugging
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "logs", "/logs", testFolder );
-            Path licenseFolder = temporaryFolderManager.createTempFolderAndMountAsVolume( container, "license", "/licenses", testFolder );
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
+            Path licenseFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/licenses");
             Files.writeString( licenseFolder.resolve("bloom.license"), "notareallicense" );
             // make sure the container successfully starts and we can write to it without getting authentication errors
             container.start();

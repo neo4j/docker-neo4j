@@ -106,13 +106,11 @@ public class TestBackupRestore44
     private void testCanBackupAndRestore(boolean asDefaultUser, String password) throws Exception
     {
         final String dbUser = "neo4j";
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "backupRestore-" );
 
         // BACKUP
         // start a database and populate data
         GenericContainer neo4j = createDBContainer( asDefaultUser, password );
-        Path dataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                neo4j, "data-", "/data", testOutputFolder );
+        Path dataDir = temporaryFolderManager.createFolderAndMountAsVolume(neo4j, "/data");
         neo4j.start();
         DatabaseIO dbio = new DatabaseIO( neo4j );
         dbio.putInitialDataIntoContainer( dbUser, password );
@@ -125,8 +123,7 @@ public class TestBackupRestore44
                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Backup complete successful.*" ) )
                 .withCommand( "neo4j-admin", "backup", "--database=neo4j", "--backup-dir=/backups", "--from="+neoDBAddress);
 
-        Path backupDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                adminBackup, "backup-", "/backups", testOutputFolder );
+        Path backupDir = temporaryFolderManager.createFolderAndMountAsVolume(adminBackup, "/backups");
         adminBackup.start();
 
         Assertions.assertTrue( neo4j.isRunning(), "neo4j container should still be running" );

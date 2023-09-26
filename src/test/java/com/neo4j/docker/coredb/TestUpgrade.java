@@ -11,14 +11,12 @@ import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -133,27 +131,14 @@ public class TestUpgrade
 	{
 		assumeUpgradeSupported( upgradeFrom );
 
-		Path tmpMountFolder = temporaryFolderManager.createTempFolder( "upgrade-" + upgradeFrom.toString() + "-" );
 		Path data, logs, imports, metrics;
 
 		try(GenericContainer container = makeContainer( getUpgradeFromImage( upgradeFrom ) ))
 		{
-			data = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                                              "data-",
-                                                                              "/data",
-																			  tmpMountFolder );
-			logs = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                                              "logs-",
-                                                                              "/logs",
-																			  tmpMountFolder );
-			imports = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                                                 "import-",
-                                                                                 "/import",
-																				 tmpMountFolder );
-			metrics = temporaryFolderManager.createTempFolderAndMountAsVolume( container,
-                                                                                 "metrics-",
-                                                                                 "/metrics",
-																				 tmpMountFolder );
+			data = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
+			logs = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
+			imports = temporaryFolderManager.createFolderAndMountAsVolume(container, "/import");
+			metrics = temporaryFolderManager.createFolderAndMountAsVolume(container, "/metrics");
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
 			db.putInitialDataIntoContainer( user, password );

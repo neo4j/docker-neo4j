@@ -7,6 +7,7 @@ import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,12 @@ public class TestMounting
 
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
+
+    @AfterEach
+    void archiveTestArtifacts() throws Exception
+    {
+        temporaryFolderManager.triggerCleanup();
+    }
 
     static Stream<Arguments> defaultUserFlagSecurePermissionsFlag()
     {
@@ -109,29 +116,19 @@ public class TestMounting
                                  String.format( "The debug.log file should %sbe writable", shouldBeWritable ? "" : "not " ) );
     }
 
-    @ParameterizedTest( name = "as current user={0}" )
+    @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource( booleans = {true, false} )
     void canDumpConfig( boolean asCurrentUser ) throws Exception
     {
         File confFile;
         Path confMount;
-        String assertMsg;
-        String mountPrefix;
-        if ( asCurrentUser )
-        {
-            assertMsg = "Conf file was not successfully dumped when running container as current user";
-            mountPrefix = "candumpconf-user-";
-        }
-        else
-        {
-            assertMsg = "Conf file was not successfully dumped when running container as root";
-            mountPrefix = "candumpconf-root-";
-        }
+        String assertMsg = "Conf file was not successfully dumped when running container as "
+                           + (asCurrentUser? "current user" : "root");
 
         try ( GenericContainer container = setupBasicContainer( asCurrentUser, false ) )
         {
             //Mount /conf
-            confMount = temporaryFolderManager.createTempFolderAndMountAsVolume( container, mountPrefix, "/conf" );
+            confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             confFile = confMount.resolve( "neo4j.conf" ).toFile();
 
             //Start the container
@@ -181,10 +178,7 @@ public class TestMounting
 
         try ( GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ) )
         {
-            Path dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "canmountjustdata-",
-                    "/data" );
+            Path dataMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
             container.start();
 
             // neo4j should now have started, so there'll be stuff in the data folder
@@ -202,10 +196,7 @@ public class TestMounting
 
         try ( GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ) )
         {
-            Path logsMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "canmountjustlogs-",
-                    "/logs" );
+            Path logsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             container.start();
 
             verifyLogsFolderContentsArePresentOnHost( logsMount, asCurrentUser );
@@ -221,15 +212,8 @@ public class TestMounting
 
         try ( GenericContainer container = setupBasicContainer( asCurrentUser, isSecurityFlagSet ) )
         {
-            Path testOutputFolder = temporaryFolderManager.createTempFolder( "canmountdataandlogs-" );
-            Path dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "data-", "/data", testOutputFolder
-            );
-            Path logsMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "logs-", "/logs", testOutputFolder
-            );
+            Path dataMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
+            Path logsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             container.start();
 
             verifyDataFolderContentsArePresentOnHost( dataMount, asCurrentUser );
@@ -245,10 +229,7 @@ public class TestMounting
 
         try ( GenericContainer container = setupBasicContainer( false, true ) )
         {
-            temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "nopermissioninsecuremode-data-",
-                    "/data" );
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
 
             // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
             container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 )
@@ -267,10 +248,7 @@ public class TestMounting
 
         try ( GenericContainer container = setupBasicContainer( false, true ) )
         {
-            temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "nopermissioninsecuremode-logs-",
-                    "/logs" );
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
 
             // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
             container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 )
@@ -281,19 +259,18 @@ public class TestMounting
         }
     }
 
-    @ParameterizedTest( name = "as current user={0}" )
+    @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource( booleans = {true, false} )
     void canMountAllTheThings_fileMounts( boolean asCurrentUser ) throws Exception
     {
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "mount-everything-" );
         try ( GenericContainer container = setupBasicContainer( asCurrentUser, false ) )
         {
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "conf", "/conf", testOutputFolder );
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "data", "/data", testOutputFolder );
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "import", "/import", testOutputFolder );
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "logs", "/logs", testOutputFolder );
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "metrics", "/metrics", testOutputFolder );
-            temporaryFolderManager.createTempFolderAndMountAsVolume( container, "plugins", "/plugins", testOutputFolder );
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/import");
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/metrics");
+            temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.start();
             DatabaseIO databaseIO = new DatabaseIO( container );
             // do some database writes so that we try writing to writable folders.
@@ -302,7 +279,7 @@ public class TestMounting
         }
     }
 
-    @ParameterizedTest( name = "as current user={0}" )
+    @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource( booleans = {true, false} )
     void canMountAllTheThings_namedVolumes( boolean asCurrentUser ) throws Exception
     {
@@ -333,7 +310,7 @@ public class TestMounting
                 TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 4, 0, 0 ) ),
                 "User checks not valid before 4.0" );
 
-        Path logMount = temporaryFolderManager.createTempFolder( "subfileownership-" );
+        Path logMount = temporaryFolderManager.createFolder( "subfileownership" );
         Path debugLog = logMount.resolve( "debug.log" );
         // put file in logMount
         Files.write( debugLog, "some log words".getBytes() );

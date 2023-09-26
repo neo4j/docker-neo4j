@@ -36,7 +36,7 @@ public class TestCausalCluster
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                "No causal clustering for community edition");
 
-        Path tmpDir = temporaryFolderManager.createTempFolder( "CC_cluster_" );
+        Path tmpDir = temporaryFolderManager.createFolder( "CC_cluster_" );
 
         File compose_file =  new File(tmpDir.toString(), "causal-cluster-compose.yml");
         Files.copy(getResource("causal-cluster-compose.yml"), Paths.get(compose_file.getPath()));

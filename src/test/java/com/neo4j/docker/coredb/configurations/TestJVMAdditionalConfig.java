@@ -35,7 +35,7 @@ public class TestJVMAdditionalConfig
     @BeforeAll
     static void getVersionSpecificConfigurationSettings()
     {
-        confFolder = Configuration.getConfigurationResourcesFolder( TestSettings.NEO4J_VERSION );
+        confFolder = Configuration.getConfigurationResourcesFolder();
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ),
                                 "JVM Additional tests not applicable before 4.4.0");
     }
@@ -54,8 +54,7 @@ public class TestJVMAdditionalConfig
     void testJvmAdditionalNotOverridden_noEnv() throws Exception
     {
         String expectedJvmAdditional = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005";
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvmadd-confnotoverridden-" );
-        testJvmAdditionalNotOverridden(expectedJvmAdditional, "", testOutputFolder);
+        testJvmAdditionalNotOverridden(expectedJvmAdditional, "" );
     }
 
     @Test
@@ -63,20 +62,15 @@ public class TestJVMAdditionalConfig
     {
         String jvmAdditionalFromEnv = "-XX:+HeapDumpOnOutOfMemoryError";
         String expectedJvmAdditional = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005\n"+jvmAdditionalFromEnv;
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvmadd-confnotoverridden-withenv-" );
-        testJvmAdditionalNotOverridden(expectedJvmAdditional, jvmAdditionalFromEnv, testOutputFolder);
+        testJvmAdditionalNotOverridden(expectedJvmAdditional, jvmAdditionalFromEnv );
     }
 
-    void testJvmAdditionalNotOverridden(String expectedJvmAdditional, String jvmAdditionalEnv, Path testOutputFolder) throws Exception
+    void testJvmAdditionalNotOverridden( String expectedJvmAdditional, String jvmAdditionalEnv ) throws Exception
     {
         try( GenericContainer container = createContainer())
         {
             //Mount /conf
-            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "conf-",
-                    "/conf",
-                    testOutputFolder);
+            Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             SetContainerUser.nonRootUser( container );
             container.withEnv( JVM_ADDITIONAL_CONFIG.envName, jvmAdditionalEnv );
             //Create JvmAdditionalNotOverridden.conf file
@@ -130,12 +124,8 @@ public class TestJVMAdditionalConfig
     {
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = temporaryFolderManager.createTempFolder( "jvm-"+charName+"-in-conf-" );
             //Mount /conf
-            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "conf-",
-                    "/conf", testOutputFolder);
+            Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             //copy test conf file
             String confContent = JVM_ADDITIONAL_CONFIG.name + "=" + expectedJvmAdditional;
             Files.write( confMount.resolve( "neo4j.conf" ), confContent.getBytes() );
@@ -153,7 +143,7 @@ public class TestJVMAdditionalConfig
         }
     }
 
-    void verifyJvmAdditional( GenericContainer container, String... expectedValues ) throws Exception
+    void verifyJvmAdditional( GenericContainer container, String... expectedValues )
     {
         SetContainerUser.nonRootUser( container );
         //Start the container

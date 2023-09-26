@@ -23,7 +23,6 @@ import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -109,7 +108,7 @@ public class TestPasswords
         }
 	}
 
-	@ParameterizedTest(name = "as current user={0}")
+	@ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource(booleans = {true, false})
     void testCanSetPassword( boolean asCurrentUser ) throws Exception
     {
@@ -121,10 +120,7 @@ public class TestPasswords
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
             StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
-			dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-					firstContainer,
-					"password-defaultuser-data-",
-					"/data" );
+			dataMount = temporaryFolderManager.createFolderAndMountAsVolume(firstContainer, "/data");
 			log.info( String.format( "Starting first container as %s user and setting password",
 									 asCurrentUser? "current" : "default" ) );
             // create a database with stuff in
@@ -162,7 +158,7 @@ public class TestPasswords
         }
     }
 
-    @ParameterizedTest(name = "as current user={0}")
+    @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource(booleans = {true, false})
     void testSettingNeo4jAuthDoesntOverrideExistingPassword( boolean asCurrentUser ) throws Exception
     {
@@ -173,10 +169,7 @@ public class TestPasswords
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
             StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
-			dataMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-					firstContainer,
-					"password-envoverride-data-",
-					"/data" );
+			dataMount = temporaryFolderManager.createFolderAndMountAsVolume(firstContainer, "/data");
 
 			// create a database with stuff in
 			log.info( String.format( "Starting first container as %s user and setting password",
@@ -290,10 +283,7 @@ public class TestPasswords
                                 "Minimum password length introduced in 5.2.0");
         try(GenericContainer container = createContainer( false ))
         {
-            Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-            		container,
-					"noMinimumPasswordLength-conf-",
-					"/conf" );
+            Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Files.writeString(confMount.resolve( "neo4j.conf" ),
                               Configuration.getConfigurationNameMap().get( Setting.MINIMUM_PASSWORD_LENGTH ).name+"=2");
 

@@ -118,7 +118,6 @@ public class TestDumpLoad44
 
     private void shouldCreateDumpAndLoadDump( boolean asDefaultUser, String password ) throws Exception
     {
-        Path testOutputFolder = temporaryFolderManager.createTempFolder( "dumpandload-" );
         Path firstDataDir;
         Path secondDataDir;
         Path backupDir;
@@ -126,8 +125,9 @@ public class TestDumpLoad44
         // start a database and populate it
         try(GenericContainer container = createDBContainer( asDefaultUser, password ))
         {
-            firstDataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container, "data1-", "/data", testOutputFolder );
+            firstDataDir = temporaryFolderManager.createNamedFolderAndMountAsVolume( container,
+                                                                                     "data1",
+                                                                                     "/data" );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", password );
@@ -138,8 +138,7 @@ public class TestDumpLoad44
         try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
             temporaryFolderManager.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
-            backupDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    admin, "dump-", "/backups", testOutputFolder );
+            backupDir = temporaryFolderManager.createFolderAndMountAsVolume(admin, "/backups");
             admin.withCommand( "neo4j-admin", "dump", "--database=neo4j", "--to=/backups/neo4j.dump" );
             admin.start();
         }
@@ -149,8 +148,9 @@ public class TestDumpLoad44
         // use admin container to create dump
         try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
-            secondDataDir = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    admin, "data2-", "/data", testOutputFolder );
+            secondDataDir = temporaryFolderManager.createNamedFolderAndMountAsVolume( admin,
+                                                                                     "data2",
+                                                                                     "/data" );
             temporaryFolderManager.mountHostFolderAsVolume( admin, backupDir, "/backups" );
             admin.withCommand( "neo4j-admin", "load", "--database=neo4j", "--from=/backups/neo4j.dump" );
             admin.start();

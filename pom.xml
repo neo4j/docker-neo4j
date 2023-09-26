@@ -10,8 +10,9 @@
 	<packaging>jar</packaging>
 
 	<properties>
-        <neo4j.driver.version>4.4.11</neo4j.driver.version>
         <java.version>17</java.version>
+        <junit.version>5.10.0</junit.version>
+        <neo4j.driver.version>4.4.11</neo4j.driver.version>
         <testcontainers.version>1.18.0</testcontainers.version>
     </properties>
 
@@ -48,25 +49,25 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>5.6.0</version>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.6.0</version>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-params</artifactId>
-			<version>5.6.0</version>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-migrationsupport</artifactId>
-			<version>5.6.0</version>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -98,7 +99,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.22</version>
+            <version>1.24.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
