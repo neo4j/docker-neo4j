@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -49,21 +50,21 @@ public class TestUpgrade
 
 	private static List<Neo4jVersion> upgradableNeo4jVersionsPre5()
 	{
-		return Arrays.asList( new Neo4jVersion( 3, 5, 3 ), // 3.5.6 image introduced file permission changes, so we need to test upgrades before that version
-							  new Neo4jVersion( 3, 5, 7 ),
-							  Neo4jVersion.NEO4J_VERSION_400,
-							  new Neo4jVersion( 4, 1, 0 ),
-							  new Neo4jVersion( 4, 4, 0 ));
+		return Arrays.asList( new Neo4jVersion( 3, 5, 35 ),
+							  new Neo4jVersion( 4, 4, 0 ),
+							  new Neo4jVersion( 4, 4, 25 ));
     }
 
     private static List<Neo4jVersion> upgradableNeo4jVersions()
     {
-        List<Neo4jVersion> out = new ArrayList<>(TestSettings.NEO4J_VERSION.minor);
-        for(int minor=1; minor < TestSettings.NEO4J_VERSION.minor; minor++ )
-        {
-            out.add( new Neo4jVersion( 5, minor, 0 ) );
-        }
-        return out;
+        // instead of returning ALL 5.x versions just run a few to check that upgrading works and the volume/bind mount
+        // settings do not break upgrade.
+        // Running every upgrade path used up all the test agent memorry and caused unneccessary failures.
+        // We must assume that Neo4j upgrades are fully tested elsewhere, and just make sure that the
+        // docker infrastructure doesn't break upgrading.
+		return Arrays.asList( new Neo4jVersion( 5, 1, 0 ),
+                              new Neo4jVersion( 5, 5, 0 ),
+							  new Neo4jVersion( 5, 10, 0 ));
     }
 
     private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
