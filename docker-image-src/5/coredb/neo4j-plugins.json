@@ -21,10 +21,6 @@
       "dbms.bloom.license_file": "/licenses/bloom.license"
     }
   },
-  "streams": {
-    "versions": "https://neo4j-contrib.github.io/neo4j-streams/versions.json",
-    "properties": {}
-  },
   "graphql": {
     "versions": "https://neo4j-graphql.github.io/neo4j-graphql/versions.json",
     "properties": {
