@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,6 +29,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.utility.DockerImageName;
 
+@Tag("upgrade")
 public class TestUpgrade
 {
 	private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
@@ -215,7 +217,7 @@ public class TestUpgrade
 		}
 	}
 
-	private static DockerImageName getUpgradeFromImage( Neo4jVersion ver)
+	private static DockerImageName getUpgradeFromImage(Neo4jVersion ver)
 	{
 		if(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)
 		{
