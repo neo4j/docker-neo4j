@@ -102,7 +102,9 @@ public class TestConfSettings
     {
         // searches the debug log for the given string, returns true if present
         Stream<String> lines = Files.lines(debugLog);
-        String actualSetting = lines.filter(s -> s.contains( setting.name )).findFirst().orElse( "" );
+        String actualSetting = lines.filter(s -> s.contains( setting.name ))
+                                    .findFirst()
+                                    .orElse( "" );
         lines.close();
         if(shouldBeFound)
         {
@@ -475,28 +477,21 @@ public class TestConfSettings
     @Test
     void testSettingAppendsToConfFileWithoutEmptyLine_neo4jPlugins() throws Exception
     {
-        // if a conf file is supplied without a blank line at the end, AND we have a NEO4J_PLUGINS plugin
-        // then the plugin settings should append to the conf on a new line instead of at the end of the last line.
-
-        Path debugLog;
+        String expectedPageCacheSize = "1000.00MiB";
+        String pluginStr = "[\"apoc\"]";
+        if(TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ))
+        {
+            pluginStr = "[\"apoc-core\"]";
+        }
 
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = temporaryFolderManager.createTempFolder( "confEnvVarsAppend-" );
-            //Mount /conf
             Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
-                    "conf-",
-                    "/conf",
-                    testOutputFolder);
-            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "logs-",
-                    "/logs",
-                    testOutputFolder);
-            debugLog = logMount.resolve("debug.log");
+                    "confEnvVarsAppend-",
+                    "/conf");
             Files.copy( confFolder.resolve( "NoNewline.conf" ), confMount.resolve( "neo4j.conf" ) );
-            container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\"]" );
+            container.withEnv( Neo4jPluginEnv.get(), pluginStr );
             //Start the container
             makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
@@ -509,55 +504,41 @@ public class TestConfSettings
             {
                 Assertions.fail("Did not load apoc plugin.", ex);
             }
+            dbio.verifyConfigurationSetting( "neo4j",
+                                             PASSWORD,
+                                             confNames.get( Setting.MEMORY_PAGECACHE_SIZE ).name,
+                                             expectedPageCacheSize);
         }
-
-        //Check if the container reads the conf file
-        assertConfigurationPresentInDebugLog( debugLog,
-                                              confNames.get(Setting.MEMORY_PAGECACHE_SIZE),
-                                              "1000.00M",
-                                              true);
     }
 
     @Test
     void testSettingAppendsToConfFileWithoutEmptyLine_envSetting() throws Exception
     {
-        // if a conf file is supplied without a blank line at the end, AND we have environment settings,
-        // then the env settings should append to the conf on a new line instead of at the end of the last line.
-
-        Path debugLog;
+        String expectedHeapSize = "128.00MiB";
+        String expectedPageCacheSize = "1000.00MiB";
 
         try(GenericContainer container = createContainer())
         {
-            Path testOutputFolder = temporaryFolderManager.createTempFolder( "confEnvVarsAppend-" );
-            //Mount /conf
             Path confMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
                     container,
-                    "conf-",
-                    "/conf",
-                    testOutputFolder);
-            Path logMount = temporaryFolderManager.createTempFolderAndMountAsVolume(
-                    container,
-                    "logs-",
-                    "/logs",
-                    testOutputFolder);
-            debugLog = logMount.resolve("debug.log");
+                    "confEnvVarsAppend-",
+                    "/conf");
             Files.copy( confFolder.resolve( "NoNewline.conf" ), confMount.resolve( "neo4j.conf" ) );
             // set an env variable
-            container.withEnv( confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).envName, "128MB" );
+            container.withEnv( confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).envName, expectedHeapSize );
             //Start the container
             makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
+            DatabaseIO dbio = new DatabaseIO( container );
+            dbio.verifyConfigurationSetting( "neo4j",
+                                             PASSWORD,
+                                             confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).name,
+                                             expectedHeapSize);
+            dbio.verifyConfigurationSetting( "neo4j",
+                                             PASSWORD,
+                                             confNames.get( Setting.MEMORY_PAGECACHE_SIZE ).name,
+                                             expectedPageCacheSize);
         }
-
-        //Check if the container reads the conf file
-        assertConfigurationPresentInDebugLog( debugLog,
-                                              confNames.get(Setting.MEMORY_PAGECACHE_SIZE),
-                                              "1000M",
-                                              true);
-        assertConfigurationPresentInDebugLog( debugLog,
-                                              confNames.get(Setting.MEMORY_HEAP_MAXSIZE),
-                                              "128MB",
-                                              true);
     }
 
     @Test
