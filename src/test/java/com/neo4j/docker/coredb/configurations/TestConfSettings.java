@@ -234,7 +234,7 @@ public class TestConfSettings
             DatabaseIO dbio = new DatabaseIO( container );
             Path debugLog = logMount.resolve( "debug.log" );
 
-            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS).name, "0.0.0.0");
+            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0");
             assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0", true);
 
             // test enterprise only default configurations are set
@@ -242,11 +242,11 @@ public class TestConfSettings
                 String expectedDiscoveryAddress = container.getContainerId().substring(0, 12) + ":5000";
                 String expectedTxAddress = container.getContainerId().substring(0, 12) + ":6000";
                 String expectedRaftAddress = container.getContainerId().substring(0, 12) + ":7000";
-                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS).name, expectedDiscoveryAddress);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress,true);
-                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS).name, expectedTxAddress);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress,true);
-                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_RAFT_ADDRESS).name, expectedRaftAddress);
+                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress,true);
             }
         }
@@ -506,7 +506,7 @@ public class TestConfSettings
             }
             dbio.verifyConfigurationSetting( "neo4j",
                                              PASSWORD,
-                                             confNames.get( Setting.MEMORY_PAGECACHE_SIZE ).name,
+                                             confNames.get( Setting.MEMORY_PAGECACHE_SIZE ),
                                              expectedPageCacheSize);
         }
     }
@@ -532,11 +532,11 @@ public class TestConfSettings
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.verifyConfigurationSetting( "neo4j",
                                              PASSWORD,
-                                             confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).name,
+                                             confNames.get( Setting.MEMORY_HEAP_MAXSIZE ),
                                              expectedHeapSize);
             dbio.verifyConfigurationSetting( "neo4j",
                                              PASSWORD,
-                                             confNames.get( Setting.MEMORY_PAGECACHE_SIZE ).name,
+                                             confNames.get( Setting.MEMORY_PAGECACHE_SIZE ),
                                              expectedPageCacheSize);
         }
     }

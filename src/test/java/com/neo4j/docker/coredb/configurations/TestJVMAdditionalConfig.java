@@ -87,7 +87,7 @@ public class TestJVMAdditionalConfig
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", PASSWORD, JVM_ADDITIONAL_CONFIG.name, expectedJvmAdditional);
+            dbio.verifyConfigurationSetting( "neo4j", PASSWORD, JVM_ADDITIONAL_CONFIG, expectedJvmAdditional);
         }
     }
 
@@ -161,7 +161,7 @@ public class TestJVMAdditionalConfig
         container.start();
         // verify setting correctly loaded into neo4j
         DatabaseIO dbio = new DatabaseIO( container );
-        String actualConfValue = dbio.getConfigurationSettingAsString( "neo4j", PASSWORD, JVM_ADDITIONAL_CONFIG.name );
+        String actualConfValue = dbio.getConfigurationSettingAsString( "neo4j", PASSWORD, JVM_ADDITIONAL_CONFIG );
         
         for(String expectedJvmAdditional : expectedValues)
         {

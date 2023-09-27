@@ -2,6 +2,8 @@ package com.neo4j.docker.coredb.plugins;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.google.gson.Gson;
+import com.neo4j.docker.coredb.configurations.Configuration;
+import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileHttpHandler;
 import com.neo4j.docker.utils.HttpServerRule;
@@ -216,11 +218,13 @@ public class TestPluginInstallation
     {
         Path pluginsDir = temporaryFolderManager.createTempFolder( "plugin-noOverride-" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
+        Configuration securityProcedures = Configuration.getConfigurationNameMap()
+                                                        .get( Setting.SECURITY_PROCEDURES_UNRESTRICTED );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
         {
             // When we set a config value explicitly
-            container.withEnv( "NEO4J_dbms_security_procedures_unrestricted", "foo" );
+            container.withEnv( securityProcedures.envName, "foo" );
             // When we start the neo4j docker container
             container.start();
 
@@ -229,7 +233,7 @@ public class TestPluginInstallation
             DatabaseIO db = new DatabaseIO( container );
             verifyTestPluginLoaded( db );
             db.verifyConfigurationSetting( DB_USER, DB_PASSWORD,
-                                           "dbms.security.procedures.unrestricted",
+                                           securityProcedures,
                                            "foo",
                                            "neo4j config should not be overridden by plugin" );
         }

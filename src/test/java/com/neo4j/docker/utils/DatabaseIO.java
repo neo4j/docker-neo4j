@@ -1,11 +1,11 @@
 package com.neo4j.docker.utils;
 
+import com.neo4j.docker.coredb.configurations.Configuration;
 import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -79,27 +79,27 @@ public class DatabaseIO
         }
 	}
 
-    public String getConfigurationSettingAsString(String user, String password, String confName)
+    public String getConfigurationSettingAsString( String user, String password, Configuration conf)
     {
         List<Record> confRecord = runCypherQuery( user, password,
                                                   "CALL dbms.listConfig() YIELD name, value " +
-                                                  "WHERE name='" + confName + "' " +
+                                                  "WHERE name='" + conf.name + "' " +
                                                   "RETURN value" );
-        Assertions.assertEquals(1, confRecord.size(), "Configuration "+confName+" was not set." );
+        Assertions.assertEquals(1, confRecord.size(), "Configuration "+conf.name+" was not set." );
         return confRecord.get( 0 ).get( 0 ).asString();
     }
 
-    public void verifyConfigurationSetting(String user, String password, String confName, String expectedValue)
+    public void verifyConfigurationSetting( String user, String password, Configuration conf, String expectedValue)
     {
-        verifyConfigurationSetting(user, password, confName, expectedValue, "");
+        verifyConfigurationSetting(user, password, conf, expectedValue, "");
     }
 
-    public void verifyConfigurationSetting(String user, String password, String confName, String expectedValue, String extraFailureMsg)
+    public void verifyConfigurationSetting( String user, String password, Configuration conf, String expectedValue, String extraFailureMsg)
     {
-        String actualConf = getConfigurationSettingAsString( user, password, confName );
+        String actualConf = getConfigurationSettingAsString( user, password, conf );
         Assertions.assertEquals(expectedValue, actualConf,
                                 String.format("Expected %s to be %s but it was %s.%s",
-                                              confName, expectedValue, actualConf, extraFailureMsg));
+                                              conf.name, expectedValue, actualConf, extraFailureMsg));
     }
 
 	public void changePassword(String user, String oldPassword, String newPassword)
