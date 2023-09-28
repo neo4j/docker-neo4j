@@ -143,6 +143,42 @@ public class TestAdminReport
     }
 
     @Test
+    void shouldErrorIfUserCannotWrite() throws Exception
+    {
+        try(GenericContainer container = createNeo4jContainer(true))
+        {
+            Path reportFolder = temporaryFolderManager.createTempFolderAndMountAsVolume(container,
+                                                                                        outputFolderNamePrefix,
+                                                                                        "/reports");
+            temporaryFolderManager.setFolderOwnerToNeo4j( reportFolder );
+            // now will be running as non root, and try to write to a folder owned by 7474
+            container.start();
+            Container.ExecResult execResult = container.execInContainer( "neo4j-admin-report", reportDestinationFlag, "/reports" );
+            Assertions.assertTrue( execResult.getStderr().contains( "Folder /reports is not accessible for user: " ),
+                                   "Did not error about incorrect file permissions" );
+        }
+    }
+
+    @ParameterizedTest(name = "mountPoint_{0}")
+    @ValueSource(strings = {"/tmp/reports", "/reports"})
+    void shouldReownMountedReportDestinationIfRootDoesNotOwn(String mountPoint) throws Exception
+    {
+        try(GenericContainer container = createNeo4jContainer(false))
+        {
+            Path reportFolder = temporaryFolderManager.createTempFolderAndMountAsVolume(container,
+                                                                                        outputFolderNamePrefix,
+                                                                                        mountPoint);
+            temporaryFolderManager.setFolderOwnerToCurrentUser( reportFolder );
+            // now will be running as root, and try to write to a folder owned by 1000
+            container.start();
+            Container.ExecResult execResult = container.execInContainer( "neo4j-admin-report", reportDestinationFlag, mountPoint );
+            Assertions.assertTrue( execResult.getStderr().isEmpty(),
+                                   "errors were encountered when trying to reown "+mountPoint+".\n"+execResult.getStderr());
+            verifyCreatesReport( reportFolder, execResult );
+        }
+    }
+
+    @Test
     void shouldShowNeo4jAdminHelpText_whenCMD() throws Exception
     {
         try(GenericContainer container = createNeo4jContainer(false))
