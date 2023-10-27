@@ -349,6 +349,26 @@ If Neo4j fails to start, you can:
     fi
 }
 
+
+function set_initial_password_from_path
+{
+    # this has an inbuilt assumption that any configuration settings from the environment have already been applied to neo4j.conf
+    # This is for the logic to test whether password length is too short.
+    local _neo4j_auth_path="${1}"
+
+    # set the neo4j initial password only if you run the database server
+    if [ "${cmd}" == "neo4j" ]; then
+
+        # Validate the existance of the password file
+        if [ ! -f "${_neo4j_auth_path}" ]; then
+            echo >&2 "The password file '${_neo4j_auth_path}' does not exist!"
+            exit 1
+        fi
+
+        set_initial_password "$(cat "${_neo4j_auth_path}")"
+    fi
+}
+
 # ==== CODE STARTS ====
 debug_msg "DEBUGGING ENABLED"
 
@@ -572,7 +592,11 @@ done
 
 # ==== SET PASSWORD ====
 
-set_initial_password "${NEO4J_AUTH:-}"
+if [[ -n "${NEO4J_AUTH_PATH}" ]]; then
+    set_initial_password_from_path "${NEO4J_AUTH_PATH}"
+else
+    set_initial_password "${NEO4J_AUTH:-}"
+fi
 
 # ==== INVOKE NEO4J STARTUP ====
 
