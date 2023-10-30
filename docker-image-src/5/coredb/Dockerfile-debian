@@ -1,5 +1,15 @@
+FROM debian:bullseye-slim as suexec-builder
+RUN apt update \
+    && apt install -y gcc git make \
+    && git clone https://github.com/ncopa/su-exec.git \
+    && cd su-exec \
+    && make \
+    && rm -rf /var/lib/apt/lists/*
+
+
 FROM debian:bullseye-slim
 ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=suexec-builder /su-exec/su-exec /usr/bin/su-exec
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=%%NEO4J_SHA%% \
@@ -13,7 +23,7 @@ RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-creat
 COPY ./local-package/* /startup/
 
 RUN apt update \
-    && apt install -y curl gosu jq procps tini wget \
+    && apt install -y curl jq procps tini wget \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \

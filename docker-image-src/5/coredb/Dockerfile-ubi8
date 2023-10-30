@@ -1,6 +1,15 @@
+FROM redhat/ubi8-minimal:latest as suexec-builder
+RUN microdnf install -y gcc git make \
+    && git clone https://github.com/ncopa/su-exec.git \
+    && cd su-exec \
+    && make \
+    && microdnf clean all
+
+
 FROM redhat/ubi8-minimal:latest
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
+COPY --from=suexec-builder /su-exec/su-exec /usr/bin/su-exec
 
 # gather pre-requisite packages
 RUN set -eux; \
@@ -9,14 +18,10 @@ RUN set -eux; \
         'x86_64') \
             tiniurl="https://github.com/krallin/tini/releases/download/v0.19.0/tini"; \
             tinisha="93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c"; \
-            gosuurl="https://github.com/tianon/gosu/releases/download/1.16/gosu-amd64"; \
-            gosusha="3a4e1fc7430f9e7dd7b0cbbe0bfde26bf4a250702e84cf48a1eb2b631c64cf13"; \
             ;; \
         'aarch64') \
             tiniurl="https://github.com/krallin/tini/releases/download/v0.19.0/tini-arm64"; \
             tinisha="07952557df20bfd2a95f9bef198b445e006171969499a1d361bd9e6f8e5e0e81"; \
-            gosuurl="https://github.com/tianon/gosu/releases/download/1.16/gosu-arm64"; \
-            gosusha="23fa49907d5246d2e257de3bf883f57fba47fe1f559f7e732ff16c0f23d2b6a6"; \
             ;; \
         *) echo >&2 "Neo4j does not currently have a docker image for architecture $arch"; exit 1 ;; \
     esac; \
@@ -33,19 +38,14 @@ RUN set -eux; \
     wget -q ${tiniurl} -O /usr/bin/tini; \
     wget -q ${tiniurl}.asc -O tini.asc; \
     echo "${tinisha}"  /usr/bin/tini | sha256sum -c --strict --quiet; \
-    wget -q ${gosuurl} -O /usr/sbin/gosu; \
-    wget -q  ${gosuurl}.asc -O gosu.asc; \
-    echo "${gosusha}" /usr/sbin/gosu | sha256sum -c --strict --quiet; \
     chmod a+x /usr/bin/tini; \
-    chmod a+x /usr/sbin/gosu; \
     export GNUPGHOME="$(mktemp -d)"; \
     gpg --batch --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys \
         595E85A6B1B4779EA4DAAEC70B588DFF0527A9B7 \
         B42F6819007F00F88E364FD4036A9C25BF357DD4; \
     gpg --batch --verify tini.asc /usr/bin/tini; \
-    gpg --batch --verify gosu.asc /usr/sbin/gosu; \
     gpgconf --kill all; \
-    rm -rf "$GNUPGHOME" tini.asc gosu.asc; \
+    rm -rf "$GNUPGHOME" tini.asc; \
     microdnf clean all
 
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
