@@ -248,9 +248,8 @@ public class TestPluginInstallation
             // if we try to set a plugin that doesn't exist
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                     .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
-                                                        .withTimeout( Duration.ofSeconds( 30 ) ) )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
+            StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(30) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();
@@ -268,9 +267,8 @@ public class TestPluginInstallation
             // if we try to set a plugin that doesn't exist
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                     .withStartupCheckStrategy( new OneShotStartupCheckStrategy()
-                                                        .withTimeout( Duration.ofSeconds( 30 ) ) )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
+            StartupDetector.makeContainerWaitUntilFinished(container, Duration.ofSeconds(30));
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();

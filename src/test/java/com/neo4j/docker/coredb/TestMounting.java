@@ -234,7 +234,7 @@ public class TestMounting
             // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
             container.setWaitStrategy( Wait.forLogMessage( "[fF]older /data is not accessible for user", 1 )
                                            .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
-            Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
+            Assertions.assertThrows( ContainerLaunchException.class,
                                      () -> container.start(),
                                      "Neo4j should not start in secure mode if data folder is unwritable" );
         }
@@ -253,7 +253,7 @@ public class TestMounting
             // currently Neo4j will try to start and fail. It should be fixed to throw an error and not try starting
             container.setWaitStrategy( Wait.forLogMessage( "[fF]older /logs is not accessible for user", 1 )
                                            .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
-            Assertions.assertThrows( org.testcontainers.containers.ContainerLaunchException.class,
+            Assertions.assertThrows( ContainerLaunchException.class,
                                      () -> container.start(),
                                      "Neo4j should not start in secure mode if logs folder is unwritable" );
         }

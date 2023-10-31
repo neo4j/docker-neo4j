@@ -30,7 +30,7 @@ public class TestAdminBasic
              .waitingFor( new HttpWaitStrategy().forPort( 7474 ).forStatusCode( 200 ) )
              .withCommand( "neo4j", "console" );
 
-        Assertions.assertThrows( ContainerLaunchException.class, () -> admin.start() );
+        Assertions.assertThrows( ContainerLaunchException.class, admin::start );
         admin.stop();
     }
     @Test

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.rnorth.ducttape.unreliables.Unreliables;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerStatus;
@@ -41,9 +42,16 @@ public class StartupDetector {
         return makeContainerWaitForDatabaseReady(container, "neo4j", password, "neo4j", timeout);
     }
 
+    /**For containers that will just run a command and exit automatically.
+     * With this wait strategy, starting a container will block until the container has closed itself.
+     * The container could have succeeded or failed, we just wait for it to close.
+     * @param container the container to set the wait strategy on
+     * @param timeout how long to wait
+     * @return container in the modified state.
+     * */
     public static GenericContainer makeContainerWaitUntilFinished(GenericContainer container, Duration timeout)
     {
-
+        container.setStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( timeout ) );
         container.setWaitStrategy( new AbstractWaitStrategy()
         {
             @Override

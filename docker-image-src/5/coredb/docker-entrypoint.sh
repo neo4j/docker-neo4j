@@ -288,8 +288,6 @@ function add_env_setting_to_conf
 
 function set_initial_password
 {
-    # this has an inbuilt assumption that any configuration settings from the environment have already been applied to neo4j.conf
-    # This is for the logic to test whether password length is too short.
     local _neo4j_auth="${1}"
 
     # set the neo4j initial password only if you run the database server
@@ -306,6 +304,12 @@ function set_initial_password
                 echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
                 exit 1
             fi
+            if [ "${admin_user}" != "neo4j" ]; then
+                echo >&2 "Invalid admin username, it must be neo4j."
+                exit 1
+            fi
+
+            # this line has an inbuilt assumption that any configuration settings from the environment have already been applied to neo4j.conf
             local _min_password_length=$(cat "${NEO4J_HOME}"/conf/neo4j.conf | grep dbms.security.auth_minimum_password_length | sed -E 's/.*=(.*)/\1/')
             if [ "${#password}" -lt "${_min_password_length:-"8"}" ]; then
                 echo >&2 "Invalid value for password. The minimum password length is 8 characters.
@@ -313,10 +317,6 @@ If Neo4j fails to start, you can:
   1) Use a stronger password.
   2) Set configuration dbms.security.auth_minimum_password_length to override the minimum password length requirement.
   3) Set environment variable NEO4J_dbms_security_auth__minimum__password__length to override the minimum password length requirement."
-            fi
-            if [ "${admin_user}" != "neo4j" ]; then
-                echo >&2 "Invalid admin username, it must be neo4j."
-                exit 1
             fi
 
             if running_as_root; then
@@ -346,26 +346,6 @@ If Neo4j fails to start, you can:
             echo >&2 "Invalid value for NEO4J_AUTH: '${_neo4j_auth}'"
             exit 1
         fi
-    fi
-}
-
-
-function set_initial_password_from_path
-{
-    # this has an inbuilt assumption that any configuration settings from the environment have already been applied to neo4j.conf
-    # This is for the logic to test whether password length is too short.
-    local _neo4j_auth_path="${1}"
-
-    # set the neo4j initial password only if you run the database server
-    if [ "${cmd}" == "neo4j" ]; then
-
-        # Validate the existance of the password file
-        if [ ! -f "${_neo4j_auth_path}" ]; then
-            echo >&2 "The password file '${_neo4j_auth_path}' does not exist!"
-            exit 1
-        fi
-
-        set_initial_password "$(cat "${_neo4j_auth_path}")"
     fi
 }
 
@@ -569,7 +549,7 @@ fi
 ## these override BOTH defaults and any existing values in the neo4j.conf file
 
 # these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
-not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_DEBUG" "NEO4J_EDITION" \
+not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_AUTH_PATH" "NEO4J_DEBUG" "NEO4J_EDITION" \
              "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL")
 
 debug_msg "Applying configuration settings that have been set using environment variables."
@@ -592,9 +572,19 @@ done
 
 # ==== SET PASSWORD ====
 
-if [[ -n "${NEO4J_AUTH_PATH}" ]]; then
-    set_initial_password_from_path "${NEO4J_AUTH_PATH}"
+if [[ -n "${NEO4J_AUTH_PATH:-}" ]]; then
+    # Validate the existence of the password file
+    if [ ! -f "${NEO4J_AUTH_PATH}" ]; then
+        echo >&2 "The password file '${NEO4J_AUTH_PATH}' does not exist"
+        exit 1
+    fi
+    # validate the password file is readable
+    check_mounted_folder_readable "${NEO4J_AUTH_PATH}"
+
+    debug_msg "Setting initial password from file ${NEO4J_AUTH_PATH}"
+    set_initial_password "$(cat ${NEO4J_AUTH_PATH})"
 else
+    debug_msg "Setting initial password from environment"
     set_initial_password "${NEO4J_AUTH:-}"
 fi
 
@@ -631,9 +621,6 @@ function get_neo4j_run_cmd {
     fi
 }
 
-# Use su-exec to drop privileges to neo4j user
-# Note that su-exec, despite its name, does not replicate the
-# functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
     # separate declaration and use of get_neo4j_run_cmd so that error codes are correctly surfaced
     debug_msg "getting full neo4j run command"

@@ -535,7 +535,7 @@ fi
 ## these override BOTH defaults and any existing values in the neo4j.conf file
 
 # these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
-not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_DEBUG" "NEO4J_EDITION" \
+not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_AUTH_PATH" "NEO4J_DEBUG" "NEO4J_EDITION" \
              "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL")
 
 debug_msg "Applying configuration settings that have been set using environment variables."
@@ -558,7 +558,21 @@ done
 
 # ==== SET PASSWORD AND PLUGINS ====
 
-set_initial_password "${NEO4J_AUTH:-}"
+if [[ -n "${NEO4J_AUTH_PATH:-}" ]]; then
+    # Validate the existence of the password file
+    if [ ! -f "${NEO4J_AUTH_PATH}" ]; then
+        echo >&2 "The password file '${NEO4J_AUTH_PATH}' does not exist"
+        exit 1
+    fi
+    # validate the password file is readable
+    check_mounted_folder_readable "${NEO4J_AUTH_PATH}"
+
+    debug_msg "Setting initial password from file ${NEO4J_AUTH_PATH}"
+    set_initial_password "$(cat ${NEO4J_AUTH_PATH})"
+else
+    debug_msg "Setting initial password from environment"
+    set_initial_password "${NEO4J_AUTH:-}"
+fi
 
 
 if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then

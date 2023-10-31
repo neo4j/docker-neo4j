@@ -21,8 +21,7 @@ public class TestReport
         GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID )
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" ).withEnv( "NEO4J_DEBUG", "yes" )
                 .withCommand( "neo4j-admin", "server", "report" )
-                .withLogConsumer( new Slf4jLogConsumer( log ) )
-                .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 20 ) ) );
+                .withLogConsumer( new Slf4jLogConsumer( log ) );
         StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds( 20 ) );
         return container;
     }
