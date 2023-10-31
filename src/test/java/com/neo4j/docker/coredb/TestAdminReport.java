@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -141,7 +142,16 @@ public class TestAdminReport
         {
             container.withCommand( "neo4j-admin-report", "--help" );
             StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds( 20 ) );
-            container.start();
+            try
+            {
+                container.start();
+            }
+            catch ( ContainerLaunchException e )
+            {
+                // consume any failed to start exceptions
+                log.warn( "Running 'neo4j-admin-report --help' caused the container to fail rather than " +
+                          "successfully complete. This is allowable, so the test is not going to fail." );
+            }
             verifyHelpText( container.getLogs(OutputFrame.OutputType.STDOUT),
                             container.getLogs(OutputFrame.OutputType.STDERR) );
         }

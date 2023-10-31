@@ -203,7 +203,7 @@ public class TestAuthentication
             StartupDetector.makeContainerWaitUntilFinished( failContainer, Duration.ofSeconds( 30 ) )
                            .withEnv( NEO4J_AUTH_FILE_ENV, "/secrets/doesnotexist.secret" );
 
-            Assertions.assertThrows( ContainerLaunchException.class, () -> failContainer.start(),
+            Assertions.assertThrows( ContainerLaunchException.class, failContainer::start,
                                      "Neo4j started even though the password file does not exist" );
             // an error message should be printed to stderr
             String errors = failContainer.getLogs( OutputFrame.OutputType.STDERR);
