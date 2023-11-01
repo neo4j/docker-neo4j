@@ -41,12 +41,12 @@ debug_msg "report_destination will be ${report_destination}"
 debug_msg "Determining which user to run neo4j-admin as."
 if running_as_root; then
     debug_msg "running neo4j-admin report as root"
-    if [[ ! $(gosu neo4j:neo4j test -w "${report_destination}") ]]; then
+    if [[ ! $(su-exec neo4j:neo4j test -w "${report_destination}") ]]; then
         debug_msg "reowning ${report_destination} to neo4j:neo4j"
         chown neo4j:neo4j "${report_destination}"
     fi
-    debug_msg gosu neo4j:neo4j "${report_cmd[@]}" "$@"
-    gosu neo4j:neo4j "${report_cmd[@]}" "$@"
+    debug_msg su-exec neo4j:neo4j "${report_cmd[@]}" "$@"
+    su-exec neo4j:neo4j "${report_cmd[@]}" "$@"
 else
     debug_msg "running neo4j-admin report as user defined by --user flag"
     if [[ ! -w "${report_destination}" ]]; then
