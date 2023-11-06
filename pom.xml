@@ -16,6 +16,26 @@
         <testcontainers.version>1.18.0</testcontainers.version>
     </properties>
 
+    <profiles>
+        <profile>
+            <!-- This sets what test groups will run by default if you don't specify any maven profiles when running mvn test -->
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <profile.include></profile.include>
+                <profile.exclude>BundleTest</profile.exclude>
+            </properties>
+        </profile>
+        <profile>
+            <id>bundle</id>
+            <properties>
+                <profile.include>BundleTest</profile.include>
+            </properties>
+        </profile>
+    </profiles>
+
 	<build>
 		<plugins>
 			<plugin>
