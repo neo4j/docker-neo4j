@@ -27,7 +27,7 @@ public class StartupDetector {
                     .withStartupTimeout(timeout));
         } else {
             container.setWaitStrategy(Wait.forHttp("/")
-                    .forPort(7474)
+                    .forPort(7687)
                     .forStatusCode(200)
                     .withStartupTimeout(timeout));
         }
