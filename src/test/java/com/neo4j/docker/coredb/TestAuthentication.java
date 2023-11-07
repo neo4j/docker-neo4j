@@ -21,8 +21,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,11 +41,8 @@ public class TestAuthentication
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( Wait.forHttp( "/" )
-                                  .forPort( 7474 )
-                                  .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 90 ) ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitForBoltReady( container, Duration.ofSeconds(90) );
         if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -71,7 +66,6 @@ public class TestAuthentication
 		try(GenericContainer container = createContainer( false ))
 		{
 			container.withEnv( "NEO4J_AUTH", "none");
-            StartupDetector.makeContainerWaitForNeo4jReady(container, "none", Duration.ofSeconds( 90 ));
 			container.start();
             DatabaseIO db = new DatabaseIO(container);
             db.putInitialDataIntoContainer( "neo4j", "none" );

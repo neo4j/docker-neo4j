@@ -5,6 +5,7 @@ import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -57,11 +58,8 @@ public class TestBackupRestore44
                  .withEnv( confNames.get( Setting.BACKUP_ENABLED ).envName, "true" )
                  .withEnv( confNames.get( Setting.BACKUP_LISTEN_ADDRESS ).envName, "0.0.0.0:6362" )
                  .withExposedPorts( 7474, 7687, 6362 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( Wait.forHttp( "/" )
-                                  .forPort( 7474 )
-                                  .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 90 ) ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitForNeo4jReady( container, password, Duration.ofSeconds( 90 ));
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -73,8 +71,8 @@ public class TestBackupRestore44
     {
         GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 90 ) ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(180) );
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );

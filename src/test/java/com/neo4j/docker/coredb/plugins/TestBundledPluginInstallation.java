@@ -1,7 +1,10 @@
 package com.neo4j.docker.coredb.plugins;
 
+import com.neo4j.docker.coredb.configurations.Configuration;
+import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -18,6 +21,7 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.file.Files;
@@ -30,8 +34,6 @@ import java.util.stream.Stream;
 @Tag("BundleTest")
 public class TestBundledPluginInstallation
 {
-    private static final int DEFAULT_BROWSER_PORT = 7474;
-    private static final int DEFAULT_BOLT_PORT = 7687;
     private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
     private static String APOC = "apoc";
     private static String APOC_CORE = "apoc-core";
@@ -46,25 +48,25 @@ public class TestBundledPluginInstallation
                 // plugin name key, version it's bundled since, version bundled until, is enterprise only
                 Arguments.arguments( APOC_CORE, new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
                 Arguments.arguments( APOC, new Neo4jVersion(5, 0, 0), null, false ),
-                // Arguments.arguments( GDS, Neo4jVersion.NEO4J_VERSION_440, null, true ),
+                 Arguments.arguments( GDS, Neo4jVersion.NEO4J_VERSION_440, null, true ),
                 Arguments.arguments( BLOOM, Neo4jVersion.NEO4J_VERSION_440, null, true )
         );
     }
 
-    private GenericContainer createContainerWithBundledPlugin(String pluginName)
+    private GenericContainer createContainer()
     {
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-
         container.withEnv( "NEO4J_AUTH", "none" )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( Neo4jPluginEnv.get(), "[\"" +pluginName+ "\"]" )
-                 .withExposedPorts( DEFAULT_BROWSER_PORT, DEFAULT_BOLT_PORT )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( Wait.forHttp( "/" )
-                                  .forPort( DEFAULT_BROWSER_PORT )
-                                  .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 60 ) )  );
+                 .withExposedPorts( 7474, 7687 )
+                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitForBoltReady( container, Duration.ofSeconds(60) );
         return container;
+    }
+
+    private GenericContainer createContainerWithBundledPlugin(String pluginName)
+    {
+        return createContainer().withEnv( Neo4jPluginEnv.get(), "[\"" +pluginName+ "\"]" );
     }
 
     @ParameterizedTest(name = "testBundledPlugin_{0}")
@@ -209,6 +211,27 @@ public class TestBundledPluginInstallation
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", PASSWORD );
+        }
+    }
+
+    @Test
+    void testBrowserListensOn7474()
+    {
+        try(GenericContainer container = createContainer())
+        {
+            container.waitingFor( new HttpWaitStrategy()
+                                          .forPort(7474)
+                                          .forStatusCode(200)
+                                          .withStartupTimeout(Duration.ofSeconds(60)) );
+            container.start();
+            Assertions.assertTrue( container.isRunning() );
+
+            // verify that there are browser settings in the current configuration
+            DatabaseIO dbio = new DatabaseIO( container );
+            dbio.verifyConfigurationSetting( "neo4j", "none",
+                                             Configuration.getConfigurationNameMap()
+                                                          .get(Setting.BROWSER_ALLOW_OUTGOING_CONNECTIONS ),
+                                             "true" );
         }
     }
 }

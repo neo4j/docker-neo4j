@@ -9,6 +9,7 @@ import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -424,6 +425,7 @@ public class TestConfSettings
     }
 
     @Test
+    @Tag("BundleTest")
     void testSettingAppendsToConfFileWithoutEmptyLine_neo4jPlugins() throws Exception
     {
         String expectedPageCacheSize = "1000.00MiB";
@@ -504,7 +506,7 @@ public class TestConfSettings
         File apocConf = confMount.resolve( "apoc.conf" ).toFile();
         Assertions.assertTrue( apocConf.exists(), "Did not create an apoc.conf to contain the apoc settings." );
         Map<String,String> actualApocSettings = parseConfFile( apocConf );
-        Assertions.assertTrue(actualApocSettings.containsKey(confNames.get( Setting.APOC_EXPORT_FILE_ENABLED).name),
+        Assertions.assertTrue(actualApocSettings.containsKey(confNames.get(Setting.APOC_EXPORT_FILE_ENABLED).name),
                               "APOC setting not added to apoc.conf");
         Assertions.assertEquals("true",
                                 actualApocSettings.get(confNames.get( Setting.APOC_EXPORT_FILE_ENABLED).name),

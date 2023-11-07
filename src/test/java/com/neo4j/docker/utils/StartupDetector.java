@@ -34,6 +34,15 @@ public class StartupDetector {
         return container;
     }
 
+    public static GenericContainer makeContainerWaitForBoltReady(GenericContainer container, Duration timeout)
+    {
+            container.setWaitStrategy(Wait.forHttp("/")
+                    .forPort(7687)
+                    .forStatusCode(200)
+                    .withStartupTimeout(timeout));
+            return container;
+    }
+
     public static GenericContainer makeContainerWaitForNeo4jReady(GenericContainer container, String password) {
         return makeContainerWaitForDatabaseReady(container, "neo4j", password, "neo4j", Duration.ofSeconds(60));
     }
@@ -45,6 +54,7 @@ public class StartupDetector {
     /**For containers that will just run a command and exit automatically.
      * With this wait strategy, starting a container will block until the container has closed itself.
      * The container could have succeeded or failed, we just wait for it to close.
+     * If the container fails to start, it will still throw an exception, this just prevents us from having to wait the full timeout.
      * @param container the container to set the wait strategy on
      * @param timeout how long to wait
      * @return container in the modified state.

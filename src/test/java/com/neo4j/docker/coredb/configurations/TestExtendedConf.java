@@ -2,6 +2,7 @@ package com.neo4j.docker.coredb.configurations;
 
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Assert;
@@ -56,13 +57,14 @@ public class TestExtendedConf
 
 	protected GenericContainer createContainer(String password)
 	{
-        return new GenericContainer(TestSettings.IMAGE_ID)
-				.withEnv("NEO4J_AUTH", password == null || password.isEmpty() ? "none" : "neo4j/" + password)
-				.withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
-				.withEnv( "EXTENDED_CONF", "yeppers" )
-				.withExposedPorts(7474, 7687)
-				.waitingFor( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) )
-				.withLogConsumer(new Slf4jLogConsumer( log ));
+        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
+                .withEnv( "NEO4J_AUTH", password == null || password.isEmpty() ? "none" : "neo4j/" + password )
+                .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                .withEnv( "EXTENDED_CONF", "yeppers" )
+                .withExposedPorts( 7474, 7687 )
+                .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitForBoltReady( container, Duration.ofSeconds(90) );
+       return container;
     }
 
 
@@ -72,7 +74,6 @@ public class TestExtendedConf
 	{
         try(GenericContainer container = createContainer(password))
         {
-            container.setWaitStrategy( Wait.forHttp( "/" ).forPort( 7474 ).forStatusCode( 200 ) );
             container.start();
 
             Assertions.assertTrue( container.isRunning() );

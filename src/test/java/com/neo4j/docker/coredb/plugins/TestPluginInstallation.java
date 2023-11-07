@@ -28,11 +28,9 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.shaded.com.google.common.io.Files;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -45,7 +43,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.driver.Record;
 
-import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
 
 @EnableRuleMigrationSupport
@@ -89,7 +86,7 @@ public class TestPluginInstallation
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withEnv( "NEO4J_AUTH", "none" );
-        makeContainerWaitForNeo4jReady( container, "none" );
+        StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
         if ( asCurrentUser )
         {
             SetContainerUser.nonRootUser( container );
@@ -105,7 +102,7 @@ public class TestPluginInstallation
         String jsonStr = jsonBuilder.toJson( jsonEntry );
 
         File outputJsonFile = destinationFolder.resolve( "versions.json" ).toFile();
-        Files.write( jsonStr, outputJsonFile, StandardCharsets.UTF_8 );
+        java.nio.file.Files.writeString( outputJsonFile.toPath(), jsonStr );
         return outputJsonFile;
     }
 
@@ -119,7 +116,7 @@ public class TestPluginInstallation
         String jsonStr = jsonBuilder.toJson( jsonEntries );
 
         File outputJsonFile = destinationFolder.resolve( "versions.json" ).toFile();
-        Files.write( jsonStr, outputJsonFile, StandardCharsets.UTF_8 );
+        java.nio.file.Files.writeString( outputJsonFile.toPath(), jsonStr );
         return outputJsonFile;
     }
 

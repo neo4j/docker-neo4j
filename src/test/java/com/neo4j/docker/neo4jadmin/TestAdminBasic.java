@@ -1,5 +1,6 @@
 package com.neo4j.docker.neo4jadmin;
 
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -24,11 +25,10 @@ public class TestAdminBasic
     {
         GenericContainer admin = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
         admin.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-             .withExposedPorts( 7474 )
+             .withExposedPorts( 7474, 7687 )
              .withLogConsumer( new Slf4jLogConsumer( log ) )
-             .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 15 ) ) )
-             .waitingFor( new HttpWaitStrategy().forPort( 7474 ).forStatusCode( 200 ) )
              .withCommand( "neo4j", "console" );
+        StartupDetector.makeContainerWaitUntilFinished( admin, Duration.ofSeconds(30) );
 
         Assertions.assertThrows( ContainerLaunchException.class, admin::start );
         admin.stop();
@@ -43,11 +43,9 @@ public class TestAdminBasic
         try(GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
-            container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )
-                                      .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-            container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(30) );
             // container start should fail due to licensing.
-            Assertions.assertThrows( Exception.class, () -> container.start(),
+            Assertions.assertThrows( ContainerLaunchException.class, container::start,
                                      "Neo4j did not notify about accepting the license agreement" );
             logsOut = container.getLogs();
         }

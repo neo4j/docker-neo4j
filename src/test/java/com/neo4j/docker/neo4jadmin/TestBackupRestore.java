@@ -72,8 +72,8 @@ public class TestBackupRestore
     {
         GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 180 ) ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+        StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(180) );
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );

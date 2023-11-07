@@ -4,6 +4,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.StartupDetector;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -17,7 +18,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -51,15 +51,12 @@ public class TestDumpLoad44
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( Wait.forHttp( "/" )
-                                  .forPort( 7474 )
-                                  .forStatusCode( 200 )
-                                  .withStartupTimeout( Duration.ofSeconds( 90 ) ) )
                  // the default testcontainer framework behaviour is to just stop the process entirely,
                  // preventing clean shutdown. This means we can run the stop command and
                  // it'll send a SIGTERM to initiate neo4j shutdown. See also stopContainer method.
                  .withCreateContainerCmdModifier(
                          (Consumer<CreateContainerCmd>) cmd -> cmd.withStopSignal( "SIGTERM" ).withStopTimeout( 20 ));
+        StartupDetector.makeContainerWaitForNeo4jReady( container, password, Duration.ofSeconds( 90 ));
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -74,7 +71,6 @@ public class TestDumpLoad44
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Done: \\d+ files, [\\d\\.,]+[KMGi]+B processed\\..*" ) )
-//                 .waitingFor( new LogMessageWaitStrategy().withRegEx( "^Done: .*" ) )
                  .withStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( Duration.ofSeconds( 90 ) ) );
         if(!asDefaultUser)
         {

@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -36,7 +37,7 @@ public class TestBasic
     }
 
     @Test
-    void testListensOn7474()
+    void testListensOn7687()
     {
         try(GenericContainer container = createBasicContainer())
         {
@@ -77,12 +78,10 @@ public class TestBasic
         try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
-            container.waitingFor( Wait.forLogMessage( ".*must accept the license.*", 1 )
-                                      .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-			container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
+            StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(30) );
 			// container start should fail due to licensing.
-            Assertions.assertThrows( Exception.class, () -> container.start(),
-									 "Neo4j did not notify about accepting the license agreement" );
+            Assertions.assertThrows( ContainerLaunchException.class, () -> container.start(),
+                                     "Neo4j did not notify about accepting the license agreement" );
             logsOut = container.getLogs();
         }
         // double check the container didn't warn and start neo4j anyway
