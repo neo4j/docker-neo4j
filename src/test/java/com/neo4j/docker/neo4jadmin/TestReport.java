@@ -1,6 +1,6 @@
 package com.neo4j.docker.neo4jadmin;
 
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
+
 import java.time.Duration;
 
 public class TestReport
@@ -22,7 +22,7 @@ public class TestReport
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" ).withEnv( "NEO4J_DEBUG", "yes" )
                 .withCommand( "neo4j-admin", "server", "report" )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds( 20 ) );
+        WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 20 ) );
         return container;
     }
 

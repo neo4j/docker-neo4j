@@ -3,7 +3,7 @@ package com.neo4j.docker.coredb;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -17,8 +17,6 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
 import java.util.function.Consumer;
@@ -41,7 +39,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
             String stdout = container.getLogs();
@@ -55,7 +53,7 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -78,7 +76,7 @@ public class TestBasic
         try(GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
-            StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(30) );
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30) );
 			// container start should fail due to licensing.
             Assertions.assertThrows( ContainerLaunchException.class, () -> container.start(),
                                      "Neo4j did not notify about accepting the license agreement" );
@@ -100,7 +98,7 @@ public class TestBasic
                                 "No unified license acceptance method before 5.0.0");
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -120,8 +118,8 @@ public class TestBasic
                                 "No unified license acceptance method before 5.0.0");
         try(GenericContainer container = createBasicContainer())
         {
-            container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "eval" );
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "eval" )
+                     .waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -138,7 +136,7 @@ public class TestBasic
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
 
             Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell" );
@@ -152,9 +150,9 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            StartupDetector.makeContainerWaitForNeo4jReady( container, "neo4j" );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.setWorkingDirectory( "/tmp" );
-            Assertions.assertDoesNotThrow( () -> container.start(),
+            Assertions.assertDoesNotThrow( container::start,
                                            "Could not start neo4j from workdir other than NEO4J_HOME" );
         }
     }
@@ -165,8 +163,8 @@ public class TestBasic
     {
         try(GenericContainer container = createBasicContainer())
         {
-            container.withEnv( "NEO4J_AUTH", "none" );
-            StartupDetector.makeContainerWaitForNeo4jReady(container, "none");
+            container.withEnv( "NEO4J_AUTH", "none" )
+                     .waitingFor( WaitStrategies.waitForNeo4jReady( "none" ) );
             // sets sigterm as the stop container signal
             container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
                     cmd.withStopSignal( signal )

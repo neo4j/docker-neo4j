@@ -11,11 +11,13 @@ import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 
+import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,7 +37,7 @@ public class TestUpgrade
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
-	private GenericContainer makeContainer( DockerImageName image)
+	private GenericContainer makeContainer(DockerImageName image)
 	{
         GenericContainer container = new GenericContainer<>( image );
         container.withEnv( "NEO4J_AUTH", user + "/" + password )

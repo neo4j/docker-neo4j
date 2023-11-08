@@ -4,7 +4,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -49,12 +49,12 @@ public class TestDumpLoad
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( password, Duration.ofSeconds( 90 )) )
                  // the default testcontainer framework behaviour is to just stop the process entirely,
                  // preventing clean shutdown. This means we can run the stop command and
                  // it'll send a SIGTERM to initiate neo4j shutdown. See also stopContainer method.
                  .withCreateContainerCmdModifier(
                          (Consumer<CreateContainerCmd>) cmd -> cmd.withStopSignal( "SIGTERM" ).withStopTimeout( 20 ));
-        StartupDetector.makeContainerWaitForNeo4jReady(container, password, Duration.ofSeconds( 90 ));
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );

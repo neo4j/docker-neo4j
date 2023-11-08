@@ -6,6 +6,7 @@ import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,8 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.exceptions.ClientException;
-
-import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 
 public class TestConfSettings
 {
@@ -186,7 +185,7 @@ public class TestConfSettings
     {
         Path debugLog;
 
-        try(GenericContainer container = createContainer())
+        try(GenericContainer container = createContainer().waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD)))
         {
             //Mount /conf
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
@@ -197,7 +196,6 @@ public class TestConfSettings
             Path confFile = confFolder.resolve( "ReadConf.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
         }
 
@@ -209,13 +207,12 @@ public class TestConfSettings
     @Test
     void testDefaultsConfigsAreSet() throws Exception
     {
-        try(GenericContainer container = createContainer())
+        try(GenericContainer container = createContainer().waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD)))
         {
             //Mount /logs
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             SetContainerUser.nonRootUser( container );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             Path debugLog = logMount.resolve( "debug.log" );
@@ -341,7 +338,9 @@ public class TestConfSettings
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 2, 0)),
                                "test not applicable in versions before 4.2.");
         Path debugLog;
-        try(GenericContainer container = createContainer().withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512.00MiB"))
+        try(GenericContainer container = createContainer()
+                .withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512.00MiB")
+                .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD)))
         {
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
@@ -351,7 +350,6 @@ public class TestConfSettings
             Path confFile = confFolder.resolve("EnvVarsOverride.conf");
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
         }
         assertConfigurationPresentInDebugLog(debugLog, confNames.get(Setting.MEMORY_PAGECACHE_SIZE), "512.00MiB", true );
@@ -363,7 +361,7 @@ public class TestConfSettings
         Assumptions.assumeTrue(TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                 "This is testing only ENTERPRISE EDITION configs");
 
-        try(GenericContainer container = createContainer())
+        try(GenericContainer container = createContainer().waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD)))
         {
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
@@ -373,7 +371,6 @@ public class TestConfSettings
 
             //Start the container
             SetContainerUser.nonRootUser( container );
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             //Read debug.log to check that cluster confs are set successfully
             assertConfigurationPresentInDebugLog( logMount.resolve( "debug.log" ),
@@ -409,14 +406,15 @@ public class TestConfSettings
                                "This is testing only COMMUNITY EDITION configs");
 
         Path debugLog;
-        try(GenericContainer container = createContainer().withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512m"))
+        try(GenericContainer container = createContainer()
+                .withEnv(confNames.get(Setting.MEMORY_PAGECACHE_SIZE).envName, "512m")
+                .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD)))
         {
             //Mount /logs
 			Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             debugLog = logMount.resolve( "debug.log" );
             SetContainerUser.nonRootUser( container );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
         }
 
@@ -435,13 +433,12 @@ public class TestConfSettings
             pluginStr = "[\"apoc-core\"]";
         }
 
-        try(GenericContainer container = createContainer())
+        try(GenericContainer container = createContainer().waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD)))
         {
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Files.copy( confFolder.resolve( "NoNewline.conf" ), confMount.resolve( "neo4j.conf" ) );
             container.withEnv( Neo4jPluginEnv.get(), pluginStr );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             try
@@ -470,9 +467,9 @@ public class TestConfSettings
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Files.copy( confFolder.resolve( "NoNewline.conf" ), confMount.resolve( "neo4j.conf" ) );
             // set an env variable
-            container.withEnv( confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).envName, expectedHeapSize );
+            container.withEnv( confNames.get( Setting.MEMORY_HEAP_MAXSIZE ).envName, expectedHeapSize )
+                     .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD));
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.verifyConfigurationSetting( "neo4j",

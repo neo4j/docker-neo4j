@@ -3,14 +3,12 @@ package com.neo4j.docker.coredb;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -36,7 +34,6 @@ public class TestAdminReport
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
     private static String reportDestinationFlag;
-    private String outputFolderNamePrefix;
 
     @BeforeAll
     static void setCorrectPathFlagForVersion()
@@ -51,29 +48,14 @@ public class TestAdminReport
         }
     }
 
-    @BeforeEach
-    void getTestName( TestInfo info )
-    {
-        outputFolderNamePrefix = info.getTestClass().get().getName() + "_" +
-                                 info.getTestMethod().get().getName();
-        if(!info.getDisplayName().startsWith( info.getTestMethod().get().getName() ))
-        {
-            outputFolderNamePrefix += "_" + info.getDisplayName() + "-";
-        }
-        else
-        {
-            outputFolderNamePrefix += "-";
-        }
-    }
-
     private GenericContainer createNeo4jContainer( boolean asCurrentUser)
     {
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                 .withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
                 .withExposedPorts( 7474, 7687 )
-                .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitForNeo4jReady( container, PASSWORD );
+                .withLogConsumer( new Slf4jLogConsumer( log ) )
+                .waitingFor(WaitStrategies.waitForNeo4jReady( PASSWORD ));
         if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -141,7 +123,7 @@ public class TestAdminReport
         try(GenericContainer container = createNeo4jContainer(false))
         {
             container.withCommand( "neo4j-admin-report", "--help" );
-            StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds( 20 ) );
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 20 ) );
             try
             {
                 container.start();

@@ -5,6 +5,7 @@ import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -17,8 +18,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 
 public class TestJVMAdditionalConfig
 {
@@ -47,7 +46,8 @@ public class TestJVMAdditionalConfig
                 .withEnv("NEO4J_DEBUG", AUTH)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withExposedPorts(7474, 7687)
-                .withLogConsumer(new Slf4jLogConsumer( log));
+                .withLogConsumer(new Slf4jLogConsumer( log))
+                .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD));
     }
 
     @Test
@@ -77,7 +77,6 @@ public class TestJVMAdditionalConfig
             Path confFile = confFolder.resolve( "JvmAdditionalNotOverridden.conf" );
             Files.copy( confFile, confMount.resolve( "neo4j.conf" ) );
             //Start the container
-            makeContainerWaitForNeo4jReady( container, PASSWORD );
             container.start();
             // verify setting correctly loaded into neo4j
             DatabaseIO dbio = new DatabaseIO( container );
@@ -147,7 +146,6 @@ public class TestJVMAdditionalConfig
     {
         SetContainerUser.nonRootUser( container );
         //Start the container
-        makeContainerWaitForNeo4jReady( container, PASSWORD );
         container.start();
         // verify setting correctly loaded into neo4j
         DatabaseIO dbio = new DatabaseIO( container );

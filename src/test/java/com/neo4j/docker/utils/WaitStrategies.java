@@ -10,45 +10,46 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.utility.DockerStatus;
 
-public class StartupDetector {
-    private StartupDetector() {}
+public class WaitStrategies
+{
+    private WaitStrategies() {}
 
-    public static GenericContainer makeContainerWaitForDatabaseReady(
-            GenericContainer container, String username,
-            String password, String database, Duration timeout) {
-        if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE &&
-                TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500)) {
-            container.setWaitStrategy(Wait.forHttp("/db/" + database + "/cluster/available")
-                    .withBasicCredentials(username, password)
-                    .forPort(7474)
-                    .forStatusCode(200)
-                    .withStartupTimeout(timeout));
-        } else {
-            container.setWaitStrategy(Wait.forHttp("/")
-                    .forPort(7687)
-                    .forStatusCode(200)
-                    .withStartupTimeout(timeout));
-        }
-        return container;
-    }
-
-    public static GenericContainer makeContainerWaitForBoltReady(GenericContainer container, Duration timeout)
+    public static WaitStrategy waitForNeo4jReady( String username, String password, String database, Duration timeout )
     {
-            container.setWaitStrategy(Wait.forHttp("/")
-                    .forPort(7687)
-                    .forStatusCode(200)
-                    .withStartupTimeout(timeout));
-            return container;
+        if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE &&
+            TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500)) {
+            return Wait.forHttp("/db/" + database + "/cluster/available")
+                       .withBasicCredentials(username, password)
+                       .forPort(7474)
+                       .forStatusCode(200)
+                       .withStartupTimeout(timeout);
+        } else
+        {
+            return waitForBoltReady( timeout );
+        }
     }
 
-    public static GenericContainer makeContainerWaitForNeo4jReady(GenericContainer container, String password) {
-        return makeContainerWaitForDatabaseReady(container, "neo4j", password, "neo4j", Duration.ofSeconds(60));
+    public static WaitStrategy waitForNeo4jReady( String password ) {
+        return waitForNeo4jReady( "neo4j", password, "neo4j", Duration.ofSeconds(60));
     }
 
-    public static GenericContainer makeContainerWaitForNeo4jReady(GenericContainer container, String password, Duration timeout) {
-        return makeContainerWaitForDatabaseReady(container, "neo4j", password, "neo4j", timeout);
+    public static WaitStrategy waitForNeo4jReady( String password, Duration timeout ) {
+        return waitForNeo4jReady( "neo4j", password, "neo4j", timeout);
+    }
+
+    public static WaitStrategy waitForNeo4jReady( String user, String password, Duration timeout ) {
+        return waitForNeo4jReady( user, password, "neo4j", timeout);
+    }
+
+    public static WaitStrategy waitForBoltReady( Duration timeout )
+    {
+        return Wait.forHttp("/")
+                   .forPort(7687)
+                   .forStatusCode(200)
+                   .withStartupTimeout(timeout);
     }
 
     /**For containers that will just run a command and exit automatically.
@@ -59,7 +60,7 @@ public class StartupDetector {
      * @param timeout how long to wait
      * @return container in the modified state.
      * */
-    public static GenericContainer makeContainerWaitUntilFinished(GenericContainer container, Duration timeout)
+    public static GenericContainer waitUntilContainerFinished( GenericContainer container, Duration timeout)
     {
         container.setStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( timeout ) );
         container.setWaitStrategy( new AbstractWaitStrategy()

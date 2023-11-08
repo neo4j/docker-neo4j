@@ -7,6 +7,7 @@ import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -33,8 +34,6 @@ import java.time.Duration;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static com.neo4j.docker.utils.StartupDetector.makeContainerWaitForNeo4jReady;
 
 public class TestMounting
 {
@@ -71,8 +70,8 @@ public class TestMounting
         container.withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_AUTH", "none" );
-        makeContainerWaitForNeo4jReady( container, "none" );
+                 .withEnv( "NEO4J_AUTH", "none" )
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( "none" ) );
         if ( asCurrentUser )
         {
             SetContainerUser.nonRootUser( container );

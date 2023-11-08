@@ -9,7 +9,7 @@ import com.neo4j.docker.utils.HostFileHttpHandler;
 import com.neo4j.docker.utils.HttpServerRule;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.Rule;
@@ -28,7 +28,6 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.shaded.com.google.common.io.Files;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -69,9 +68,8 @@ public class TestPluginInstallation
                  .withEnv( "NEO4J_DEBUG", "yes" )
                  .withEnv( Neo4jPluginEnv.get(), "[\"_testing\"]" )
                  .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitForDatabaseReady( container, DB_USER, DB_PASSWORD, "neo4j",
-                                                           Duration.ofSeconds( 60 ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) )
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( DB_USER, DB_PASSWORD, Duration.ofSeconds( 60 )));
         SetContainerUser.nonRootUser( container );
         return container;
     }
@@ -85,8 +83,8 @@ public class TestPluginInstallation
         container.withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv( "NEO4J_AUTH", "none" );
-        StartupDetector.makeContainerWaitForNeo4jReady( container, "none" );
+                 .withEnv( "NEO4J_AUTH", "none" )
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( "none" ) );
         if ( asCurrentUser )
         {
             SetContainerUser.nonRootUser( container );
@@ -246,7 +244,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
-            StartupDetector.makeContainerWaitUntilFinished( container, Duration.ofSeconds(30) );
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds(30));
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();
@@ -265,7 +263,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
-            StartupDetector.makeContainerWaitUntilFinished(container, Duration.ofSeconds(30));
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds(30));
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();

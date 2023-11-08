@@ -5,7 +5,7 @@ import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -41,8 +41,8 @@ public class TestAuthentication
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitForBoltReady( container, Duration.ofSeconds(90) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) )
+                 .waitingFor(WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90) ));
         if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -100,7 +100,9 @@ public class TestAuthentication
 		try(GenericContainer container = createContainer( true ))
         {
             log.info( "Starting first container as current user and not specifying NEO4J_AUTH" );
-            StartupDetector.makeContainerWaitForDatabaseReady(container, "neo4j", "neo4j", "neo4j", Duration.ofSeconds(90));
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j",
+                                                                    "neo4j",
+                                                                    Duration.ofSeconds( 90)) );
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             // try with no password, this should fail because the default password should be applied with no NEO4J_AUTH env variable
@@ -125,8 +127,8 @@ public class TestAuthentication
 
         try(GenericContainer firstContainer = createContainer( asCurrentUser ))
 		{
-			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
-            StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
+			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password )
+                          .waitingFor(WaitStrategies.waitForNeo4jReady(password));
 			dataMount = temporaryFolderManager.createFolderAndMountAsVolume(firstContainer, "/data");
 			log.info( String.format( "Starting first container as %s user and setting password",
 									 asCurrentUser? "current" : "default" ) );
@@ -137,11 +139,11 @@ public class TestAuthentication
         }
 
         // with a new container, check the database data.
-        try(GenericContainer secondContainer = createContainer( asCurrentUser ))
+        try(GenericContainer secondContainer = createContainer( asCurrentUser )
+                .waitingFor(WaitStrategies.waitForNeo4jReady(password)))
         {
             temporaryFolderManager.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
             log.info( "starting new container with same /data mount as same user without setting password" );
-            StartupDetector.makeContainerWaitForNeo4jReady(secondContainer, password);
             secondContainer.start();
             DatabaseIO db = new DatabaseIO(secondContainer);
             db.verifyInitialDataInContainer( "neo4j", password );
@@ -154,10 +156,10 @@ public class TestAuthentication
     {
         String password = "some_valid_password";
 
-        try(GenericContainer container = createContainer( asCurrentUser ))
+        try(GenericContainer container = createContainer( asCurrentUser )
+                .waitingFor(WaitStrategies.waitForNeo4jReady(password)))
 		{
 			setInitialPasswordWithSecretsFile( container, password );
-            StartupDetector.makeContainerWaitForNeo4jReady(container, password);
 			log.info( String.format( "Starting first container as %s user and setting password",
 									 asCurrentUser? "current" : "default" ) );
             container.start();
@@ -173,11 +175,11 @@ public class TestAuthentication
         String password = "some_valid_password";
         String wrongPassword = "not_the_password";
 
-        try(GenericContainer container = createContainer(false ))
+        try(GenericContainer container = createContainer(false )
+                .waitingFor(WaitStrategies.waitForNeo4jReady(password)))
 		{
             container.withEnv( "NEO4J_AUTH", "neo4j/" + wrongPassword );
 			setInitialPasswordWithSecretsFile( container, password );
-            StartupDetector.makeContainerWaitForNeo4jReady(container, password);
             container.start();
             DatabaseIO db = new DatabaseIO(container);
 			Assertions.assertThrows( org.neo4j.driver.exceptions.AuthenticationException.class,
@@ -194,8 +196,8 @@ public class TestAuthentication
     {
         try(GenericContainer failContainer = createContainer( false ))
 		{
-            StartupDetector.makeContainerWaitUntilFinished( failContainer, Duration.ofSeconds( 30 ) )
-                           .withEnv( NEO4J_AUTH_FILE_ENV, "/secrets/doesnotexist.secret" );
+            WaitStrategies.waitUntilContainerFinished( failContainer, Duration.ofSeconds( 30 ) );
+            failContainer.withEnv( NEO4J_AUTH_FILE_ENV, "/secrets/doesnotexist.secret" );
 
             Assertions.assertThrows( ContainerLaunchException.class, failContainer::start,
                                      "Neo4j started even though the password file does not exist" );
@@ -214,8 +216,8 @@ public class TestAuthentication
         try ( GenericContainer container = createContainer( false  ) )
         {
             container.withEnv( "NEO4J_AUTH", "neo4j/" + password )
-                     .withEnv( "NEO4J_DEBUG", "yes" );
-            StartupDetector.makeContainerWaitForNeo4jReady( container, password );
+                     .withEnv( "NEO4J_DEBUG", "yes" )
+                     .waitingFor(WaitStrategies.waitForNeo4jReady( password ));
             // create a database with stuff in
             container.start();
             DatabaseIO db = new DatabaseIO( container );
@@ -232,8 +234,8 @@ public class TestAuthentication
 
 		try(GenericContainer firstContainer = createContainer( asCurrentUser ))
 		{
-			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password );
-            StartupDetector.makeContainerWaitForNeo4jReady(firstContainer, password);
+			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password )
+                          .waitingFor(WaitStrategies.waitForNeo4jReady( password));
 			dataMount = temporaryFolderManager.createFolderAndMountAsVolume(firstContainer, "/data");
 
 			// create a database with stuff in
@@ -269,9 +271,8 @@ public class TestAuthentication
             String user = "neo4j";
             String intialPass = "apassword";
             String resetPass = "new_password";
-            container.withEnv("NEO4J_AUTH", user+"/"+intialPass+"/true" );
-            StartupDetector.makeContainerWaitForDatabaseReady(container, user, intialPass, "neo4j",
-                    Duration.ofSeconds(60));
+            container.withEnv("NEO4J_AUTH", user+"/"+intialPass+"/true" )
+                     .waitingFor(   WaitStrategies.waitForNeo4jReady( user, intialPass, Duration.ofSeconds(60)) );
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             Assertions.assertThrows( org.neo4j.driver.exceptions.ClientException.class,
@@ -301,7 +302,7 @@ public class TestAuthentication
             {
                 failContainer.withEnv( "NEO4J_AUTH", "neo4j/"+shortPassword );
             }
-            StartupDetector.makeContainerWaitUntilFinished( failContainer, Duration.ofSeconds( 30 ) );
+            WaitStrategies.waitUntilContainerFinished( failContainer, Duration.ofSeconds( 30 ) );
             Assertions.assertThrows( ContainerLaunchException.class, failContainer::start,
                                      "Neo4j started even though initial password was too short" );
             String logsOut = failContainer.getLogs();
@@ -330,8 +331,8 @@ public class TestAuthentication
                 failContainer.withEnv( "NEO4J_AUTH", "neo4j/"+shortPassword );
             }
 
-            StartupDetector.makeContainerWaitUntilFinished( failContainer, Duration.ofSeconds( 30 ) )
-                           .withEnv(Configuration.getConfigurationNameMap().get( Setting.MINIMUM_PASSWORD_LENGTH ).envName, "20");
+            WaitStrategies.waitUntilContainerFinished( failContainer, Duration.ofSeconds( 30 ) )
+                          .withEnv(Configuration.getConfigurationNameMap().get( Setting.MINIMUM_PASSWORD_LENGTH ).envName, "20");
             Assertions.assertThrows( ContainerLaunchException.class, failContainer::start,
                                      "Neo4j started even though initial password was too short" );
             String logsOut = failContainer.getLogs();

@@ -4,7 +4,7 @@ import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.StartupDetector;
+import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -22,7 +22,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,8 +58,8 @@ public class TestBundledPluginInstallation
         container.withEnv( "NEO4J_AUTH", "none" )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
-        StartupDetector.makeContainerWaitForBoltReady( container, Duration.ofSeconds(60) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) )
+                 .waitingFor( WaitStrategies.waitForBoltReady(Duration.ofSeconds(60)) );
         return container;
     }
 
