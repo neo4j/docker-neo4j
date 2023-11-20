@@ -1,18 +1,6 @@
-FROM redhat/ubi8-minimal:latest as suexec-builder
-# get su-exec source and checkout a known good version (current HEAD). Verify files contents are expected.
-RUN microdnf install -y gcc git make \
-    && git clone https://github.com/ncopa/su-exec.git \
-    && cd su-exec \
-    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
-    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
-    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
-    && make \
-    && microdnf clean all
-
 FROM redhat/ubi8-minimal:latest
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:11 $JAVA_HOME $JAVA_HOME
-COPY --from=suexec-builder /su-exec/su-exec /usr/bin/su-exec
 
 # gather pre-requisite packages
 RUN set -eux; \
@@ -30,14 +18,25 @@ RUN set -eux; \
     esac; \
     microdnf install -y \
         findutils \
+        gcc \
+        git \
         gzip \
         hostname \
         jq \
+        make \
         procps \
         shadow-utils \
         tar \
         wget \
         which; \
+    git clone https://github.com/ncopa/su-exec.git; \
+    cd su-exec; \
+    git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af; \
+    echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c; \
+    echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c; \
+    make; \
+    cd /; \
+    mv /su-exec/su-exec /usr/bin/su-exec; \
     wget -q ${tiniurl} -O /usr/bin/tini; \
     wget -q ${tiniurl}.asc -O tini.asc; \
     echo "${tinisha}"  /usr/bin/tini | sha256sum -c --strict --quiet; \
@@ -48,7 +47,7 @@ RUN set -eux; \
         B42F6819007F00F88E364FD4036A9C25BF357DD4; \
     gpg --batch --verify tini.asc /usr/bin/tini; \
     gpgconf --kill all; \
-    rm -rf "$GNUPGHOME" tini.asc; \
+    rm -rf "$GNUPGHOME" tini.asc /su-exec; \
     microdnf clean all
 
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
