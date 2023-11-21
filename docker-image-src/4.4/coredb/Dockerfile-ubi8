@@ -21,7 +21,7 @@ RUN set -eux; \
         git \
         gzip \
         hostname \
-        java-17 \
+        java-11 \
         jq \
         make \
         procps \
