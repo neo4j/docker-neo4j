@@ -14,14 +14,6 @@ COPY ./local-package/* /startup/
 
 RUN apt update \
     && apt install -y curl gcc git jq make procps tini wget \
-    && git clone https://github.com/ncopa/su-exec.git \
-    && cd su-exec \
-    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
-    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
-    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
-    && make \
-    && cd / \
-    && mv /su-exec/su-exec /usr/bin/su-exec \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -39,6 +31,13 @@ RUN apt update \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh \
     && mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report \
+    && git clone https://github.com/ncopa/su-exec.git \
+    && cd su-exec \
+    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
+    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
+    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
+    && make \
+    && mv /su-exec/su-exec /usr/bin/su-exec \
     && apt-get -y purge --auto-remove curl \
     && rm -rf /var/lib/apt/lists/* /su-exec
 

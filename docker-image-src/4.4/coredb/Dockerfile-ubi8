@@ -29,14 +29,6 @@ RUN set -eux; \
         tar \
         wget \
         which; \
-    git clone https://github.com/ncopa/su-exec.git; \
-    cd su-exec; \
-    git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af; \
-    echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c; \
-    echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c; \
-    make; \
-    cd /; \
-    mv /su-exec/su-exec /usr/bin/su-exec; \
     wget -q ${tiniurl} -O /usr/bin/tini; \
     wget -q ${tiniurl}.asc -O tini.asc; \
     echo "${tinisha}"  /usr/bin/tini | sha256sum -c --strict --quiet; \
@@ -46,6 +38,13 @@ RUN set -eux; \
         595E85A6B1B4779EA4DAAEC70B588DFF0527A9B7 \
         B42F6819007F00F88E364FD4036A9C25BF357DD4; \
     gpg --batch --verify tini.asc /usr/bin/tini; \
+    git clone https://github.com/ncopa/su-exec.git; \
+    cd su-exec; \
+    git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af; \
+    echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c; \
+    echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c; \
+    make; \
+    mv /su-exec/su-exec /usr/bin/su-exec; \
     gpgconf --kill all; \
     rm -rf "$GNUPGHOME" tini.asc /su-exec; \
     microdnf clean all
