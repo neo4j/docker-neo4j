@@ -40,17 +40,25 @@ build: build-debian build-ubi8
 
 build-debian: build-debian-community build-debian-enterprise
 .PHONY: build-debian
+build-debian-community: build/debian/coredb/community/.sentinel
+.PHONY: build-debian-community
+build-debian-enterprise: build/debian/coredb/enterprise/.sentinel
+.PHONY: build-debian-enterprise
 
-build-debian-%:
+build/debian/coredb/%/.sentinel::
 > ./build-docker-image.sh $(NEO4JVERSION) "${*}" "debian"
-.PHONY: build-debian-%
+> touch $@
 
 build-ubi8: build-ubi8-community build-ubi8-enterprise
-.PHONY: build-debian
+.PHONY: build-ubi8
+build-ubi8-community: build/ubi8/coredb/community/.sentinel
+.PHONY: build-ubi8-community
+build-ubi8-enterprise: build/ubi8/coredb/enterprise/.sentinel
+.PHONY: build-ubi8-enterprise
 
-build-ubi8-%:
+build/ubi8/coredb/%/.sentinel::
 > ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi8"
-.PHONY: build-ubi8-%
+> touch $@
 
 ## tagging
 
@@ -100,3 +108,4 @@ package-%-release-artifacts: build-%-community build-%-enterprise
 > cp --recursive --force build/${*} out/
 > find out/${*} -name "neo4j-*.tar.gz" -delete
 > find out/${*} -name ".image-id-*" -delete
+> find out/${*} -name ".sentinel" -delete
