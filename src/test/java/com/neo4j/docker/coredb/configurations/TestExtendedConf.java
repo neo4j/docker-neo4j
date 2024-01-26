@@ -5,7 +5,6 @@ import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -135,9 +134,9 @@ public class TestExtendedConf
                     Wait.forLogMessage( ".*this is an error message from inside neo4j config command expansion.*", 1 )
                         .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
 
-            Assert.assertThrows( "Container should have errored on start",
-                                 ContainerLaunchException.class,
-                                 () -> container.start() );
+            Assertions.assertThrows( ContainerLaunchException.class,
+                                     () -> container.start(),
+                                     "Container should have errored on start");
 
             String logs = container.getLogs();
             // check that error messages from neo4j are visible in docker logs
@@ -190,7 +189,7 @@ public class TestExtendedConf
 		container.start();
 
 		Path debugLog = logsFolder.resolve("debug.log");
-		Assert.assertTrue("Did not write debug log", debugLog.toFile().exists());
+		Assertions.assertTrue(debugLog.toFile().exists(), "Did not write debug log");
 
 		//Check if the container reads the conf file
 		Stream<String> lines = Files.lines( debugLog);

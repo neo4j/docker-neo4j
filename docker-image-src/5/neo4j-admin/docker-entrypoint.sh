@@ -42,6 +42,8 @@ else
   debug_msg "Running as user ${userid} inside neo4j-admin image"
 fi
 
+#%%DEPRECATION_WARNING_PLACEHOLDER%%
+
 # ==== MAKE SURE NEO4J CANNOT BE RUN FROM THIS CONTAINER ====
 debug_msg "checking neo4j was not requested"
 if [[ "${1}" == "neo4j" ]]; then

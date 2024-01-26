@@ -126,7 +126,7 @@ function load_plugin_from_location
   for filename in ${_location}; do
     echo "Installing Plugin '${_plugin_name}' from ${_location} to ${_destination}"
     cp --preserve "${filename}" "${_destination}"
-    chmod +wr ${_destination}
+    chmod +rw ${_destination}
   done
 
   if ! is_readable "${_destination}"; then
@@ -565,7 +565,7 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
         if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
             add_env_setting_to_conf "${setting}" "${value}"
         else
-            echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
+            echo >&2 "WARNING: ${setting} not written to conf file. Settings that start with a number are not permitted."
         fi
     fi
 done
@@ -626,6 +626,7 @@ if [ "${cmd}" == "neo4j" ]; then
     debug_msg "getting full neo4j run command"
     neo4j_console_cmd="$(get_neo4j_run_cmd)"
     debug_msg "${exec_cmd} ${neo4j_console_cmd}"
+    #%%DEPRECATION_WARNING_PLACEHOLDER%%
     eval ${exec_cmd} ${neo4j_console_cmd?:No Neo4j command was generated}
 else
     debug_msg "${exec_cmd}" "$@"

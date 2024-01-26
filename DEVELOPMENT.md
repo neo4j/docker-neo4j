@@ -17,7 +17,7 @@ Development is tested on Ubuntu and OSX. It will probably work on other Linuxes.
 
 There are two supported base operating systems that the docker image can be build upon:
  * debian, based off `debian:bullseye-slim`.
- * RedHat UBI8, based off `redhat/ubi8-minimal`. Only available for 4.4 onwards.
+ * RedHat ubi9, based off `redhat/ubi9-minimal`. Only available for 4.4 onwards.
 
 On top of that there is also the choice Neo4j version, and whether to build `community` or `enterprise` edition Neo4j.
 
@@ -31,17 +31,17 @@ Here are some examples:
 NEO4JVERSION=5.9.0 make tag-debian-community
 # creates tag neo4j:5.9.0-debian
 
-# 4.4.20 community edition and redhat ubi8
-NEO4JVERSION=4.4.20 make tag-ubi8-community
-# creates tag neo4j:4.4.20-ubi8
+# 4.4.20 community edition and redhat ubi9
+NEO4JVERSION=4.4.20 make tag-ubi9-community
+# creates tag neo4j:4.4.20-ubi9
 
 # 5.2.0 enterprise edition and debian 
 NEO4JVERSION=5.2.0 make tag-debian-enterprise
 # creates tag neo4j:5.2.0-enterprise-debian
 
-# 4.4.0 enterprise edition and redhat ubi8
-NEO4JVERSION=4.4.0 make tag-ubi8-enterprise
-# creates tag neo4j:4.4.0-enterprise-ubi8
+# 4.4.0 enterprise edition and redhat ubi9
+NEO4JVERSION=4.4.0 make tag-ubi9-enterprise
+# creates tag neo4j:4.4.0-enterprise-ubi9
 ```
 
 ## The build script
@@ -51,8 +51,8 @@ For example:
 ```bash
 #  debian based 4.4.22 community edition:
 ./build-docker-image.sh 4.4.22 community debian
-#  redhat-ubi8 based 5.9.0 enterprise edition:
-./build-docker-image.sh 5.9.0 enterprise ubi8
+#  redhat-ubi9 based 5.9.0 enterprise edition:
+./build-docker-image.sh 5.9.0 enterprise ubi9
 ```
 The make script will automatically download the source files needed to build the images.
 You just need to specify the **full** Neo4j version including major, minor and patch numbers.
@@ -76,11 +76,11 @@ For each action, it can be broken down by base image and community/enterprise ty
 For example `build`, has the following make targets:
 * `build`. Builds *every* variant.
 * `build-debian`. Builds debian community and enterprise.
-* `build-ubi8`. Builds redhat-ubi8 community and enterprise.
+* `build-ubi9`. Builds redhat-ubi9 community and enterprise.
 * `build-debian-community`
 * `build-debian-enterprise`
-* `build-ubi8-community`
-* `build-ubi8-enterprise`
+* `build-ubi9-community`
+* `build-ubi9-enterprise`
 
 The other actions have the same targets.
 
