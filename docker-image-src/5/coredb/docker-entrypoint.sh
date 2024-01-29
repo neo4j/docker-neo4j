@@ -550,7 +550,7 @@ fi
 
 # these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
 not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_AUTH_PATH" "NEO4J_DEBUG" "NEO4J_EDITION" \
-             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL")
+             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" "NEO4J_DEPRECATION_WARNING")
 
 debug_msg "Applying configuration settings that have been set using environment variables."
 # list env variables with prefix NEO4J_ and create settings from them

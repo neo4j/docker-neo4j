@@ -187,12 +187,14 @@ sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${ADMIN_LOCALCXT_DIR}/D
 
 # add deprecation warning if needed
 if [ "${IMAGE_OS}" = "ubi8" ]; then
-    dep_msg="echo \>\&2 \"\n=======================================================\n
+    dep_msg="if [ \"\${NEO4J_DEPRECATION_WARNING:-yes}\" != \"suppress\" ]; then\n
+\techo \>\&2 \"\n=======================================================\n
 Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9.\n
 Update your codebase to use Neo4j Docker image tags ending with -ubi9 instead of -ubi8.\n\n
 Neo4j 5.20.0 will be the last version to get a Red Hat UBI8 docker image release.\n\n
 To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress\n
-=======================================================\n\""
+=======================================================\n\"\n
+fi"
     sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
     sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
 else
