@@ -67,7 +67,7 @@ public class TestSettings
         case "enterprise":
             return Edition.ENTERPRISE;
         default:
-            Assertions.fail( edition + " is not a valid Neo4j edition. Options are \"community\" or \"enterprise\"" );
+            Assertions.fail( edition + " is not a valid Neo4j edition. Options are \"community\" or \"enterprise\"." );
         }
         return null;
     }
@@ -84,7 +84,7 @@ public class TestSettings
         case "ubi8":
             return BaseOS.UBI8;
         default:
-            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"ubi9\" or \"ubi8\"" );
+            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"ubi9\" or \"ubi8\"." );
         }
         return null;
     }
