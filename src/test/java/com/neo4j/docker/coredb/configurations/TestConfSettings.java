@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
@@ -125,17 +126,14 @@ public class TestConfSettings
     {
         try(GenericContainer container = createContainer())
         {
-            container.withEnv( "NEO4J_1a", "1" );
+            container.withEnv( "NEO4J_1a", "1" )
+                     .waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds( 15 ) ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
-
-            WaitingConsumer waitingConsumer = new WaitingConsumer();
-            container.followOutput( waitingConsumer );
-
-			Assertions.assertDoesNotThrow( () -> waitingConsumer.waitUntil( frame -> frame.getUtf8String()
-					  .contains( "WARNING: 1a not written to conf file because settings that start with a number are not permitted" ),
-				15, TimeUnit.SECONDS ),
-			   "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`" );
+            String errorLogs = container.getLogs( OutputFrame.OutputType.STDERR);
+            Assertions.assertTrue( errorLogs.contains( "WARNING: 1a not written to conf file. Settings that start with a number are not permitted" ),
+                                   "Neo4j did not warn about invalid numeric config variable `Neo4j_1a`.\n" +
+                                   "Actual warnings were:\n"+errorLogs);
 		}
 	}
 

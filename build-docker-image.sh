@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 
-SUPPORTED_IMAGE_OS=("debian" "ubi8")
+# SUPPORTED_IMAGE_OS=("debian" "ubi9" "ubi8")
 EDITIONS=("community" "enterprise")
 
 DISTRIBUTION_SITE="https://dist.neo4j.org"
@@ -15,11 +15,11 @@ function usage
     echo >&2 "USAGE: $0 <version> <edition> <operating system>
     For example:
         $0 4.4.10 community debian
-        $0 5.10.0 enterprise ubi8
+        $0 5.10.0 enterprise ubi9
     Version and operating system can also be set in the environment.
     For example:
         NEO4JVERSION=4.4.10 NEO4JEDITION=community IMAGE_OS=debian $0
-        NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=ubi8 $0
+        NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=ubi9 $0
     "
     exit 1
 }
@@ -52,7 +52,7 @@ function get_compatible_dockerfile_for_os_or_error
     local minor=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\2/')
     case ${major} in
         5)
-            local SUPPORTED_IMAGE_OS=("debian" "ubi8")
+            local SUPPORTED_IMAGE_OS=("debian" "ubi9" "ubi8")
             if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile-${requested_os}"
                 return 0
@@ -61,7 +61,7 @@ function get_compatible_dockerfile_for_os_or_error
         4)
             case ${minor} in
             4)
-                local SUPPORTED_IMAGE_OS=("debian" "ubi8")
+                local SUPPORTED_IMAGE_OS=("debian" "ubi9")
                 if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
                     echo  "Dockerfile-${requested_os}"
                     return 0
@@ -185,6 +185,23 @@ sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|"
 sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 
+# add deprecation warning if needed
+if [ "${IMAGE_OS}" = "ubi8" ]; then
+    dep_msg="if [ \"\${NEO4J_DEPRECATION_WARNING:-yes}\" != \"suppress\" ]; then\n
+\techo \>\&2 \"\n=======================================================\n
+Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9.\n
+Update your codebase to use Neo4j Docker image tags ending with -ubi9 instead of -ubi8.\n\n
+Neo4j 5.20.0 will be the last version to get a Red Hat UBI8 docker image release.\n\n
+To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress.\n
+=======================================================\n\"\n
+fi"
+    sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
+    sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
+else
+    sed -i -e '/#%%DEPRECATION_WARNING_PLACEHOLDER%%/d' "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
+    sed -i -e '/#%%DEPRECATION_WARNING_PLACEHOLDER%%/d' "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
+fi
+
 ## ==================================================================================
 ## Finally we are ready to do a docker build...
 
@@ -213,6 +230,7 @@ echo -n "${admin_image_tag}" > ${ADMIN_LOCALCXT_DIR}/../.image-id-"${NEO4JEDITIO
     echo "NEO4J_IMAGE=$(cat "${COREDB_LOCALCXT_DIR}"/../.image-id-"${NEO4JEDITION}")"
     echo "NEO4JADMIN_IMAGE=$(cat "${ADMIN_LOCALCXT_DIR}"/../.image-id-"${NEO4JEDITION}")"
     echo "NEO4J_EDITION=${NEO4JEDITION}"
+    echo "BASE_OS=${IMAGE_OS}"
     echo "NEO4J_SKIP_MOUNTED_FOLDER_TARBALLING=true"
 } > ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env
 ln -f ${BUILD_DIR}/${IMAGE_OS}/devenv-"${NEO4JEDITION}".env ${BUILD_DIR}/devenv-"${NEO4JEDITION}".env

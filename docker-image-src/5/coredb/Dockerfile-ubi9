@@ -1,4 +1,4 @@
-FROM redhat/ubi8-minimal:latest
+FROM redhat/ubi9-minimal:latest
 ENV JAVA_HOME=/usr
 
 # gather pre-requisite packages
@@ -15,14 +15,13 @@ RUN set -eux; \
             ;; \
         *) echo >&2 "Neo4j does not currently have a docker image for architecture $arch"; exit 1 ;; \
     esac; \
-    microdnf install -y dnf; \
-    dnf install -y \
+    microdnf install -y \
         findutils \
         gcc \
         git \
         gzip \
         hostname \
-        java-11 \
+        java-17 \
         jq \
         make \
         procps \
@@ -48,9 +47,7 @@ RUN set -eux; \
     mv /su-exec/su-exec /usr/bin/su-exec; \
     gpgconf --kill all; \
     rm -rf "$GNUPGHOME" tini.asc /su-exec; \
-    dnf remove -y gcc git make; \
-    dnf autoremove; \
-    dnf clean all
+    microdnf clean all
 
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=%%NEO4J_SHA%% \
@@ -78,7 +75,6 @@ RUN set -eux; \
     chmod -R 777 "${NEO4J_HOME}"; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /logs "${NEO4J_HOME}"/logs; \
-    ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh; \
     mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
