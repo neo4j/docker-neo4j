@@ -522,6 +522,7 @@ fi
 debug_msg "Setting docker specific configuration overrides"
 add_docker_default_to_conf "dbms.memory.pagecache.size" "512M"
 add_docker_default_to_conf "dbms.default_listen_address" "0.0.0.0"
+add_docker_default_to_conf "dbms.directories.run" "/run"
 # set enterprise only docker defaults
 if [ "${NEO4J_EDITION}" == "enterprise" ];
 then

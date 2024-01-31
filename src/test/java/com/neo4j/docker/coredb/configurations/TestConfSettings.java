@@ -225,12 +225,15 @@ public class TestConfSettings
                 String expectedDiscoveryAddress = container.getContainerId().substring(0, 12) + ":5000";
                 String expectedTxAddress = container.getContainerId().substring(0, 12) + ":6000";
                 String expectedRaftAddress = container.getContainerId().substring(0, 12) + ":7000";
+                String expectedRunDirectory = "/run";
                 dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress,true);
                 dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress,true);
                 dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress,true);
+                dbio.verifyConfigurationSetting( "neo4j", PASSWORD, confNames.get( Setting.DIRECTORIES_RUN), expectedRunDirectory );
+                assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DIRECTORIES_RUN), expectedRunDirectory,true);
             }
         }
     }
