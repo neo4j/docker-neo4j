@@ -1,7 +1,6 @@
 package com.neo4j.docker.utils;
 
-import org.junit.Assert;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
 import org.testcontainers.utility.DockerImageName;
 
 import java.nio.file.Path;
@@ -9,11 +8,12 @@ import java.nio.file.Paths;
 
 public class TestSettings
 {
-    public static final Neo4jVersion NEO4J_VERSION = Neo4jVersion.fromVersionString( getVersionFromPropertyOrEnv() );
-    public static final DockerImageName IMAGE_ID = getImageFromPropertyOrEnv();
-    public static final DockerImageName ADMIN_IMAGE_ID = getNeo4jAdminImageFromPropertyOrEnv();
+    public static final Neo4jVersion NEO4J_VERSION = getVersion();
+    public static final DockerImageName IMAGE_ID = getImage();
+    public static final DockerImageName ADMIN_IMAGE_ID = getNeo4jAdminImage();
     public static final Path TEST_TMP_FOLDER = Paths.get("local-mounts" );
-    public static final Edition EDITION = getEditionFromPropertyOrEnv();
+    public static final Edition EDITION = getEdition();
+    public static final BaseOS BASE_OS = getBaseOS();
     public static final boolean SKIP_MOUNTED_FOLDER_TARBALLING = getSkipTarballingFromEnv();
 
     public enum Edition
@@ -21,47 +21,45 @@ public class TestSettings
         COMMUNITY,
         ENTERPRISE;
     }
-
-    private static String getVersionFromPropertyOrEnv()
+    public enum BaseOS
     {
-        String verStr = System.getProperty( "version" );
+        BULLSEYE,
+        UBI9,
+        UBI8;
+    }
+
+    private static String getValueFromPropertyOrEnv(String propertyName, String envName)
+    {
+        String verStr = System.getProperty( propertyName );
         if(verStr == null)
         {
-            verStr = System.getenv( "NEO4JVERSION" );
+            verStr = System.getenv( envName );
         }
-        Assert.assertNotNull("Neo4j version has not been specified, either use mvn argument -Dversion or set env NEO4JVERSION", verStr);
+        Assertions.assertNotNull( String.format( "Neo4j %s has not been specified. " +
+                                                 "Either use mvn argument -D%s or set env %s",
+                                                 propertyName, propertyName, envName),
+                                  verStr);
         return verStr;
     }
 
-    private static DockerImageName getImageFromPropertyOrEnv()
+    private static Neo4jVersion getVersion()
     {
-        String image = System.getProperty( "image" );
-        if(image == null)
-        {
-            image = System.getenv( "NEO4J_IMAGE" );
-        }
-        Assert.assertNotNull("Neo4j image has not been specified, either use mvn argument -Dimage or set env NEO4J_IMAGE", image);
-        return DockerImageName.parse(image);
+        return Neo4jVersion.fromVersionString( getValueFromPropertyOrEnv( "version", "NEO4JVERSION" ));
     }
 
-    private static DockerImageName getNeo4jAdminImageFromPropertyOrEnv()
+    private static DockerImageName getImage()
     {
-        String image = System.getProperty( "adminimage" );
-        if(image == null)
-        {
-            image = System.getenv( "NEO4JADMIN_IMAGE" );
-        }
-        Assert.assertNotNull("Neo4j image has not been specified, either use mvn argument -Dadminimage or set env NEO4JADMIN_IMAGE", image);
-        return DockerImageName.parse(image);
+        return DockerImageName.parse(getValueFromPropertyOrEnv("image", "NEO4J_IMAGE"));
     }
 
-    private static Edition getEditionFromPropertyOrEnv()
+    private static DockerImageName getNeo4jAdminImage()
     {
-        String edition = System.getProperty( "edition" );
-        if(edition == null)
-        {
-            edition = System.getenv( "NEO4J_EDITION" );
-        }
+        return DockerImageName.parse(getValueFromPropertyOrEnv("adminimage", "NEO4JADMIN_IMAGE"));
+    }
+
+    private static Edition getEdition()
+    {
+        String edition = getValueFromPropertyOrEnv("edition", "NEO4J_EDITION");
         switch ( edition.toLowerCase() )
         {
         case "community":
@@ -69,7 +67,24 @@ public class TestSettings
         case "enterprise":
             return Edition.ENTERPRISE;
         default:
-            Assert.fail( "Neo4j edition has not been specified, either use mvn argument -Dedition or set env NEO4J_EDITION" );
+            Assertions.fail( edition + " is not a valid Neo4j edition. Options are \"community\" or \"enterprise\"." );
+        }
+        return null;
+    }
+
+    private static BaseOS getBaseOS()
+    {
+        String os = getValueFromPropertyOrEnv("baseos", "BASE_OS");
+        switch ( os.toLowerCase() )
+        {
+        case "debian":
+            return BaseOS.BULLSEYE;
+        case "ubi9":
+            return BaseOS.UBI9;
+        case "ubi8":
+            return BaseOS.UBI8;
+        default:
+            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"ubi9\" or \"ubi8\"." );
         }
         return null;
     }

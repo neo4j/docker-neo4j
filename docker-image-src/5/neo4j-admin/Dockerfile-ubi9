@@ -1,4 +1,4 @@
-FROM redhat/ubi8-minimal:latest
+FROM redhat/ubi9-minimal:latest
 ENV JAVA_HOME=/usr
 
 # gather pre-requisite packages

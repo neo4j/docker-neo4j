@@ -51,6 +51,8 @@ public class TestBasic
     @Test
     void testNoUnexpectedErrors() throws Exception
     {
+        Assumptions.assumeFalse( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
+                                 "UBI8 based images are expected to have a warning in stderr");
         try(GenericContainer container = createBasicContainer())
         {
             container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
