@@ -215,9 +215,10 @@ public class TestConfSettings
             DatabaseIO dbio = new DatabaseIO( container );
             Path debugLog = logMount.resolve( "debug.log" );
 
-            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0");
-            assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0", true);
+            String expectedDefaultListenAddress = "0.0.0.0";
             String expectedRunDirectory = "/run";
+            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), expectedDefaultListenAddress);
+            assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), expectedDefaultListenAddress, true);
             dbio.verifyConfigurationSetting( "neo4j", PASSWORD, confNames.get( Setting.DIRECTORIES_RUN), expectedRunDirectory );
             assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DIRECTORIES_RUN), expectedRunDirectory,true);
             // test enterprise only default configurations are set
