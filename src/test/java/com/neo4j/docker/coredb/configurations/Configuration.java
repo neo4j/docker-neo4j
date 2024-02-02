@@ -30,7 +30,6 @@ public class Configuration
         put( Setting.MINIMUM_PASSWORD_LENGTH, new Configuration("dbms.security.auth_minimum_password_length"));
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration("db.tx_log.rotation.retention_policy"));
-        put( Setting.DIRECTORIES_RUN, new Configuration("server.directories.run"));
     }};
 
     private static Map<Setting,Configuration> CONFIGURATIONS_4X = new EnumMap<Setting,Configuration>( Setting.class ) {{
@@ -52,7 +51,6 @@ public class Configuration
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("dbms.memory.pagecache.size"));
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration("dbms.tx_log.rotation.retention_policy"));
-        put( Setting.DIRECTORIES_RUN, new Configuration("dbms.directories.run"));
     }};
     public static Map<Setting,Configuration> getConfigurationNameMap()
     {
