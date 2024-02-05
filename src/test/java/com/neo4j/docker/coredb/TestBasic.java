@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
