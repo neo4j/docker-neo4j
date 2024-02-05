@@ -21,11 +21,11 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.neo4j.docker.utils.NetworkUtils.getUniqueHostPort;
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
 
@@ -59,7 +59,7 @@ public class TestBasic
     }
 
     @Test
-    void testNoUnexpectedErrors() throws Exception
+    void testNoUnexpectedErrors()
     {
         Assumptions.assumeFalse( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                  "UBI8 based images are expected to have a warning in stderr" );
@@ -102,7 +102,7 @@ public class TestBasic
     }
 
     @Test
-    void testLicenseAcceptanceAvoidsWarning() throws Exception
+    void testLicenseAcceptanceAvoidsWarning()
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "No license checks for community edition" );
@@ -122,7 +122,7 @@ public class TestBasic
     }
 
     @Test
-    void testLicenseAcceptanceAvoidsWarning_evaluation() throws Exception
+    void testLicenseAcceptanceAvoidsWarning_evaluation()
     {
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
                                 "No license checks for community edition" );
@@ -158,7 +158,7 @@ public class TestBasic
     }
 
     @Test
-    void testCanChangeWorkDir() throws Exception
+    void testCanChangeWorkDir()
     {
         try ( GenericContainer container = createBasicContainer() )
         {
@@ -171,7 +171,7 @@ public class TestBasic
 
     @ParameterizedTest( name = "ShutsDownCorrectly_{0}" )
     @ValueSource( strings = {"SIGTERM", "SIGINT"} )
-    void testShutsDownCleanly( String signal ) throws Exception
+    void testShutsDownCleanly( String signal )
     {
         try ( GenericContainer container = createBasicContainer() )
         {
@@ -210,8 +210,9 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            var boltHostPort = new ServerSocket( 0 ).getLocalPort();
-            var browserHostPort = new ServerSocket( 0 ).getLocalPort();
+            int boltHostPort = getUniqueHostPort();
+            int browserHostPort = getUniqueHostPort();
+
             container.waitingFor( waitForBoltReady( Duration.ofSeconds( 90 ) ) );
             container.withEnv( "NEO4J_AUTH", "none" );
 
