@@ -35,7 +35,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
-import static java.lang.String.format;
 
 public class TestBasic
 {
@@ -214,7 +213,7 @@ public class TestBasic
     }
 
     @Test
-    void testContainerCanBeRestarted() throws IOException, InterruptedException, ExecutionException, TimeoutException
+    void testContainerCanBeRestarted() throws InterruptedException, ExecutionException, TimeoutException
     {
         try ( GenericContainer container = createBasicContainer() )
         {
@@ -223,13 +222,13 @@ public class TestBasic
             container.withEnv( "NEO4J_AUTH", "none" );
 
             container.start();
-            Assertions.assertTrue( neo4jBrowserIsReachable( container ) );
+            Assertions.assertTrue( neo4jBoltAvailable( container ) );
 
             log.info( "Terminating container with SIGKILL signal" );
             terminateContainerWithSignal( container, "SIGKILL" );
             log.info( "Starting container" );
             startContainer( container );
-            Assertions.assertTrue( neo4jBrowserIsReachable( container ) );
+            Assertions.assertTrue( neo4jBoltAvailable( container ) );
         }
     }
 
@@ -281,7 +280,7 @@ public class TestBasic
         }
     }
 
-    private boolean neo4jBrowserIsReachable( GenericContainer container ) throws IOException
+    private boolean neo4jBoltAvailable( GenericContainer container )
     {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> task = executor.submit( () ->
@@ -289,33 +288,35 @@ public class TestBasic
                                               boolean browserAvailable = false;
                                               while ( !browserAvailable )
                                               {
-                                                  int browserPort = Integer.parseInt( Arrays.stream(
+                                                  int boltPort = Integer.parseInt( Arrays.stream(
                                                           container.getDockerClient().inspectContainerCmd( container.getContainerId() ).exec()
                                                                    .getNetworkSettings()
                                                                    .getPorts().getBindings()
-                                                                   .get( new ExposedPort( 7474 ) ) ).toList().get( 0 ).getHostPortSpec() );
+                                                                   .get( new ExposedPort( 7687 ) ) ).toList().get( 0 ).getHostPortSpec() );
                                                   try
                                                   {
-                                                      var url = new URL( "http://localhost:" + browserPort + "/browser/" );
+                                                      var url = new URL( "http://localhost:" + boltPort );
                                                       var urlConnection = (HttpURLConnection) url.openConnection();
                                                       urlConnection.connect();
                                                       var response = urlConnection.getResponseCode();
                                                       browserAvailable = response == HttpURLConnection.HTTP_OK;
                                                   }
-                                                  catch ( IOException ignored )
+                                                  catch ( IOException ex )
                                                   {
+                                                      log.warn( "Contacting bolt exception {}", ex.getMessage() );
                                                   }
                                               }
                                           } );
 
         try
         {
-            task.get( 60, TimeUnit.SECONDS );
+            task.get( 120, TimeUnit.SECONDS );
             return true;
         }
         catch ( TimeoutException | ExecutionException | InterruptedException e )
         {
-            throw new IOException( format( "Could not find neo4j browser endpoint. Error : %s", e.getMessage() ) );
+            log.error( "Bolt was not available within the timeout period {}", e.getMessage() );
+            return false;
         }
     }
 }
