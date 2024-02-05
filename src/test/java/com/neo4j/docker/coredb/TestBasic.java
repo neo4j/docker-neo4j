@@ -1,7 +1,6 @@
 package com.neo4j.docker.coredb;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import com.github.dockerjava.api.model.ExposedPort;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
@@ -22,18 +21,14 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.ServerSocket;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
 
 public class TestBasic
@@ -213,110 +208,26 @@ public class TestBasic
     }
 
     @Test
-    void testContainerCanBeRestarted() throws InterruptedException, ExecutionException, TimeoutException
+    void testContainerCanBeRestarted() throws IOException
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-
-            container.waitingFor( waitForNeo4jReady( "none" ) );
+            var boltHostPort = new ServerSocket( 0 ).getLocalPort();
+            var browserHostPort = new ServerSocket( 0 ).getLocalPort();
+            container.waitingFor( waitForBoltReady( Duration.ofSeconds( 90 ) ) );
             container.withEnv( "NEO4J_AUTH", "none" );
 
+            container.setPortBindings( List.of( browserHostPort + ":7474", boltHostPort + ":7687" ) );
+
             container.start();
-            Assertions.assertTrue( neo4jBoltAvailable( container ) );
 
             log.info( "Terminating container with SIGKILL signal" );
-            terminateContainerWithSignal( container, "SIGKILL" );
+            container.getDockerClient().killContainerCmd( container.getContainerId() ).withSignal( "SIGKILL" ).exec();
+
             log.info( "Starting container" );
-            startContainer( container );
-            Assertions.assertTrue( neo4jBoltAvailable( container ) );
-        }
-    }
+            container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
 
-    private void terminateContainerWithSignal( GenericContainer container, String signal ) throws TimeoutException, ExecutionException, InterruptedException
-    {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Future<?> task = executor.submit( () ->
-                                          {
-                                              while ( Boolean.TRUE.equals(
-                                                      container.getDockerClient().inspectContainerCmd( container.getContainerId() ).exec().getState()
-                                                               .getRunning() ) )
-                                              {
-                                                  container.getDockerClient().killContainerCmd( container.getContainerId() ).withSignal( signal ).exec();
-                                              }
-                                          } );
-
-        try
-        {
-            task.get( 30, TimeUnit.SECONDS );
-        }
-        catch ( TimeoutException e )
-        {
-            throw new TimeoutException( "Coule not terminate container within timeout duration" );
-        }
-    }
-
-    private void startContainer( GenericContainer container ) throws TimeoutException, ExecutionException, InterruptedException
-    {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Future<?> task = executor.submit( () ->
-                                          {
-                                              while ( Boolean.FALSE.equals(
-                                                      container.getDockerClient().inspectContainerCmd( container.getContainerId() ).exec().getState()
-                                                               .getRunning() ) )
-                                              {
-                                                  container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
-                                              }
-                                          } );
-
-        try
-        {
-            task.get( 60, TimeUnit.SECONDS );
-        }
-        catch ( TimeoutException e )
-        {
-            throw new TimeoutException( "Coule not start container within timeout duration" );
-        }
-    }
-
-    private boolean neo4jBoltAvailable( GenericContainer container )
-    {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<?> task = executor.submit( () ->
-                                          {
-                                              boolean browserAvailable = false;
-                                              while ( !browserAvailable )
-                                              {
-                                                  int boltPort = Integer.parseInt( Arrays.stream(
-                                                          container.getDockerClient().inspectContainerCmd( container.getContainerId() ).exec()
-                                                                   .getNetworkSettings()
-                                                                   .getPorts().getBindings()
-                                                                   .get( new ExposedPort( 7687 ) ) ).toList().get( 0 ).getHostPortSpec() );
-                                                  try
-                                                  {
-                                                      var url = new URL( "http://localhost:" + boltPort );
-                                                      var urlConnection = (HttpURLConnection) url.openConnection();
-                                                      urlConnection.connect();
-                                                      var response = urlConnection.getResponseCode();
-                                                      browserAvailable = response == HttpURLConnection.HTTP_OK;
-                                                  }
-                                                  catch ( IOException ex )
-                                                  {
-                                                      log.warn( "Contacting bolt exception {}", ex.getMessage() );
-                                                  }
-                                              }
-                                          } );
-
-        try
-        {
-            task.get( 120, TimeUnit.SECONDS );
-            return true;
-        }
-        catch ( TimeoutException | ExecutionException | InterruptedException e )
-        {
-            log.error( "Bolt was not available within the timeout period {}", e.getMessage() );
-            return false;
+            waitForBoltReady( Duration.ofSeconds( 90 ) ).waitUntilReady( container );
         }
     }
 }
