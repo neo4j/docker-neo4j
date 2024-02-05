@@ -522,7 +522,7 @@ fi
 debug_msg "Setting docker specific configuration overrides"
 add_docker_default_to_conf "dbms.memory.pagecache.size" "512M"
 add_docker_default_to_conf "dbms.default_listen_address" "0.0.0.0"
-add_docker_default_to_conf "dbms.directories.run" "/run"
+
 # set enterprise only docker defaults
 if [ "${NEO4J_EDITION}" == "enterprise" ];
 then
@@ -579,6 +579,13 @@ fi
 if [[ ! -z "${NEO4J_PLUGINS:-}" ]]; then
   # NEO4J_PLUGINS should be a json array of plugins like '["graph-algorithms", "apoc", "streams", "graphql"]'
   install_neo4j_labs_plugins
+fi
+
+# ==== CLEANUP RUN FILE ====
+
+if [ -f "${NEO4J_HOME}"/run/neo4j.pid ];
+then
+  rm "${NEO4J_HOME}"/run/neo4j.pid
 fi
 
 # ==== INVOKE NEO4J STARTUP ====
