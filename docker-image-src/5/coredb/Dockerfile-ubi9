@@ -15,7 +15,7 @@ RUN set -eux; \
             ;; \
         *) echo >&2 "Neo4j does not currently have a docker image for architecture $arch"; exit 1 ;; \
     esac; \
-    microdnf install -y \
+    microdnf install -y --nodocs \
         findutils \
         gcc \
         git \
