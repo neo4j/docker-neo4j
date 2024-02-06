@@ -28,6 +28,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -215,9 +217,9 @@ public class TestConfSettings
             DatabaseIO dbio = new DatabaseIO( container );
             Path debugLog = logMount.resolve( "debug.log" );
 
-            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0");
-            assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), "0.0.0.0", true);
-
+            String expectedDefaultListenAddress = "0.0.0.0";
+            dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), expectedDefaultListenAddress);
+            assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), expectedDefaultListenAddress, true);
             // test enterprise only default configurations are set
             if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE) {
                 String expectedDiscoveryAddress = container.getContainerId().substring(0, 12) + ":5000";

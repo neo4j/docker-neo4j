@@ -536,6 +536,7 @@ fi
 debug_msg "Setting docker specific configuration overrides"
 add_docker_default_to_conf "server.memory.pagecache.size" "512M"
 add_docker_default_to_conf "server.default_listen_address" "0.0.0.0"
+
 # set enterprise only docker defaults
 if [ "${NEO4J_EDITION}" == "enterprise" ];
 then
@@ -586,6 +587,13 @@ if [[ -n "${NEO4J_AUTH_PATH:-}" ]]; then
 else
     debug_msg "Setting initial password from environment"
     set_initial_password "${NEO4J_AUTH:-}"
+fi
+
+# ==== CLEANUP RUN FILE ====
+
+if [ -f "${NEO4J_HOME}"/run/neo4j.pid ];
+then
+  rm "${NEO4J_HOME}"/run/neo4j.pid
 fi
 
 # ==== INVOKE NEO4J STARTUP ====

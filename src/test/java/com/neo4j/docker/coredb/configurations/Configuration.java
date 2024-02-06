@@ -84,7 +84,7 @@ public class Configuration
         }
         else return Paths.get( "src", "test", "resources", "confs", "before50");
     }
-    
+
     public String name;
     public String envName;
 
