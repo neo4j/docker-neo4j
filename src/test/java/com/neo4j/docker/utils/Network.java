@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 
 import static java.lang.String.format;
 
-public class NetworkUtils
+public class Network
 {
     public static int getUniqueHostPort() throws IOException
     {
