@@ -205,8 +205,13 @@ public class TestBasic
         }
     }
 
+    /*
+        This test emulates a termination of the Docker Desktop or Docker Engine by the user. In these
+        cases the container receives a SIGKILL signal and neo4j doesn't have time to clean up the PID
+        file. In turn this causes the container to not be re-startable.
+     */
     @Test
-    void testContainerCanBeRestarted() throws IOException
+    void testContainerCanBeRestartedAfterUnexpectedTermination() throws IOException
     {
         try ( GenericContainer container = createBasicContainer() )
         {
@@ -216,16 +221,22 @@ public class TestBasic
             container.waitingFor( waitForBoltReady( Duration.ofSeconds( 90 ) ) );
             container.withEnv( "NEO4J_AUTH", "none" );
 
+            // Ensuring host ports are constant with container restarts
             container.setPortBindings( List.of( browserHostPort + ":7474", boltHostPort + ":7687" ) );
 
             container.start();
 
+            // Terminating container with a SIGKILL signal to emulate docker engine (docker desktop) being terminated by user.
+            // This also keeps around the container unlike GenericContainer::stop(), which cleans up everything
             log.info( "Terminating container with SIGKILL signal" );
             container.getDockerClient().killContainerCmd( container.getContainerId() ).withSignal( "SIGKILL" ).exec();
 
+            // Restarting the container with DockerClient because the GenericContainer was not terminates and GenericContainer::start()
+            // does not work
             log.info( "Starting container" );
             container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
 
+            // Applying the Waiting strategy to ensure container is correctly running, because DockerClient does not check
             waitForBoltReady( Duration.ofSeconds( 90 ) ).waitUntilReady( container );
         }
     }
