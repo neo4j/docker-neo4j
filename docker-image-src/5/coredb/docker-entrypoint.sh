@@ -157,7 +157,7 @@ function load_plugin_from_url
     local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
     if [[ -z "${_plugin_jar_url}" ]] || [[ "${_plugin_jar_url}" == "null" ]]; then
         debug_msg "ERROR: '${_versions_json_url}' does not contain an entry for ${_neo4j_version}"
-        echo >&2 "ERROR: No compatible \"${_plugin_name}\" plugin found for Neo4j ${_neo4j_version}."
+        echo >&2 "ERROR: No compatible \"${_plugin_name}\" plugin found for Neo4j ${_neo4j_version} ${NEO4J_EDITION}."
         echo >&2 "This can happen with the newest Neo4j versions when a compatible plugin has not yet been released."
         echo >&2 "You can either use an older version of Neo4j, or continue without ${_plugin_name}."
         echo >&2 "Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."

@@ -47,6 +47,12 @@
       "dbms.security.procedures.unrestricted":"semantics.*"
     }
   },
+  "genai": {
+    "location": "/var/lib/neo4j/products/neo4j-genai-plugin-*.jar",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "genai.*"
+    }
+  },
   "_testing": {
     "versions": "http://host.testcontainers.internal:3000/versions.json",
     "properties": {
