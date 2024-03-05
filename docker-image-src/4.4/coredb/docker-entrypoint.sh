@@ -530,6 +530,7 @@ then
     add_docker_default_to_conf "causal_clustering.discovery_advertised_address" "$(hostname):5000"
     add_docker_default_to_conf "causal_clustering.transaction_advertised_address" "$(hostname):6000"
     add_docker_default_to_conf "causal_clustering.raft_advertised_address" "$(hostname):7000"
+    add_docker_default_to_conf "dbms.routing.advertised_address" "$(hostname):7688"
 fi
 
 ## == ENVIRONMENT VARIABLE CONFIGURATIONS ===

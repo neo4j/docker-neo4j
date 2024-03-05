@@ -544,6 +544,7 @@ then
     add_docker_default_to_conf "server.discovery.advertised_address" "$(hostname):5000"
     add_docker_default_to_conf "server.cluster.advertised_address" "$(hostname):6000"
     add_docker_default_to_conf "server.cluster.raft.advertised_address" "$(hostname):7000"
+    add_docker_default_to_conf "server.routing.advertised_address" "$(hostname):7688"
 fi
 
 ## == ENVIRONMENT VARIABLE CONFIGURATIONS ===

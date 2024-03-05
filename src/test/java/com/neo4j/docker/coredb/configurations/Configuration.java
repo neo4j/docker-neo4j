@@ -17,6 +17,7 @@ public class Configuration
         put( Setting.BROWSER_ALLOW_OUTGOING_CONNECTIONS, new Configuration("browser.allow_outgoing_connections"));
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("server.discovery.advertised_address"));
         put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("server.cluster.raft.advertised_address"));
+        put( Setting.CLUSTER_ROUTING_ADDRESS, new Configuration("server.routing.advertised_address"));
         put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("server.cluster.advertised_address"));
         put( Setting.DEFAULT_LISTEN_ADDRESS, new Configuration("server.default_listen_address"));
         put( Setting.DIRECTORIES_DATA, new Configuration("server.directories.data"));
@@ -39,6 +40,7 @@ public class Configuration
         put( Setting.BROWSER_ALLOW_OUTGOING_CONNECTIONS, new Configuration("browser.allow_outgoing_connections"));
         put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("causal_clustering.discovery_advertised_address"));
         put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("causal_clustering.raft_advertised_address"));
+        put( Setting.CLUSTER_ROUTING_ADDRESS, new Configuration("dbms.routing.advertised_address"));
         put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("causal_clustering.transaction_advertised_address"));
         put( Setting.DEFAULT_LISTEN_ADDRESS, new Configuration("dbms.default_listen_address"));
         put( Setting.DIRECTORIES_DATA, new Configuration("dbms.directories.data"));
