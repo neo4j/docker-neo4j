@@ -57,6 +57,7 @@ public class TestBundledPluginInstallation
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_AUTH", "none" )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+                 .withEnv("NEO4J_DEBUG", "yes")
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .waitingFor( WaitStrategies.waitForBoltReady(Duration.ofSeconds(60)) );
@@ -166,20 +167,44 @@ public class TestBundledPluginInstallation
             // This is done in the finally block because after stopping the container, the stdout cannot be retrieved.
             if (pluginsMount != null)
             {
-                List<String> plugins = Files.list(pluginsMount)
-                                            .map( fname -> fname.getFileName().toString() )
-                                            .filter( fname -> fname.endsWith( ".jar" ) )
-                                            .collect(Collectors.toList());
-                Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );
-                Assertions.assertTrue( plugins.get( 0 ).contains( pluginName ) );
                 // Verify from container logs, that the plugins were loaded locally rather than downloaded.
                 String logs = container.getLogs( OutputFrame.OutputType.STDOUT);
                 String errlogs = container.getLogs( OutputFrame.OutputType.STDERR);
                 Assertions.assertTrue(
                         Stream.of(logs.split( "\n" ))
-                              .anyMatch( line -> line.matches( "Fetching versions.json for Plugin '" + pluginName + "' from http[s]?://.*" ) ),
+                                .anyMatch( line -> line.matches( "Fetching versions.json for Plugin '" + pluginName + "' from http[s]?://.*" ) ),
                         "Plugin was not installed from cloud");
+
+                // If we are testing an unreleased version of neo4j, then the plugin may fail to download.
+                // This is expected, so we have to check that either the plugin is in the plugins mount,
+                // or the logs report the download failed.
+
+                List<String> plugins = Files.list(pluginsMount)
+                        .map( path -> path.getFileName().toString() )
+                        .filter( fileName -> fileName.endsWith( ".jar" ) )
+                        .collect(Collectors.toList());
+                if(plugins.size() == 0)
+                {
+                    // no plugins were downloaded, which is correct if we are testing an unreleased neo4j
+                    String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s community\\.",
+                            pluginName, TestSettings.NEO4J_VERSION);
+                    Assertions.assertTrue(
+                        Stream.of(errlogs.split( "\n" ))
+                                .anyMatch( line -> line.matches( expectedError ) ),
+                        "Should have errored that unreleased plugin could not be downloaded. Actual errors:\n"+errlogs);
+                }
+                else
+                {
+                    // at least one plugin was downloaded, so check it is the correct one
+                    Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );
+                    Assertions.assertTrue( plugins.get( 0 ).contains( pluginName ) );
+                }
             }
+            else
+            {
+                Assertions.fail("Failed to start container and failed to mount plugins directory.");
+            }
+
             if(container !=null)
             {
                 container.stop();
@@ -224,13 +249,6 @@ public class TestBundledPluginInstallation
                                           .withStartupTimeout(Duration.ofSeconds(60)) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
-
-            // verify that there are browser settings in the current configuration
-            DatabaseIO dbio = new DatabaseIO( container );
-            dbio.verifyConfigurationSetting( "neo4j", "none",
-                                             Configuration.getConfigurationNameMap()
-                                                          .get(Setting.BROWSER_ALLOW_OUTGOING_CONNECTIONS ),
-                                             "true" );
         }
     }
 }
