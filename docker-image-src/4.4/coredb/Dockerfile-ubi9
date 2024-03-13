@@ -68,6 +68,7 @@ RUN set -eux; \
     tar --extract --file ${NEO4J_TARBALL} --directory /var/lib; \
     mv /var/lib/neo4j-* "${NEO4J_HOME}"; \
     rm ${NEO4J_TARBALL}; \
+    sed -i 's/Package Type:.*/Package Type: docker ubi9/' $NEO4J_HOME/packaging_info; \
     mv "${NEO4J_HOME}"/data /data; \
     mv "${NEO4J_HOME}"/logs /logs; \
     chown -R neo4j:neo4j /data; \
