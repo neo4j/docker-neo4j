@@ -20,6 +20,7 @@ RUN apt update \
     && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
     && rm ${NEO4J_TARBALL} \
     && sed -i 's/Package Type:.*/Package Type: docker bullseye/' $NEO4J_HOME/packaging_info \
+    && mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report \
     && mv "${NEO4J_HOME}"/data /data \
     && mv "${NEO4J_HOME}"/logs /logs \
     && chown -R neo4j:neo4j /data \
@@ -28,10 +29,10 @@ RUN apt update \
     && chmod -R 777 /logs \
     && chown -R neo4j:neo4j "${NEO4J_HOME}" \
     && chmod -R 777 "${NEO4J_HOME}" \
+    && chmod -R 755 "${NEO4J_HOME}/bin" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh \
-    && mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report \
     && git clone https://github.com/ncopa/su-exec.git \
     && cd su-exec \
     && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
