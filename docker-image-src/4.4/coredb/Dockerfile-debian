@@ -19,7 +19,6 @@ RUN apt update \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
     && mv /var/lib/neo4j-* "${NEO4J_HOME}" \
     && rm ${NEO4J_TARBALL} \
-    && sed -i 's/Package Type:.*/Package Type: docker bullseye/' $NEO4J_HOME/packaging_info \
     && mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report \
     && mv "${NEO4J_HOME}"/data /data \
     && mv "${NEO4J_HOME}"/logs /logs \
