@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static com.neo4j.docker.utils.Network.getUniqueHostPort;
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
@@ -166,6 +167,26 @@ public class TestBasic
             container.setWorkingDirectory( "/tmp" );
             Assertions.assertDoesNotThrow( container::start,
                                            "Could not start neo4j from workdir other than NEO4J_HOME" );
+        }
+    }
+
+    @Test
+    void testPackagingInfoContainsDocker() throws Exception
+    {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5, 0, 0 ) ),
+                "No packaging_info file before 5.0.0" );
+        try ( GenericContainer container = createBasicContainer() )
+        {
+            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.start();
+            String packagingInfo = container.execInContainer("cat", "/var/lib/neo4j/packaging_info").getStdout();
+            List<String> actualPackageType = Stream.of(packagingInfo.split( "\n" ))
+                    .filter(line -> line.startsWith("Package Type:"))
+                    .toList();
+            Assertions.assertEquals(1, actualPackageType.size(),
+                    "There should only be 1 Package Type declarations in the packaging_info:\n"+actualPackageType);
+            Assertions.assertEquals("Package Type: docker " + TestSettings.BASE_OS.name().toLowerCase(),
+                    actualPackageType.get(0), "Docker packaging type is missing from packaging info file");
         }
     }
 
