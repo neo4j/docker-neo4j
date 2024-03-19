@@ -173,6 +173,8 @@ public class TestBasic
     @Test
     void testPackagingInfoContainsDocker() throws Exception
     {
+        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5, 0, 0 ) ),
+                "No packaging_info file before 5.0.0" );
         try ( GenericContainer container = createBasicContainer() )
         {
             container.waitingFor( waitForNeo4jReady( "neo4j" ) );
