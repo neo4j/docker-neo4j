@@ -29,6 +29,7 @@ public class Configuration
         put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration( "server.memory.heap.max_size"));
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("server.memory.pagecache.size"));
         put( Setting.MINIMUM_PASSWORD_LENGTH, new Configuration("dbms.security.auth_minimum_password_length"));
+        put( Setting.NETTY_SSL_PROVIDER, new Configuration("dbms.netty.ssl.provider"));
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration("db.tx_log.rotation.retention_policy"));
     }};
@@ -51,6 +52,7 @@ public class Configuration
         put( Setting.MEMORY_HEAP_INITIALSIZE, new Configuration("dbms.memory.heap.initial_size"));
         put( Setting.MEMORY_HEAP_MAXSIZE, new Configuration("dbms.memory.heap.max_size"));
         put( Setting.MEMORY_PAGECACHE_SIZE, new Configuration("dbms.memory.pagecache.size"));
+        put( Setting.NETTY_SSL_PROVIDER, new Configuration("dbms.netty.ssl.provider"));
         put( Setting.SECURITY_PROCEDURES_UNRESTRICTED, new Configuration("dbms.security.procedures.unrestricted"));
         put( Setting.TXLOG_RETENTION_POLICY, new Configuration("dbms.tx_log.rotation.retention_policy"));
     }};

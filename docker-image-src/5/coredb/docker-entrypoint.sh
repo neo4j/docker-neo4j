@@ -535,6 +535,22 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_server_cluster_raft_advertised__address:=${NEO4J_causal__clustering_raft__advertised__address:-}}
 fi
 
+# ==== CHECK IF OPENSSL FIPS MODE IS REQUESTED ====
+if [[ ${NEO4J_OPENSSL_FIPS_ENABLE-} =~ [tT][rR][uU][eE] ]]
+then
+  echo "OpenSSL FIPS mode has been requested."
+  netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/g')
+  debug_msg "Netty version detected as: \"${netty_version}\""
+  # check if dynamic tcnative is in /plugins or /var/lib/neo4j/plugins
+    # download correct dynamically linked netty-tcnative
+      # if cannot download, instruct user to put the jar in /plugins
+  # delete all the boringssl jars
+  find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
+  # move dynamic tcnative to lib folder
+  # set netty option to openssl
+  : "${NEO4J_dbms_netty_ssl_provider:=OPENSSL}"
+fi
+
 # ==== SET CONFIGURATIONS ====
 
 ## == DOCKER SPECIFIC DEFAULT CONFIGURATIONS ===
@@ -559,7 +575,8 @@ fi
 
 # these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
 not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_AUTH_PATH" "NEO4J_DEBUG" "NEO4J_EDITION" \
-             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" "NEO4J_DEPRECATION_WARNING")
+             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" \
+             "NEO4J_DEPRECATION_WARNING" "NEO4J_OPENSSL_FIPS_ENABLE")
 
 debug_msg "Applying configuration settings that have been set using environment variables."
 # list env variables with prefix NEO4J_ and create settings from them
