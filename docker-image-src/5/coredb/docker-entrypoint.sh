@@ -528,6 +528,12 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_server_cluster_raft_advertised__address:=${NEO4J_causal__clustering_raft__advertised__address:-}}
 fi
 
+# ==== CHECK IF OPENSSL FIPS MODE IS REQUESTED ====
+if [[ ${NEO4J_OPENSSL_FIPS_ENABLE-} =~ [tT][rR][uU][eE] ]]
+then
+  echo "blah"
+fi
+
 # ==== SET CONFIGURATIONS ====
 
 ## == DOCKER SPECIFIC DEFAULT CONFIGURATIONS ===
@@ -552,7 +558,8 @@ fi
 
 # these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
 not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_AUTH_PATH" "NEO4J_DEBUG" "NEO4J_EDITION" \
-             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" "NEO4J_DEPRECATION_WARNING")
+             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" \
+             "NEO4J_DEPRECATION_WARNING" "NEO4J_OPENSSL_FIPS_ENABLE")
 
 debug_msg "Applying configuration settings that have been set using environment variables."
 # list env variables with prefix NEO4J_ and create settings from them
