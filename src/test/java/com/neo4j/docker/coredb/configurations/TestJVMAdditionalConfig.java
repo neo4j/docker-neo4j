@@ -111,12 +111,12 @@ public class TestJVMAdditionalConfig
     void testSpecialCharInJvmAdditional_dollar_conf() throws Exception
     {
         testJvmAdditionalSpecialCharacters_conf("dollar",
-                                                "-Djavax.net.ssl.trustStorePassword=\"beepbeep$boop1boop2\"" );
+                                                "-Dnot.a.real.parameter=\"beepbeep$boop1boop2\"" );
     }
 
     @Test
     void testSpecialCharInJvmAdditional_dollar_env() throws Exception {
-        testJvmAdditionalSpecialCharacters_env( "-Djavax.net.ssl.trustStorePassword=\"bleepblorp$bleep1blorp4\"");
+        testJvmAdditionalSpecialCharacters_env( "-Dnot.a.real.parameter=\"bleepblorp$bleep1blorp4\"");
     }
 
     void testJvmAdditionalSpecialCharacters_conf(String charName, String expectedJvmAdditional) throws Exception
