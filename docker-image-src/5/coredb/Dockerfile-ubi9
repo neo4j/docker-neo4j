@@ -53,9 +53,11 @@ RUN set -eux; \
         6380DC428747F6C393FEACA59A84159D7001A4E5 \
         A21FAB74B0088AA361152586B8EF1A6BA9DA2D5C; \
     gpg --batch --verify tini.asc /usr/bin/tini; \
-    gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz; \
+    gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz
+
+
     # install openssl
-    tar -xzf /openssl.tar.gz --directory /tmp; \
+RUN tar -xzf /openssl.tar.gz --directory /tmp; \
     cd /tmp/openssl-3.0.9; \
     ./Configure enable-fips no-tests no-legacy no-deprecated shared; \
     make install_sw install_ssldirs install_fips; \
@@ -109,8 +111,9 @@ RUN set -eux; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /logs "${NEO4J_HOME}"/logs
 
-ENV PATH "${NEO4J_HOME}"/bin:/usr/local/bin:$PATH
-
+#ENV PATH="${NEO4J_HOME}"/bin:/usr/local/bin:$PATH \
+#    LD_LIBRARY_PATH=/usr/local/lib64
+ENV PATH="${NEO4J_HOME}"/bin:$PATH
 WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs

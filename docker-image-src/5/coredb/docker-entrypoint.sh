@@ -248,6 +248,41 @@ function install_neo4j_plugins
     rm "${_old_config}"
 }
 
+function load_dynamic_netty_tcnative
+{
+    local _netty_version="${1}"
+    # check if dynamic tcnative is in /plugins or /var/lib/neo4j/plugins
+    if [[ ! -e /plugins/netty-tcnative-${netty_version}-linux-x86_64.jar ]] && [[ ! -e "${NEO4J_HOME}"/plugins/netty-tcnative-${netty_version}-linux-x86_64.jar ]]
+    then
+        if [ -d /plugins ]; then
+            _download_dir="/plugins"
+        else
+            _download_dir="${NEO4J_HOME}/plugins"
+        fi
+        echo "Compatible dynamic netty-tcnative library not found in plugins directory. Attempting download."
+        debug_msg "downloading netty-tcnative-${netty_version}-linux-x86_64.jar to ${_download_dir}"
+        debug_msg "downloading netty-tcnative-classes-${_netty_version}.jar to ${_download_dir}"
+        wget -q -P "${_download_dir}" https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-"${_netty_version}"-linux-x86_64.jar \
+        && wget -q -P "${_download_dir}" https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-"${_netty_version}".jar \
+        || (echo >&2 "Could not download files:
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-x86_64.jar
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-${_netty_version}.jar
+
+If Neo4j is running without internet access, these will need to be downloaded and mounted to Neo4j in the /plugins folder.
+The files have been signed with GPG key 07A4FA67A8222F1B39F9EDAEF8052E4E1BD0DB31. Signatures are available at:
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-x86_64.jar.asc
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-${_netty_version}.jar.asc
+
+SHA256 hashes are available at:
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-x86_64.jar.sha256
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-${_netty_version}.jar.sha256
+  " && exit 1)
+        debug_msg "netty-tcnative libraries downloaded."
+    else
+        debug_msg "netty-tcnative libraries are already available in the container"
+    fi
+}
+
 function add_docker_default_to_conf
 {
     # docker defaults should NOT overwrite values already in the conf file
@@ -535,20 +570,23 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_server_cluster_raft_advertised__address:=${NEO4J_causal__clustering_raft__advertised__address:-}}
 fi
 
+
 # ==== CHECK IF OPENSSL FIPS MODE IS REQUESTED ====
 if [[ ${NEO4J_OPENSSL_FIPS_ENABLE-} =~ [tT][rR][uU][eE] ]]
 then
   echo "OpenSSL FIPS mode has been requested."
-  netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/g')
-  debug_msg "Netty version detected as: \"${netty_version}\""
-  # check if dynamic tcnative is in /plugins or /var/lib/neo4j/plugins
-    # download correct dynamically linked netty-tcnative
-      # if cannot download, instruct user to put the jar in /plugins
-  # delete all the boringssl jars
+  # delete all the boringssl and incompatible tcnative jars
   find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
-  # move dynamic tcnative to lib folder
-  # set netty option to openssl
-  : "${NEO4J_dbms_netty_ssl_provider:=OPENSSL}"
+  find "${NEO4J_HOME}"/lib/ -iname '*tcnative*.jar' -delete
+  # put dynamic netty-tcnative libraries in plugin directory
+  #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/g')
+  #debug_msg "Netty version detected as: \"${netty_version}\""
+  netty_version="2.0.66.Final-SNAPSHOT"
+  load_dynamic_netty_tcnative ${netty_version}
+  # set paths so that the FIPS compatible openssl is loaded
+  debug_msg "setting paths to enable OpenSSL"
+  export PATH=/usr/local/bin:$PATH
+  export LD_LIBRARY_PATH=/usr/local/lib64
 fi
 
 # ==== SET CONFIGURATIONS ====
