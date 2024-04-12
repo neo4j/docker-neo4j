@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -29,17 +31,48 @@ public class TestFIPS
 {
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
-    private static final Logger log = LoggerFactory.getLogger(TestFIPS.class);
     public static final String FIPS_FLAG = "NEO4J_OPENSSL_FIPS_ENABLE";
     public static final String PASSWORD = "MYsuperSECRETpassword123";
+    public static final String OPENSSL_VERSION = "3.0.9";
+    private static final Logger log = LoggerFactory.getLogger(TestFIPS.class);
+    private static Path certificates;
 
+    /*TODO
+       generate certificates
+       test happy path with ssl certs
+       test errors if fips and debian
+       test error if offline
+    *  */
     @BeforeAll
-    static void skipInvalidTestScenarios()
+    static void skipInvalidTestScenariosGenerateKeys()
     {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5,17,0)),
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5, 17, 0)),
                 "FIPS compliance was introduced after 5.19.0.");
         Assumptions.assumeFalse(TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                 "UBI8 images are deprecated and are not FIPS compliant");
+    }
+
+    private synchronized Path generateSSLKeys() throws Exception
+    {
+        if(certificates == null) {
+            // using nginx image because it's easy to verify startup and it has openssl already installed
+            try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"))) {
+                certificates = temporaryFolderManager.createFolderAndMountAsVolume(container, "/certificates");
+                container.withExposedPorts(80)
+                        .waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
+                container.start();
+                container.execInContainer("openssl", "req", "-x509", "-sha1", "-nodes",
+                        "-newkey", "rsa:2048", "-keyout", "/certificates/private.key1",
+                        "-out", "/certificates/selfsigned.crt",
+                        "-subj", "/C=SE/O=Example/OU=ExampleCluster/CN=Server0",
+                        "-days", "1");
+                container.execInContainer("openssl", "pkcs8", "-topk8", "-nocrypt",
+                        "-in", "/certificates/private.key1", "-out", "/certificates/private.key");
+                container.execInContainer("rm", "/certificates/private.key1");
+                container.execInContainer("chown", "-R", "7474:7474", "/certificates");
+            }
+        }
+        return certificates;
     }
 
     GenericContainer createFIPSContainer()
@@ -47,19 +80,33 @@ public class TestFIPS
         GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withEnv("NEO4J_AUTH", "neo4j/"+PASSWORD)
+                .withEnv("NEO4J_DEBUG", "yes")
                 .withEnv(FIPS_FLAG, "true")
-                .withEnv("NEO4J_dbms_netty_ssl_provider", "OPENSSL")
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD, Duration.ofSeconds(60)));
         return container;
     }
 
+    private void configureContainerForSSL(GenericContainer container) throws Exception
+    {
+        Path certs = generateSSLKeys();
+        temporaryFolderManager.mountHostFolderAsVolume(container, certs, "/certificates");
+        Path conf = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
+        FileWriter confFile = new FileWriter(conf.resolve("neo4j.conf").toFile());
+        confFile.write("server.bolt.tls_level=OPTIONAL\n");
+        confFile.write("dbms.ssl.policy.bolt.enabled=true\n");
+        confFile.write("dbms.ssl.policy.bolt.base_directory=/certificates\n");
+        confFile.write("dbms.ssl.policy.bolt.private_key=private.key\n");
+        confFile.write("dbms.ssl.policy.bolt.public_certificate=selfsigned.crt\n");
+        confFile.write("dbms.netty.ssl.provider=OPENSSL\n");
+        confFile.flush();
+        confFile.close();
+    }
+
     @Test
     void testOpensslIsInstalledWithFIPS() throws Exception
     {
-        final String expectedOpensslVersion = "3.0.9";
-
         try(GenericContainer container = createFIPSContainer())
         {
             container.start();
@@ -69,8 +116,8 @@ public class TestFIPS
             // verify openssl version
             Assertions.assertEquals(0, versionOut.getExitCode(), "OpenSSL command failed. Full output:\n"+versionOut);
             List<String> openssl = Arrays.stream(versionOut.getStdout().split("\n")).toList();
-            Assertions.assertTrue(openssl.get(0).contains("OpenSSL "+expectedOpensslVersion),
-                    "OpenSSL "+expectedOpensslVersion+" is not installed.\n"+versionOut);
+            Assertions.assertTrue(openssl.get(0).contains("OpenSSL " + OPENSSL_VERSION),
+                    "OpenSSL "+ OPENSSL_VERSION +" is not installed.\n"+versionOut);
             Assertions.assertTrue(openssl.stream().anyMatch(s -> s.matches("OPENSSLDIR:.*/usr/local/ssl\"?\\s*")),
             "Openssl is not using the expected ssl config directory:\n"+versionOut);
             Assertions.assertTrue(openssl.stream().anyMatch(s -> s.matches("MODULESDIR:.*/usr/local/lib64/ossl-modules\"?\\s*")),
@@ -89,8 +136,8 @@ public class TestFIPS
                     Assertions.assertTrue(line.matches("name:\\s+OpenSSL FIPS Provider"),
                             "FIPS provider has an unexpected name\n" + providersOut);
                 } else if (line.startsWith("version")) {
-                    Assertions.assertTrue(line.matches("version:\\s+"+expectedOpensslVersion.replace(".", "\\.")),
-                            "FIPS version is not "+expectedOpensslVersion+":\n" + providersOut);
+                    Assertions.assertTrue(line.matches("version:\\s+"+OPENSSL_VERSION.replace(".", "\\.")),
+                            "FIPS version is not "+OPENSSL_VERSION+":\n" + providersOut);
                 } else if (line.startsWith("status")) {
                     Assertions.assertTrue(line.matches("status:\\s+active"),
                             "FIPS is not the active provider:\n" + providersOut);
@@ -120,14 +167,7 @@ public class TestFIPS
             }
             case UBI9 -> wrapperScript.write("microdnf install -y strace\n");
         }
-//        -P path
-//        --trace-path=path
-//                   Trace only system calls accessing path.  Multiple -P options can be used to specify several paths.
-//        -z          Print only syscalls that returned without an error code.
-
-
-
-        wrapperScript.write("strace -fy --trace=openat -o /strace/"+straceLog.getName() + " /startup/docker-entrypoint.sh neo4j");
+        wrapperScript.write("strace -fyz --trace=openat -o /strace/"+straceLog.getName() + " /startup/docker-entrypoint.sh neo4j");
         wrapperScript.flush();
         wrapperScript.close();
         startScript.setExecutable(true);
@@ -135,14 +175,16 @@ public class TestFIPS
         try(GenericContainer container = createFIPSContainer())
         {
             temporaryFolderManager.mountHostFolderAsVolume(container, ioPath, "/strace");
+            configureContainerForSSL(container);
             // override the actual entrypoint with our strace wrapper
-            container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) x ->
-                    x.withEntrypoint("tini", "-g", "--", "/strace/"+startScript.getName()));
+            container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd ->
+                    cmd.withEntrypoint("tini", "-g", "--", "/strace/"+startScript.getName()));
             container.start();
             DatabaseIO dbio = new DatabaseIO(container);
             dbio.putInitialDataIntoContainer("neo4j", PASSWORD);
         }
         Assertions.assertTrue(straceLog.exists(), "Test did not create an strace log");
         List<String> strace = Files.readAllLines(straceLog.toPath());
+        List<String> libsslReads = strace.stream().filter(t -> t.contains("libssl")).toList();
     }
 }
