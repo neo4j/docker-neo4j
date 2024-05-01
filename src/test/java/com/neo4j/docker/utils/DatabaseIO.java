@@ -21,16 +21,23 @@ import org.neo4j.driver.Result;
 
 public class DatabaseIO
 {
-	private static Config TEST_DRIVER_CONFIG = Config.builder().withoutEncryption().build();
+	private static Config DEFAULT_DRIVER_CONFIG = Config.builder().withoutEncryption().build();
 	private static final Logger log = LoggerFactory.getLogger( DatabaseIO.class );
 
 	private GenericContainer container;
 	private String boltUri;
+	private Config driverConfig;
 
 	public DatabaseIO( GenericContainer container )
 	{
+		this(container, DEFAULT_DRIVER_CONFIG);
+	}
+
+	public DatabaseIO( GenericContainer container, Config driverConfig)
+	{
 		this.container = container;
         this.boltUri = "bolt://"+container.getHost()+":"+container.getMappedPort( 7687 );
+		this.driverConfig = driverConfig;
 	}
 
 
@@ -120,7 +127,7 @@ public class DatabaseIO
         // we don't just do runCypherQuery( user, password, cypher, "neo4j")
         // because it breaks the upgrade tests from 3.5.x
         List<Record> records;
-		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), this.driverConfig);
 		try ( Session session = driver.session())
 		{
 			Result rs = session.run( cypher );
@@ -133,7 +140,7 @@ public class DatabaseIO
 	public List<Record> runCypherQuery( String user, String password, String cypher, String database)
     {
         List<Record> records;
-		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), this.driverConfig);
 		try ( Session session = driver.session(SessionConfig.forDatabase( database )))
 		{
 			Result rs = session.run( cypher );
@@ -146,9 +153,9 @@ public class DatabaseIO
 	public void verifyConnectivity( String user, String password )
 	{
 		GraphDatabase.driver( boltUri,
-							  getToken( user, password ),
-							  TEST_DRIVER_CONFIG )
-					 .verifyConnectivity();
+						getToken( user, password ),
+						this.driverConfig)
+				.verifyConnectivity();
 	}
 
 	private AuthToken getToken(String user, String password)

@@ -252,7 +252,7 @@ function load_dynamic_netty_tcnative
 {
     local _netty_version="${1}"
     # check if dynamic tcnative is in /plugins or /var/lib/neo4j/plugins
-    if [[ ! -e /plugins/netty-tcnative-${netty_version}-linux-x86_64.jar ]] && [[ ! -e "${NEO4J_HOME}"/plugins/netty-tcnative-${netty_version}-linux-x86_64.jar ]]
+    if [[ ! -e /plugins/netty-tcnative-${netty_version}-linux-$(arch).jar ]] && [[ ! -e "${NEO4J_HOME}"/plugins/netty-tcnative-${netty_version}-linux-$(arch).jar ]]
     then
         if [ -d /plugins ]; then
             _download_dir="/plugins"
@@ -260,21 +260,21 @@ function load_dynamic_netty_tcnative
             _download_dir="${NEO4J_HOME}/plugins"
         fi
         echo "Compatible dynamic netty-tcnative library not found in plugins directory. Attempting download."
-        debug_msg "downloading netty-tcnative-${netty_version}-linux-x86_64.jar to ${_download_dir}"
+        debug_msg "downloading netty-tcnative-${netty_version}-linux-$(arch).jar to ${_download_dir}"
         debug_msg "downloading netty-tcnative-classes-${_netty_version}.jar to ${_download_dir}"
-        wget -q -P "${_download_dir}" https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-"${_netty_version}"-linux-x86_64.jar \
+        wget -q -P "${_download_dir}" https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-"${_netty_version}"-linux-$(arch).jar \
         && wget -q -P "${_download_dir}" https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-"${_netty_version}".jar \
         || (echo >&2 "Could not download files:
-  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-x86_64.jar
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-$(arch).jar
   https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-${_netty_version}.jar
 
 If Neo4j is running without internet access, these will need to be downloaded and mounted to Neo4j in the /plugins folder.
 The files have been signed with GPG key 07A4FA67A8222F1B39F9EDAEF8052E4E1BD0DB31. Signatures are available at:
-  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-x86_64.jar.asc
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-$(arch).jar.asc
   https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-${_netty_version}.jar.asc
 
 SHA256 hashes are available at:
-  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-x86_64.jar.sha256
+  https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-${_netty_version}-linux-$(arch).jar.sha256
   https://yum.neo4j.com/tcnativerebuilds/netty-tcnative-classes-${_netty_version}.jar.sha256
   " && exit 1)
         debug_msg "netty-tcnative libraries downloaded."
@@ -583,10 +583,6 @@ then
   #debug_msg "Netty version detected as: \"${netty_version}\""
   netty_version="2.0.66.Final-SNAPSHOT"
   load_dynamic_netty_tcnative ${netty_version}
-  # set paths so that the FIPS compatible openssl is loaded
-  debug_msg "setting paths to enable OpenSSL"
-  export PATH=/usr/local/bin:$PATH
-  export LD_LIBRARY_PATH=/usr/local/lib64
 fi
 
 # ==== SET CONFIGURATIONS ====
