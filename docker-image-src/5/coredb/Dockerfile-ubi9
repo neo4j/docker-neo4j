@@ -59,13 +59,14 @@ RUN set -eux; \
     # install openssl
 RUN tar -xzf /openssl.tar.gz --directory /tmp; \
     cd /tmp/openssl-3.0.9; \
-    ./Configure enable-fips no-tests no-legacy no-deprecated shared; \
+    ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared; \
     make install_sw install_ssldirs install_fips; \
-    /usr/local/bin/openssl fipsinstall -out /usr/local/ssl/fipsmodule.cnf -module /usr/local/lib64/ossl-modules/fips.so; \
-    sed -i 's/# fips = fips_sect/fips = fips_sect/g' /usr/local/ssl/openssl.cnf; \
-    sed -i 's|# \.include fipsmodule\.cnf|\.include /usr/local/ssl/fipsmodule\.cnf|g' /usr/local/ssl/openssl.cnf; \
-    sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/ssl/openssl.cnf; \
-    sed -i -E 's/# ?config_diagnostics = 1/config_diagnostics = 1/' /usr/local/ssl/openssl.cnf; \
+    ldconfig /usr/local/openssl/lib64; \
+    /usr/local/openssl/bin/openssl fipsinstall -out /usr/local/openssl/fipsmodule.cnf -module /usr/local/openssl/lib64/ossl-modules/fips.so; \
+    sed -i 's/# fips = fips_sect/fips = fips_sect/g' /usr/local/openssl/openssl.cnf; \
+    sed -i 's|# \.include fipsmodule\.cnf|\.include /usr/local/openssl/fipsmodule\.cnf|g' /usr/local/openssl/openssl.cnf; \
+    sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/openssl/openssl.cnf; \
+    sed -i -E 's/# ?config_diagnostics = 1/config_diagnostics = 1/' /usr/local/openssl/openssl.cnf; \
     cd /; \
     # download, verify and install su-exec
     git clone https://github.com/ncopa/su-exec.git; \
@@ -111,9 +112,7 @@ RUN set -eux; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /logs "${NEO4J_HOME}"/logs
 
-#ENV PATH="${NEO4J_HOME}"/bin:/usr/local/bin:$PATH \
-#    LD_LIBRARY_PATH=/usr/local/lib64
-ENV PATH="${NEO4J_HOME}"/bin:$PATH
+ENV PATH="${NEO4J_HOME}"/bin:/usr/local/openssl/bin:$PATH
 WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs
