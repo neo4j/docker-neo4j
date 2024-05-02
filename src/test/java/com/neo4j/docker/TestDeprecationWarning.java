@@ -82,7 +82,7 @@ public class TestDeprecationWarning
     }
 
     @Test
-    void shouldNotWarnIfDeprecationSuppressed_coreDB() throws Exception
+    void shouldIgnoreDeprecationSuppression_coreDB() throws Exception
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
@@ -96,14 +96,13 @@ public class TestDeprecationWarning
             container.start();
             // container should successfully start
             String logs = container.getLogs( OutputFrame.OutputType.STDERR );
-            Assertions.assertFalse( logs.contains( DEPRECATION_WARN_STRING ),
-                                    "Container warned about deprecation even though the warning is suppressed. " +
-                                    "Actual error logs:\n"+logs);
+            Assertions.assertTrue( logs.contains( DEPRECATION_WARN_STRING ),
+                    "Container did not warn about ubi8 deprecation. Actual error logs:\n"+logs);
         }
     }
 
     @Test
-    void shouldNotWarnIfDeprecationSuppressed_admin()
+    void shouldIgnoreDeprecationSuppressed_admin()
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
@@ -118,9 +117,8 @@ public class TestDeprecationWarning
             container.start();
             // container should successfully start
             String logs = container.getLogs( OutputFrame.OutputType.STDERR );
-            Assertions.assertFalse( logs.contains( DEPRECATION_WARN_STRING ),
-                                    "Container warned about deprecation even though the warning is suppressed. " +
-                                    "Actual error logs:\n"+logs);
+            Assertions.assertTrue( logs.contains( DEPRECATION_WARN_STRING ),
+                    "Container did not warn about ubi8 deprecation. Actual error logs:\n"+logs);
         }
     }
 }
