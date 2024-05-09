@@ -47,7 +47,7 @@ RUN set -eux; \
     mv /su-exec/su-exec /usr/bin/su-exec; \
     gpgconf --kill all; \
     rm -rf "$GNUPGHOME" /tini.asc /su-exec; \
-    microdnf remove -y git* perl* make gcc; \
+    microdnf remove -y git* perl* make gcc glibc-headers glibc-devel libxcrypt-devel; \
     microdnf clean all
 
 ENV NEO4J_SHA256=%%NEO4J_SHA%% \
