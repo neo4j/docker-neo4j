@@ -1,12 +1,11 @@
 package com.neo4j.docker.coredb.plugins;
 
-import com.neo4j.docker.coredb.configurations.Configuration;
-import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
@@ -34,21 +33,61 @@ import java.util.stream.Stream;
 public class TestBundledPluginInstallation
 {
     private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
-    private static String APOC = "apoc";
-    private static String APOC_CORE = "apoc-core";
-    private static String BLOOM = "bloom";
-    private static String GDS = "graph-data-science";
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
+    static class BundledPlugin
+    {
+        private final String name;
+        private final Neo4jVersion bundledSince;
+        private final Neo4jVersion bundledUntil;
+        private final boolean isEnterpriseOnly;
+
+        public BundledPlugin(String name, Neo4jVersion bundledSince, @Nullable Neo4jVersion bundledUntil, boolean isEnterpriseOnly)
+        {
+            this.name = name;
+            this.bundledSince = bundledSince;
+            this.bundledUntil = bundledUntil;
+            this.isEnterpriseOnly = isEnterpriseOnly;
+        }
+
+        public boolean shouldBePresentInImage()
+        {
+            boolean shouldBeBundled = TestSettings.NEO4J_VERSION.isAtLeastVersion( bundledSince );
+            if(isEnterpriseOnly)
+            {
+                shouldBeBundled = shouldBeBundled && (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE);
+            }
+            if(bundledUntil != null)
+            {
+                shouldBeBundled = shouldBeBundled && TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil );
+            }
+            return shouldBeBundled;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "BundledPlugin " + name;
+        }
+    }
+
+    private static final BundledPlugin APOC = new BundledPlugin("apoc",
+            new Neo4jVersion(5, 0, 0), null,false);
+    private static final BundledPlugin APOC_CORE = new BundledPlugin("apoc-core",
+            new Neo4jVersion(4, 3, 15),
+            new Neo4jVersion(5, 0, 0), false);
+    private static final BundledPlugin BLOOM = new BundledPlugin("bloom",
+            Neo4jVersion.NEO4J_VERSION_440, null, true);
+    private static final BundledPlugin GDS = new BundledPlugin("graph-data-science",
+            Neo4jVersion.NEO4J_VERSION_440, null, true );
 
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
-                // plugin name key, version it's bundled since, version bundled until, is enterprise only
-                Arguments.arguments( APOC_CORE, new Neo4jVersion(4, 3, 15), new Neo4jVersion(5, 0, 0), false ),
-                Arguments.arguments( APOC, new Neo4jVersion(5, 0, 0), null, false ),
-                 Arguments.arguments( GDS, Neo4jVersion.NEO4J_VERSION_440, null, true ),
-                Arguments.arguments( BLOOM, Neo4jVersion.NEO4J_VERSION_440, null, true )
+                Arguments.arguments(APOC_CORE),
+                Arguments.arguments(APOC),
+                 Arguments.arguments(GDS),
+                Arguments.arguments(BLOOM)
         );
     }
 
@@ -64,32 +103,23 @@ public class TestBundledPluginInstallation
         return container;
     }
 
-    private GenericContainer createContainerWithBundledPlugin(String pluginName)
+    private GenericContainer createContainerWithBundledPlugin(BundledPlugin plugin)
     {
-        return createContainer().withEnv( Neo4jPluginEnv.get(), "[\"" +pluginName+ "\"]" );
+        return createContainer().withEnv( Neo4jPluginEnv.get(), "[\"" +plugin.name+ "\"]" );
     }
 
     @ParameterizedTest(name = "testBundledPlugin_{0}")
     @MethodSource("bundledPluginsArgs")
-    public void testBundledPlugin(String pluginName, Neo4jVersion bundledSince, Neo4jVersion bundledUntil, boolean isEnterpriseOnly) throws Exception
+    public void testBundledPlugin(BundledPlugin plugin) throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( bundledSince ),
-                                String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince));
-        if(bundledUntil != null) {
-            Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil ),
-                                    String.format("plugin %s was not bundled after Neo4j %s", pluginName, bundledUntil));
-        }
-        if(isEnterpriseOnly)
-        {
-            Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE,
-                                    String.format("plugin %s is enterprise only", pluginName));
-        }
+        Assumptions.assumeTrue(plugin.shouldBePresentInImage(),
+                "test only applies when the plugin "+plugin.name+"is present");
 
         GenericContainer container = null;
         Path pluginsMount = null;
         try
         {
-            container = createContainerWithBundledPlugin( pluginName );
+            container = createContainerWithBundledPlugin(plugin);
             pluginsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
@@ -99,7 +129,7 @@ public class TestBundledPluginInstallation
         {
             // we don't want this test to depend on the plugins actually working (that's outside the scope of
             // the docker tests), so we have to be robust to the container failing to start.
-            log.error( String.format("The bundled %s plugin caused Neo4j to fail to start.", pluginName) );
+            log.error( String.format("The bundled %s plugin caused Neo4j to fail to start.", plugin.name) );
         }
         finally
         {
@@ -111,13 +141,13 @@ public class TestBundledPluginInstallation
                                             .filter( fname -> fname.endsWith( ".jar" ) )
                                             .collect(Collectors.toList());
                 Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );
-                Assertions.assertTrue( plugins.get( 0 ).contains( pluginName ) );
+                Assertions.assertTrue( plugins.get( 0 ).contains( plugin.name ) );
                 // Verify from container logs, that the plugins were loaded locally rather than downloaded.
                 String logs = container.getLogs( OutputFrame.OutputType.STDOUT);
                 String errlogs = container.getLogs( OutputFrame.OutputType.STDERR);
                 Assertions.assertTrue(
                         Stream.of(logs.split( "\n" ))
-                              .anyMatch( line -> line.matches( "Installing Plugin '" + pluginName + "' from /var/lib/neo4j/.*" ) ),
+                              .anyMatch( line -> line.matches( "Installing Plugin '" + plugin.name + "' from /var/lib/neo4j/.*" ) ),
                         "Plugin was not installed from neo4j home");
             }
             if(container !=null)
@@ -131,27 +161,19 @@ public class TestBundledPluginInstallation
         }
     }
 
-    @ParameterizedTest(name = "testBundledPlugin_downloadsIfNotAvailableLocally_{0}")
-    @MethodSource("bundledPluginsArgs")
-    public void testBundledPlugin_downloadsIfNotAvailableLocally
-            (String pluginName, Neo4jVersion bundledSince, Neo4jVersion bundledUntil, boolean isEnterpriseOnly) throws Exception
+    @Test
+    public void testBundledPlugin_downloadsIfNotAvailableLocally() throws Exception
     {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( bundledSince ),
-                                String.format("plugin %s was not bundled in Neo4j %s", pluginName, bundledSince.toString()));
-        if(bundledUntil != null) {
-            Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( bundledUntil ),
-                                    String.format("plugin %s was not bundled after Neo4j %s", pluginName, bundledUntil));
-        }
-        Assumptions.assumeTrue( isEnterpriseOnly, "Test only applies to enterprise only bundled plugins tested against community edition" );
+        // Test that in community edition we try to download the plugins that would otherwise be bundled
         Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
                                 "Test only applies to enterprise only bundled plugins tested against community edition" );
 
-
+        BundledPlugin plugin = GDS; // testing only GDS since
         GenericContainer container = null;
         Path pluginsMount = null;
         try
         {
-            container = createContainerWithBundledPlugin( pluginName );
+            container = createContainerWithBundledPlugin(plugin);
             pluginsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.start();
         }
@@ -159,7 +181,7 @@ public class TestBundledPluginInstallation
         {
             // we don't want this test to depend on the plugins actually working (that's outside the scope of
             // the docker tests), so we have to be robust to the container failing to start.
-            log.error( String.format("The %s plugin caused Neo4j to fail to start.", pluginName) );
+            log.error( String.format("The %s plugin caused Neo4j to fail to start.", plugin.name) );
         }
         finally
         {
@@ -172,7 +194,7 @@ public class TestBundledPluginInstallation
                 String errlogs = container.getLogs( OutputFrame.OutputType.STDERR);
                 Assertions.assertTrue(
                         Stream.of(logs.split( "\n" ))
-                                .anyMatch( line -> line.matches( "Fetching versions.json for Plugin '" + pluginName + "' from http[s]?://.*" ) ),
+                                .anyMatch( line -> line.matches( "Fetching versions.json for Plugin '" + plugin.name + "' from http[s]?://.*" ) ),
                         "Plugin was not installed from cloud");
 
                 // If we are testing an unreleased version of neo4j, then the plugin may fail to download.
@@ -182,37 +204,27 @@ public class TestBundledPluginInstallation
                 List<String> plugins = Files.list(pluginsMount)
                         .map( path -> path.getFileName().toString() )
                         .filter( fileName -> fileName.endsWith( ".jar" ) )
-                        .collect(Collectors.toList());
-                if(plugins.size() == 0)
+                        .toList();
+                if(plugins.isEmpty())
                 {
                     // no plugins were downloaded, which is correct if we are testing an unreleased neo4j
                     String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s community\\.",
-                            pluginName, TestSettings.NEO4J_VERSION);
+                            plugin.name, TestSettings.NEO4J_VERSION);
                     Assertions.assertTrue(
                         Stream.of(errlogs.split( "\n" ))
                                 .anyMatch( line -> line.matches( expectedError ) ),
-                        "Should have errored that unreleased plugin could not be downloaded. Actual errors:\n"+errlogs);
+                        "Should have errored that unreleased plugin could not be downloaded. " +
+                                "Expected error: " + expectedError +
+                                "\nActual errors:\n"+errlogs);
                 }
                 else
                 {
                     // at least one plugin was downloaded, so check it is the correct one
                     Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );
-                    Assertions.assertTrue( plugins.get( 0 ).contains( pluginName ) );
+                    Assertions.assertTrue( plugins.get( 0 ).contains( plugin.name ) );
                 }
             }
-            else
-            {
-                Assertions.fail("Failed to start container and failed to mount plugins directory.");
-            }
-
-            if(container !=null)
-            {
-                container.stop();
-            }
-            else
-            {
-                Assertions.fail("Test failed before container could even be initialised");
-            }
+            container.stop();
         }
     }
 
