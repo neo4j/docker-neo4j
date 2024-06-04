@@ -58,6 +58,27 @@ public class TestPluginInstallation
     @Rule
     public HttpServerRule httpServer = new HttpServerRule();
 
+    private class VersionsJsonEntry
+    {
+        String neo4j;
+        String jar;
+        String _testing;
+
+        VersionsJsonEntry( String neo4j )
+        {
+            this.neo4j = neo4j;
+            this._testing = "SNAPSHOT";
+            this.jar = "http://host.testcontainers.internal:3000/" + PLUGIN_JAR;
+        }
+
+        VersionsJsonEntry( String neo4j, String jar )
+        {
+            this.neo4j = neo4j;
+            this._testing = "SNAPSHOT";
+            this.jar = "http://host.testcontainers.internal:3000/" + jar;
+        }
+    }
+
     private GenericContainer createContainerWithTestingPlugin()
     {
         Testcontainers.exposeHostPorts( httpServer.PORT );
@@ -157,7 +178,7 @@ public class TestPluginInstallation
     @Test
     public void testPluginLoads() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin" );
         File versionsJson = createTestVersionsJson( pluginsDir, NEO4J_VERSION.toString() );
         setupTestPlugin( versionsJson );
         try ( GenericContainer container = createContainerWithTestingPlugin() )
@@ -276,7 +297,7 @@ public class TestPluginInstallation
     public void testBrokenVersionsJsonCausesHelpfulError() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
-        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-broken-versionsjson-" );
+        Path pluginsDir = temporaryFolderManager.createFolder( "plugin-broken-versionsjson" );
         // create a versions.json that DOES NOT contain the current neo4j version in its mapping
         File versionsJson = createTestVersionsJson( pluginsDir, "50.0.0" );
         setupTestPlugin( versionsJson );
@@ -286,6 +307,29 @@ public class TestPluginInstallation
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
             Assertions.assertTrue( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION ),
                                    "Did not error about plugin compatibility." );
+            Assertions.assertFalse(startupErrors.contains("could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
+                    "Errored about missing versions.json. Actual errors:\n\""+startupErrors+"\"");
+            DatabaseIO db = new DatabaseIO( container );
+            // make sure plugin did not load
+            List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
+                                                         "SHOW PROCEDURES YIELD name, signature RETURN name, signature" );
+            Assertions.assertFalse( procedures.stream()
+                                              .anyMatch( x -> x.get( "name" ).asString()
+                                                               .equals( "com.neo4j.docker.test.myplugin.defaultValues" ) ),
+                                    "Incompatible test plugin was loaded." );
+        }
+    }
+
+    @Test
+    void testMissingVersionsJsonCausesHelpfulError()
+    {
+        try ( GenericContainer container = createContainerWithTestingPlugin() ) {
+            container.start();
+            String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
+            Assertions.assertTrue(startupErrors.contains("could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
+                    "Did not error about missing versions.json. Actual errors:\n\""+startupErrors+"\"");
+            Assertions.assertFalse( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION ),
+                    "Should not have errored about incompatible versions in versions.json" );
             DatabaseIO db = new DatabaseIO( container );
             // make sure plugin did not load
             List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
@@ -435,27 +479,6 @@ public class TestPluginInstallation
         }
     }
 
-    private class VersionsJsonEntry
-    {
-        String neo4j;
-        String jar;
-        String _testing;
-
-        VersionsJsonEntry( String neo4j )
-        {
-            this.neo4j = neo4j;
-            this._testing = "SNAPSHOT";
-            this.jar = "http://host.testcontainers.internal:3000/" + PLUGIN_JAR;
-        }
-
-        VersionsJsonEntry( String neo4j, String jar )
-        {
-            this.neo4j = neo4j;
-            this._testing = "SNAPSHOT";
-            this.jar = "http://host.testcontainers.internal:3000/" + jar;
-        }
-    }
-
     @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource( booleans = {true, false} )
     void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly( boolean asCurrentUser ) throws Exception
@@ -465,17 +488,11 @@ public class TestPluginInstallation
             var pluginsFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             container.withEnv( "NEO4J_PLUGINS", "[\"bloom\"]" );
             container.start();
-
             Assertions.assertTrue( pluginsFolder.resolve( "bloom.jar" ).toFile().exists(), "Did not find bloom.jar in plugins folder" );
-            assertBloomIsLoaded( container );
+
+            DatabaseIO databaseIO = new DatabaseIO( container );
+            var result = databaseIO.runCypherQuery( "neo4j", "none", "SHOW PROCEDURES YIELD name, description, signature WHERE name STARTS WITH 'bloom'" );
+            Assertions.assertFalse( result.isEmpty(), "Bloom procedures not found in neo4j installation" );
         }
-    }
-
-    void assertBloomIsLoaded( GenericContainer container )
-    {
-        DatabaseIO databaseIO = new DatabaseIO( container );
-
-        var result = databaseIO.runCypherQuery( "neo4j", "none", "SHOW PROCEDURES YIELD name, description, signature WHERE name STARTS WITH 'bloom'" );
-        Assertions.assertFalse( result.isEmpty(), "Bloom procedures not found in neo4j installation" );
     }
 }
