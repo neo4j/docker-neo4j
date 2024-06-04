@@ -10,9 +10,7 @@ import org.neo4j.driver.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
-import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
@@ -116,7 +114,9 @@ public class TestFIPS
         {
             container.start();
             versionOut = container.execInContainer("openssl", "version", "-a");
+            log.info("openssl version -a:\n"+versionOut.getStdout());
             providersOut = container.execInContainer("openssl", "list", "-providers");
+            log.info("openssl providers:\n"+providersOut.getStdout());
         }
 
         // verify openssl version
@@ -162,18 +162,18 @@ public class TestFIPS
             String neo4jPID = container.execInContainer("cat", "/var/lib/neo4j/run/neo4j.pid").getStdout();
             filesInUse = container.execInContainer("su-exec", "neo4j", "cat", "/proc/"+neo4jPID+"/maps").getStdout();
         }
-        List<String> procMap = Arrays.stream(filesInUse.split("\n")).toList();
-        verifyProcessAccessesFile(procMap, "libssl.so", OPENSSL_INSTALL_DIR);
-        verifyProcessAccessesFile(procMap, "libcrypto.so", OPENSSL_INSTALL_DIR);
-        verifyProcessAccessesFile(procMap, "fips.so", OPENSSL_INSTALL_DIR);
+        verifyProcessAccessesFile(filesInUse, "libssl.so", OPENSSL_INSTALL_DIR);
+        verifyProcessAccessesFile(filesInUse, "libcrypto.so", OPENSSL_INSTALL_DIR);
+        verifyProcessAccessesFile(filesInUse, "fips.so", OPENSSL_INSTALL_DIR);
     }
 
-    private void verifyProcessAccessesFile(List<String> procMap, String filename, String expectedPath)
+    private void verifyProcessAccessesFile(String filesInUse, String filename, String expectedPath)
     {
-        List<String> fileReads = procMap.stream()
+        List<String> fileReads = Arrays.stream(filesInUse.split("\n"))
                 .filter(t -> t.contains(filename))
                 .toList();
-        Assertions.assertFalse(fileReads.isEmpty(), "Neo4j did not use "+filename+" at all");
+        Assertions.assertFalse(fileReads.isEmpty(), "Neo4j did not use "+filename+" at all." +
+                " Actual files read were:\n"+filesInUse);
         String regex = String.format(".*%s/.*%s.*", expectedPath, filename);
         for(String line : fileReads)
         {
@@ -206,27 +206,8 @@ public class TestFIPS
             List<String> nmap = Arrays.stream(nmapOut.split("\n"))
                     .filter(line -> line.contains("least strength: A"))
                     .toList();
-            Assertions.assertEquals(1, nmap.size(), "NMap scan shows port 7687 is not secure.");
+            Assertions.assertEquals(1, nmap.size(),
+                    "NMap scan shows port 7687 is not secure:\n"+nmapOut);
         }
-    }
-
-    // This test is only valid until we can get the netty-tcnative openssl3 compatibility fixes shipped in neo4j.
-    @Test
-    void testErrorsIfNoInternet()
-    {
-        List<String> errorLogs;
-        try(GenericContainer container = createFIPSContainer())
-        {
-            container.withNetworkMode("none");
-            WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(20));
-            Assertions.assertThrows( ContainerLaunchException.class, container::start,
-                    "Container should have failed on start up" );
-            errorLogs = Arrays.stream(container.getLogs(OutputFrame.OutputType.STDERR).split("\n")).toList();
-        }
-        Assertions.assertFalse(errorLogs.isEmpty(), "There should have been errors reported to stderr");
-        Assertions.assertTrue(errorLogs.stream().anyMatch(line -> line.contains("Could not download files:")),
-                "Did not give a nice error message when unable to download files");
-        Assertions.assertTrue(errorLogs.stream().anyMatch(line -> line.contains("tcnativerebuilds/netty-tcnative-classes-2.0.66.Final-SNAPSHOT.jar")),
-                "Did not give direct link to download netty-tcnative library");
     }
 }
