@@ -53,11 +53,9 @@ RUN set -eux; \
         6380DC428747F6C393FEACA59A84159D7001A4E5 \
         A21FAB74B0088AA361152586B8EF1A6BA9DA2D5C; \
     gpg --batch --verify tini.asc /usr/bin/tini; \
-    gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz
-
-
+    gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz; \
     # install openssl
-RUN tar -xzf /openssl.tar.gz --directory /tmp; \
+    tar -xzf /openssl.tar.gz --directory /tmp; \
     cd /tmp/openssl-3.0.9; \
     ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared; \
     make install_sw install_ssldirs install_fips; \
