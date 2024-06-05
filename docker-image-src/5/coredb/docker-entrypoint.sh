@@ -153,8 +153,8 @@ function load_plugin_from_url
 
     # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
     echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
-    local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
-    if [[ -z "${_versions_json}" ]] || [[ "${_versions_json}" == "null" ]]; then
+    local _versions_json
+    if ! _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"; then
         debug_msg "ERROR: could not fetch '${_versions_json}'"
         echo >&2 "ERROR: could not query ${_versions_json_url} for plugin compatibility information.
     This could indicate a problem with your network or this container's network settings.
@@ -345,7 +345,7 @@ If Neo4j fails to start, you can:
                 extra_args+=("--verbose")
             fi
             debug_msg "Setting initial password"
-            debug_msg "${neo4j_admin_cmd} dbms set-initial-password ${password} ${extra_args[*]}"
+            debug_msg "${neo4j_admin_cmd} dbms set-initial-password ***** ${extra_args[*]}"
             ${neo4j_admin_cmd} dbms set-initial-password "${password}" "${extra_args[@]}"
 
         elif [ -n "${_neo4j_auth:-}" ]; then

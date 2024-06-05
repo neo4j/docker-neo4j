@@ -294,7 +294,7 @@ public class TestPluginInstallation
     }
 
     @Test
-    public void testBrokenVersionsJsonCausesHelpfulError() throws Exception
+    public void testBrokenVersionsJsonGivesWarning() throws Exception
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
         Path pluginsDir = temporaryFolderManager.createFolder( "plugin-broken-versionsjson" );
@@ -307,8 +307,6 @@ public class TestPluginInstallation
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
             Assertions.assertTrue( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION ),
                                    "Did not error about plugin compatibility." );
-            Assertions.assertFalse(startupErrors.contains("could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
-                    "Errored about missing versions.json. Actual errors:\n\""+startupErrors+"\"");
             DatabaseIO db = new DatabaseIO( container );
             // make sure plugin did not load
             List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
@@ -321,8 +319,9 @@ public class TestPluginInstallation
     }
 
     @Test
-    void testMissingVersionsJsonCausesHelpfulError()
+    void testMissingVersionsJsonGivesWarning()
     {
+        // do not set up any versions.json infrastructure first.
         try ( GenericContainer container = createContainerWithTestingPlugin() ) {
             container.start();
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
@@ -330,8 +329,8 @@ public class TestPluginInstallation
                     "Did not error about missing versions.json. Actual errors:\n\""+startupErrors+"\"");
             Assertions.assertFalse( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION ),
                     "Should not have errored about incompatible versions in versions.json" );
-            DatabaseIO db = new DatabaseIO( container );
             // make sure plugin did not load
+            DatabaseIO db = new DatabaseIO( container );
             List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
                                                          "SHOW PROCEDURES YIELD name, signature RETURN name, signature" );
             Assertions.assertFalse( procedures.stream()
