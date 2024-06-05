@@ -2,7 +2,7 @@ FROM redhat/ubi9-minimal:latest
 
 # gather pre-requisite packages
 RUN set -eux; \
-    arch="$(uname -m)"; \
+    arch="$(rpm --query --queryformat='%{ARCH}' rpm)"; \
     case "${arch}" in \
         'x86_64') \
             tini_url="https://github.com/krallin/tini/releases/download/v0.19.0/tini"; \
