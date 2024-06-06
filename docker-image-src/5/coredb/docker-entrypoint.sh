@@ -543,8 +543,10 @@ then
   # boringssl is not FIPS certified, so they must be deleted so the jvm doesn't accidentally use them
   debug_msg "Deleting all netty-tcnative-boringssl jars"
   find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
-  netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
-  debug_msg "Netty version detected as: \"${netty_version}\""
+  debug_msg "Deleting all netty-tcnative-*fedora jars"
+  find "${NEO4J_HOME}"/lib/ -iname 'netty-tcnative*fedora.jar' -delete
+  #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
+  #debug_msg "Netty version detected as: \"${netty_version}\""
   add_docker_default_to_conf "dbms.netty.ssl.provider" "OPENSSL"
 fi
 
