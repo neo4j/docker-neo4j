@@ -6,18 +6,16 @@ import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HostFileHttpHandler;
-import com.neo4j.docker.utils.HttpServerRule;
+import com.neo4j.docker.utils.HttpServerTestExtension;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
 import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
-import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -44,7 +42,7 @@ import org.neo4j.driver.Record;
 
 import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
 
-@EnableRuleMigrationSupport
+
 public class TestPluginInstallation
 {
     private static final String DB_USER = "neo4j";
@@ -54,9 +52,8 @@ public class TestPluginInstallation
     private static final Logger log = LoggerFactory.getLogger( TestPluginInstallation.class );
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
-
-    @Rule
-    public HttpServerRule httpServer = new HttpServerRule();
+    @RegisterExtension
+    public HttpServerTestExtension httpServer = new HttpServerTestExtension();
 
     private class VersionsJsonEntry
     {
@@ -321,7 +318,8 @@ public class TestPluginInstallation
     @Test
     void testMissingVersionsJsonGivesWarning()
     {
-        // do not set up any versions.json infrastructure first.
+        // make double sure there are no versions.json files being served.
+        httpServer.unregisterEndpoint("/versions.json");
         try ( GenericContainer container = createContainerWithTestingPlugin() ) {
             container.start();
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
