@@ -161,6 +161,9 @@ function load_plugin_from_url
     Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."
         return
     fi
+    if [[ ${#_versions_json} -lt 200 ]]; then
+      debug_msg "${_versions_json}"
+    fi
     local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
     if [[ -z "${_plugin_jar_url}" ]] || [[ "${_plugin_jar_url}" == "null" ]]; then
         debug_msg "ERROR: '${_versions_json_url}' does not contain an entry for ${_neo4j_version}"
