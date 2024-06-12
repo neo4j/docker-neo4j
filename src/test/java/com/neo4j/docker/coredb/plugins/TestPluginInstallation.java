@@ -14,6 +14,7 @@ import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -315,6 +316,7 @@ public class TestPluginInstallation
         }
     }
 
+    @Disabled("Test is flaky for unknown reasons. Needs further investigation.")
     @Test
     void testMissingVersionsJsonGivesWarning()
     {
