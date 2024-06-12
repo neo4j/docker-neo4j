@@ -153,14 +153,21 @@ function load_plugin_from_url
 
     # Now we call out to github to get the versions.json for this plugin and we parse that to find the url for the correct plugin jar for our neo4j version
     echo "Fetching versions.json for Plugin '${_plugin_name}' from ${_versions_json_url}"
-    local _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"
+    local _versions_json
+    if ! _versions_json="$(wget -q --timeout 300 --tries 30 -O - "${_versions_json_url}")"; then
+        debug_msg "ERROR: could not fetch '${_versions_json}'"
+        echo >&2 "ERROR: could not query ${_versions_json_url} for plugin compatibility information.
+    This could indicate a problem with your network or this container's network settings.
+    Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."
+        return
+    fi
     local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
     if [[ -z "${_plugin_jar_url}" ]] || [[ "${_plugin_jar_url}" == "null" ]]; then
         debug_msg "ERROR: '${_versions_json_url}' does not contain an entry for ${_neo4j_version}"
-        echo >&2 "ERROR: No compatible \"${_plugin_name}\" plugin found for Neo4j ${_neo4j_version}."
-        echo >&2 "This can happen with the newest Neo4j versions when a compatible plugin has not yet been released."
-        echo >&2 "You can either use an older version of Neo4j, or continue without ${_plugin_name}."
-        echo >&2 "Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."
+        echo >&2 "ERROR: No compatible \"${_plugin_name}\" plugin found for Neo4j ${_neo4j_version} ${NEO4J_EDITION}.
+    This can happen with the newest Neo4j versions when a compatible plugin has not yet been released.
+    You can either use an older version of Neo4j, or continue without ${_plugin_name}.
+    Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."
     else
         echo "Installing Plugin '${_plugin_name}' from ${_plugin_jar_url} to ${_destination} "
         wget -q --timeout 300 --tries 30 --output-document="${_destination}" "${_plugin_jar_url}"
@@ -317,7 +324,7 @@ function set_initial_password
                 extra_args+=("--verbose")
             fi
             debug_msg "Setting initial password"
-            debug_msg "${neo4j_admin_cmd} set-initial-password ${password} ${extra_args[*]}"
+            debug_msg "${neo4j_admin_cmd} set-initial-password ***** ${extra_args[*]}"
             if debugging_enabled; then
                 # don't suppress any output or errors in debugging mode
                 ${neo4j_admin_cmd} set-initial-password "${password}" "${extra_args[@]}"

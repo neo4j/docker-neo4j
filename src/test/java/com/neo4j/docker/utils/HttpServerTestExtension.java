@@ -2,20 +2,22 @@ package com.neo4j.docker.utils;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.net.InetSocketAddress;
 
 /**
  * Runs a HTTP Server with to allow integration testing
  */
-public class HttpServerRule extends ExternalResource
+public class HttpServerTestExtension implements AfterEachCallback, BeforeEachCallback
 {
     public final int PORT = 3000;
     private HttpServer server;
 
     @Override
-    protected void before() throws Throwable
+    public void beforeEach(ExtensionContext extensionContext) throws Exception
     {
         server = HttpServer.create( new InetSocketAddress( PORT ), 0 );
         server.setExecutor( null ); // creates a default executor
@@ -23,11 +25,11 @@ public class HttpServerRule extends ExternalResource
     }
 
     @Override
-    protected void after()
+    public void afterEach(ExtensionContext extensionContext) throws Exception
     {
         if ( server != null )
         {
-            server.stop( 0 ); // doesn't wait all current exchange handlers complete
+            server.stop( 5 ); // waits up to 5 seconds to stop serving http requests
         }
     }
 
@@ -38,5 +40,20 @@ public class HttpServerRule extends ExternalResource
             uriToHandle = '/' + uriToHandle;
         }
         server.createContext( uriToHandle, httpHandler );
+    }
+
+    public void unregisterEndpoint(String endpoint)
+    {
+        if (!endpoint.startsWith( "/" )){
+            endpoint = '/' + endpoint;
+        }
+        try
+        {
+            server.removeContext(endpoint);
+        }
+        catch (IllegalArgumentException iex)
+        {
+            // there was nothing registered to that endpoint so action is a NOP.
+        }
     }
 }

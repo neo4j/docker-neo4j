@@ -9,7 +9,7 @@ import java.net.HttpURLConnection;
 import java.nio.file.Files;
 
 /**
- * HttpHandler that responds to all hhtp requests with the given file from the file system
+ * HttpHandler that responds to all http requests with the given file from the file system
  */
 public class HostFileHttpHandler implements HttpHandler
 {
