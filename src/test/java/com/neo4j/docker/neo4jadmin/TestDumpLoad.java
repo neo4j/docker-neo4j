@@ -1,6 +1,5 @@
 package com.neo4j.docker.neo4jadmin;
 
-import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SetContainerUser;
@@ -21,7 +20,6 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.function.Consumer;
 
 public class TestDumpLoad
 {
@@ -49,12 +47,7 @@ public class TestDumpLoad
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForNeo4jReady( password, Duration.ofSeconds( 90 )) )
-                 // the default testcontainer framework behaviour is to just stop the process entirely,
-                 // preventing clean shutdown. This means we can run the stop command and
-                 // it'll send a SIGTERM to initiate neo4j shutdown. See also stopContainer method.
-                 .withCreateContainerCmdModifier(
-                         (Consumer<CreateContainerCmd>) cmd -> cmd.withStopSignal( "SIGTERM" ).withStopTimeout( 20 ));
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( password, Duration.ofSeconds( 90 )) );
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -102,13 +95,6 @@ public class TestDumpLoad
         shouldCreateDumpAndLoadDump( false, "verysecretpassword" );
     }
 
-    //container.stop() actually runs the killContainer Command, preventing clean shutdown.
-    // This runs the actual stop command. Which we set up in createDBContainer to send SIGTERM
-    private void stopContainer(GenericContainer container)
-    {
-        container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
-    }
-
     private void shouldCreateDumpAndLoadDump( boolean asDefaultUser, String password ) throws Exception
     {
         Path firstDataDir;
@@ -122,7 +108,7 @@ public class TestDumpLoad
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", password );
-            stopContainer( container );
+            container.getDockerClient().stopContainerCmd( container.getContainerId() ).withTimeout(30).exec();
         }
 
         // use admin container to create dump
