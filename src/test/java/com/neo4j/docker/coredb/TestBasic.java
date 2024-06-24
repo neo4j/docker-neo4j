@@ -1,6 +1,7 @@
 package com.neo4j.docker.coredb;
 
-import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.command.KillContainerCmd;
+import com.github.dockerjava.api.command.StopContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
@@ -23,7 +24,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.neo4j.docker.utils.Network.getUniqueHostPort;
@@ -198,20 +198,22 @@ public class TestBasic
         {
             container.withEnv( "NEO4J_AUTH", "none" )
                      .waitingFor( waitForNeo4jReady( "none" ) );
-            // sets sigterm as the stop container signal
-            container.withCreateContainerCmdModifier( (Consumer<CreateContainerCmd>) cmd ->
-                    cmd.withStopSignal( signal )
-                       .withStopTimeout( 60 ) );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", "none" );
-            log.info( "issuing container stop command " + signal );
-            container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
+            try(KillContainerCmd kill = container.getDockerClient().killContainerCmd(container.getContainerId());
+                StopContainerCmd stop = container.getDockerClient().stopContainerCmd(container.getContainerId()))
+            {
+                log.info( "issuing container stop command " + signal );
+                kill.withSignal(signal).exec();
+                log.info("waiting for container to shut down.");
+                stop.withTimeout(30).exec();
+            }
             String stdout = container.getLogs();
             Assertions.assertTrue( stdout.contains( "Neo4j Server shutdown initiated by request" ),
-                                   "clean shutdown not initiated by " + signal );
+                                   "clean shutdown not initiated by " + signal + "\n" + stdout);
             Assertions.assertTrue( stdout.contains( "Stopped." ),
-                                   "clean shutdown not initiated by " + signal );
+                                   "clean shutdown not initiated by " + signal + "\n" + stdout);
         }
     }
 
