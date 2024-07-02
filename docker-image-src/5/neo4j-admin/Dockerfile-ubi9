@@ -9,7 +9,8 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
-    NEO4J_HOME="/var/lib/neo4j"
+    NEO4J_HOME="/var/lib/neo4j" \
+    LANG=C.UTF-8
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
 COPY ./local-package/* /startup/
