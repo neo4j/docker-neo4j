@@ -27,6 +27,11 @@ public class SetContainerUser
         }
     }
 
+    public static String getNeo4jUserString()
+    {
+        return "7474:7474";
+    }
+
     private static String getCurrentlyRunningUser()
     {
         UnixSystem fs = new UnixSystem();

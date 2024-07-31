@@ -37,8 +37,6 @@ RUN set -eux; \
         tar \
         wget \
         which; \
-    fips-mode-setup --enable; \
-    update-crypto-policies --set FIPS; \
     # download tini and openssl
     wget -q ${tini_url} -O /usr/bin/tini; \
     wget -q ${tini_url}.asc -O tini.asc; \
@@ -60,11 +58,6 @@ RUN set -eux; \
     ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared; \
     make install_sw install_ssldirs install_fips; \
     ldconfig /usr/local/openssl/lib64; \
-    /usr/local/openssl/bin/openssl fipsinstall -out /usr/local/openssl/fipsmodule.cnf -module /usr/local/openssl/lib64/ossl-modules/fips.so; \
-    sed -i 's/# fips = fips_sect/fips = fips_sect/g' /usr/local/openssl/openssl.cnf; \
-    sed -i 's|# \.include fipsmodule\.cnf|\.include /usr/local/openssl/fipsmodule\.cnf|g' /usr/local/openssl/openssl.cnf; \
-    sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/openssl/openssl.cnf; \
-    sed -i -E 's/# ?config_diagnostics = 1/config_diagnostics = 1/' /usr/local/openssl/openssl.cnf; \
     cd /; \
     # download, verify and install su-exec
     git clone https://github.com/ncopa/su-exec.git; \
@@ -110,7 +103,7 @@ RUN set -eux; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /logs "${NEO4J_HOME}"/logs
 
-ENV PATH="${NEO4J_HOME}"/bin:/usr/local/openssl/bin:$PATH
+ENV PATH="${NEO4J_HOME}/bin:/usr/local/openssl/bin:$PATH"
 WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs

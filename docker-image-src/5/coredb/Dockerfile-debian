@@ -24,19 +24,20 @@ RUN apt update \
     && make \
     && mv /su-exec/su-exec /usr/bin/su-exec \
     # download and verify openssl
-    && wget -q https://www.openssl.org/source/openssl-3.0.9.tar.gz -O /openssl.tar.gz \
-    && wget -q https://www.openssl.org/source/openssl-3.0.9.tar.gz.asc -O /openssl.tar.gz.asc \
-    && echo eb1ab04781474360f77c318ab89d8c5a03abc38e63d65a603cabbf1b00a1dc90 /openssl.tar.gz  | sha256sum -c \
+    && openssl_url="https://www.openssl.org/source/openssl-3.0.9.tar.gz" \
+    && openssl_sha="eb1ab04781474360f77c318ab89d8c5a03abc38e63d65a603cabbf1b00a1dc90" \
+    && wget -q ${openssl_url} -O /openssl.tar.gz \
+    && wget -q ${openssl_url}.asc -O /openssl.tar.gz.asc \
+    && echo ${openssl_sha} /openssl.tar.gz  | sha256sum -c \
     && export GNUPGHOME="$(mktemp -d)" \
     && gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys A21FAB74B0088AA361152586B8EF1A6BA9DA2D5C \
     && gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz \
     && tar --extract --file /openssl.tar.gz --directory /tmp \
+    # install openssl
     && cd /tmp/openssl-3.0.9 \
-    && ./Configure enable-fips no-ui-console no-tests no-deprecated no-legacy shared '-Wl,-rpath,$(LIBRPATH)' \
+    && ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared \
     && make install_sw install_ssldirs install_fips \
-    && /usr/local/bin/openssl fipsinstall -out /usr/local/ssl/fipsmodule.cnf -module /usr/local/lib64/ossl-modules/fips.so \
-    && sed -i 's/# fips = fips_sect/fips = fips_sect/g' /usr/local/ssl/openssl.cnf \
-    && sed -i 's|# \.include fipsmodule\.cnf|\.include /usr/local/ssl/fipsmodule\.cnf|g' /usr/local/ssl/openssl.cnf \
+    && ldconfig /usr/local/openssl/lib64 \
     && apt-get -y purge --auto-remove gcc git make perl perl-modules* \
     && rm -rf /var/lib/apt/lists/* /su-exec ${GNUPGHOME} /openssl.tar.gz /openssl.tar.gz.asc /tmp/openssl*
 
@@ -74,7 +75,8 @@ RUN apt update \
     && apt-get -y purge --auto-remove curl \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PATH "${JAVA_HOME}/bin:${NEO4J_HOME}/bin:/usr/local/bin:$PATH"
+ENV PATH="${JAVA_HOME}/bin:${NEO4J_HOME}/bin:/usr/local/openssl/bin:$PATH" \
+    LD_LIBRARY_PATH="${NEO4J_HOME}/lib:/usr/local/openssl/lib64"
 WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs

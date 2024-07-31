@@ -37,7 +37,7 @@ RUN apt update \
     && apt-get -y purge --auto-remove curl
 
 
-ENV PATH "${NEO4J_HOME}"/bin:$PATH
+ENV PATH="${NEO4J_HOME}"/bin:$PATH
 VOLUME /data /backups
 WORKDIR "${NEO4J_HOME}"
 
