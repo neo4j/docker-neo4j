@@ -1,10 +1,7 @@
 package com.neo4j.docker.coredb;
 
 import com.neo4j.docker.utils.*;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.slf4j.Logger;
@@ -16,10 +13,13 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
 
 public class TestFIPS
@@ -37,37 +37,18 @@ public class TestFIPS
     @BeforeAll
     static void skipInvalidTestScenarios()
     {
-        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5, 19, 0)),
-                "FIPS compliance was introduced after 5.19.0.");
-        Assumptions.assumeTrue(TestSettings.BASE_OS == TestSettings.BaseOS.UBI9,
-                "UBI9 images are the only FIPS compliant ones at the moment.");
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5, 21, 0)),
+                "FIPS compliance was introduced after 5.21.0.");
     }
 
     private synchronized Path generateSSLKeys() throws Exception
     {
         if(certificates == null) {
-            // using nginx image because it's easy to verify startup and it has openssl already installed
-            try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest")))
-            {
-                certificates = temporaryFolderManager.createFolderAndMountAsVolume(container, "/certificates");
-                container.withExposedPorts(80)
-                        .waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
-                container.start();
-                container.execInContainer("openssl", "req", "-x509", "-sha1", "-nodes",
-                        "-newkey", "rsa:2048", "-keyout", "/certificates/private.key1",
-                        "-out", "/certificates/selfsigned.crt",
-                        "-subj", "/C=SE/O=Example/OU=ExampleCluster/CN=localhost",
-                        "-days", "1");
-                container.execInContainer("openssl", "pkcs8", "-topk8",
-                        "-in", "/certificates/private.key1", "-out", "/certificates/private.key",
-                        "-passout", "pass:"+SSL_KEY_PASSPHRASE);
-                container.execInContainer("rm", "/certificates/private.key1");
-                container.execInContainer("chown", "-R", "7474:7474", "/certificates");
-                // copy the certificate and make it readable by the user running the unit tests
-                // otherwise we can't validate commands on the client side
-                container.execInContainer("cp", "/certificates/selfsigned.crt", "/certificates/localselfsigned.crt");
-                container.execInContainer("chown", SetContainerUser.getNonRootUserString(), "/certificates/localselfsigned.crt");
-            }
+            certificates = temporaryFolderManager.createFolder("certificates");
+            new SSLCertificateFactory(certificates)
+                    .withSSLKeyPassphrase(SSL_KEY_PASSPHRASE)
+                    .withOwnerNeo4j()
+                    .build();
         }
         return certificates;
     }
@@ -109,10 +90,12 @@ public class TestFIPS
     @Test
     void testOpenSSLIsInstalledWithFIPS() throws Exception
     {
-        Container.ExecResult versionOut, providersOut;
+        Container.ExecResult whichOpenSSL, versionOut, providersOut;
         try(GenericContainer container = createFIPSContainer())
         {
             container.start();
+            whichOpenSSL = container.execInContainer("which", "openssl");
+            log.info("OpenSSL location is \""+whichOpenSSL.getStdout()+"\"");
             versionOut = container.execInContainer("openssl", "version", "-a");
             log.info("openssl version -a:\n"+versionOut.getStdout());
             providersOut = container.execInContainer("openssl", "list", "-providers");
@@ -120,7 +103,12 @@ public class TestFIPS
         }
 
         // verify openssl version
-        Assertions.assertEquals(0, versionOut.getExitCode(), "OpenSSL command failed. Full output:\n"+versionOut);
+        Assertions.assertEquals(0, whichOpenSSL.getExitCode(),
+                "openssl not installed! Full output:\n" + whichOpenSSL);
+        Assertions.assertTrue(whichOpenSSL.getStdout().startsWith(OPENSSL_INSTALL_DIR),
+                "Using OpenSSL in dir " + whichOpenSSL.getStdout() + " instead of " + OPENSSL_INSTALL_DIR);
+        Assertions.assertEquals(0, versionOut.getExitCode(),
+                "OpenSSL command failed. Full output:\n" + versionOut);
         List<String> openssl = Arrays.stream(versionOut.getStdout().split("\n")).toList();
         Assertions.assertTrue(openssl.get(0).contains("OpenSSL " + OPENSSL_VERSION),
                 "OpenSSL "+ OPENSSL_VERSION +" is not installed.\n"+versionOut);
@@ -181,28 +169,49 @@ public class TestFIPS
                     "Did not use "+filename+" under path "+expectedPath+". Actual file: "+line);
         }
     }
-
     @Test
-    void testEndToEndSSLEncryption() throws Exception
+    void testEndToEndSSLEncryption_withFIPS() throws Exception
     {
         try(GenericContainer container = createFIPSContainer())
         {
             configureContainerForSSL(container);
-            container.start();
-            DatabaseIO dbio = new DatabaseIO(container,
-                    Config.builder()
-                            .withEncryption()
-                            .withTrustStrategy(Config.TrustStrategy
-                                    .trustCustomCertificateSignedBy(
-                                            certificates.resolve("localselfsigned.crt").toFile()
-                                    ))
-                            .build());
-            dbio.verifyConnectivity("neo4j", PASSWORD);
-            dbio.putInitialDataIntoContainer("neo4j", PASSWORD);
-            dbio.verifyInitialDataInContainer("neo4j", PASSWORD);
+            verifyEndToEndSSLEncryption(container);
+        }
+    }
+
+    @Test
+    void testEndToEndSSLEncryption_noFIPS() throws Exception
+    {
+        try(GenericContainer container = createFIPSContainer())
+        {
+            configureContainerForSSL(container);
+            container.withEnv(FIPS_FLAG, "false");
+            verifyEndToEndSSLEncryption(container);
+        }
+    }
+
+    void verifyEndToEndSSLEncryption(GenericContainer container) throws Exception
+    {
+        container.start();
+        DatabaseIO dbio = new DatabaseIO(container,
+                Config.builder()
+                        .withEncryption()
+                        .withTrustStrategy(Config.TrustStrategy
+                                .trustCustomCertificateSignedBy(
+                                        certificates.resolve("localselfsigned.crt").toFile()
+                                ))
+                        .build());
+        dbio.verifyConnectivity("neo4j", PASSWORD);
+        dbio.putInitialDataIntoContainer("neo4j", PASSWORD);
+        dbio.verifyInitialDataInContainer("neo4j", PASSWORD);
+
+        // NMap doesn't work in bullseye because the old openssl installed from apt confuses it
+        if(TestSettings.BASE_OS != TestSettings.BaseOS.BULLSEYE)
+        {
             container.execInContainer("microdnf", "install", "-y", "nmap");
             String nmapOut = container.execInContainer("nmap", "--script", "ssl-enum-ciphers", "-p", "7687", "localhost").getStdout();
             log.info("nmap scan returned:\n"+nmapOut);
+
             List<String> nmap = Arrays.stream(nmapOut.split("\n"))
                     .filter(line -> line.contains("least strength: A"))
                     .toList();
