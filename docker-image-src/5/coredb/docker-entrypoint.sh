@@ -250,7 +250,9 @@ function install_neo4j_plugins
 
 function add_docker_default_to_conf
 {
-    # docker defaults should NOT overwrite values already in the conf file
+    # configuration settings should have this order of priority:
+    # neo4j default < docker default < neo4j.conf < setting from environment
+    # Basically, docker defaults should NOT overwrite values already explicitly set in the conf files
     local _setting="${1}"
     local _value="${2}"
 
@@ -538,13 +540,8 @@ fi
 
 # ==== CHECK IF OPENSSL FIPS MODE IS REQUESTED ====
 
-# remove spare netty-tcnative libraries
-debug_msg "Deleting all netty-tcnative-boringssl jars"
-find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
 debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-$(arch).jar to ${NEO4J_HOME}/lib/"
 cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-$(arch).jar "${NEO4J_HOME}"/lib/
-debug_msg "Netty TCNative libraries in use are:
-$(find ${NEO4J_HOME}/lib -name "netty-tcnative*")"
 
 # configure for FIPS if requested
 if [[ ${NEO4J_OPENSSL_FIPS_ENABLE-} =~ [tT][rR][uU][eE] ]]
@@ -553,12 +550,14 @@ then
   #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
   #debug_msg "Netty version detected as: \"${netty_version}\""
   echo "Installing FIPS module into OpenSSL"
+  ldconfig /usr/local/openssl/lib64
   /usr/local/openssl/bin/openssl fipsinstall -out /usr/local/openssl/fipsmodule.cnf -module /usr/local/openssl/lib64/ossl-modules/fips.so
   debug_msg "Configuring OpenSSL to run with FIPS enabled"
   sed -i 's/# fips = fips_sect/fips = fips_sect/g' /usr/local/openssl/openssl.cnf
   sed -i 's|# \.include fipsmodule\.cnf|\.include /usr/local/openssl/fipsmodule\.cnf|g' /usr/local/openssl/openssl.cnf
-  sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/openssl/openssl.cnf
   sed -i -E 's/# ?config_diagnostics = 1/config_diagnostics = 1/' /usr/local/openssl/openssl.cnf
+  sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/openssl/openssl.cnf
+  sed -i -E 'N;s/providers = provider_sect/providers = provider_sect\nalg_section = algorithm_sect\n\n[algorithm_sect]\ndefault_properties = fips=yes/' /usr/local/openssl/openssl.cnf
   # fips-mode-setup --enable # > /dev/null 2>&1
   # update-crypto-policies --set FIPS # > /dev/null 2>&1
   add_docker_default_to_conf "dbms.netty.ssl.provider" "OPENSSL"

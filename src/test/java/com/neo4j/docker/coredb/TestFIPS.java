@@ -9,17 +9,15 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-
-import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
 
 public class TestFIPS
@@ -32,7 +30,6 @@ public class TestFIPS
     public static final String OPENSSL_VERSION = "3.0.9";
     public static final String OPENSSL_INSTALL_DIR = "/usr/local/openssl";
     private static final Logger log = LoggerFactory.getLogger(TestFIPS.class);
-    private static Path certificates;
 
     @BeforeAll
     static void skipInvalidTestScenarios()
@@ -41,15 +38,13 @@ public class TestFIPS
                 "FIPS compliance was introduced after 5.21.0.");
     }
 
-    private synchronized Path generateSSLKeys() throws Exception
+    private Path generateSSLKeys() throws Exception
     {
-        if(certificates == null) {
-            certificates = temporaryFolderManager.createFolder("certificates");
-            new SSLCertificateFactory(certificates)
-                    .withSSLKeyPassphrase(SSL_KEY_PASSPHRASE)
-                    .withOwnerNeo4j()
-                    .build();
-        }
+        Path certificates = temporaryFolderManager.createFolder("certificates");
+        new SSLCertificateFactory(certificates)
+                .withSSLKeyPassphrase(SSL_KEY_PASSPHRASE, true)
+                .withOwnerNeo4j()
+                .build();
         return certificates;
     }
 
@@ -66,25 +61,36 @@ public class TestFIPS
         return container;
     }
 
-    private void configureContainerForSSL(GenericContainer container) throws Exception
+    private Path configureContainerForSSL(GenericContainer container) throws Exception
     {
-        Path certs = generateSSLKeys();
-        temporaryFolderManager.mountHostFolderAsVolume(container, certs, "/certificates");
+        Path certificates = generateSSLKeys();
+        temporaryFolderManager.mountHostFolderAsVolume(container, certificates, "/ssl");
         Path conf = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
         FileWriter confFile = new FileWriter(conf.resolve("neo4j.conf").toFile());
         confFile.write("dbms.netty.ssl.provider=OPENSSL\n");
         confFile.write("server.https.enabled=false\n");
         confFile.write("server.bolt.tls_level=REQUIRED\n");
+        confFile.write("dbms.ssl.policy.bolt.tls_level=REQUIRED\n");
         confFile.write("dbms.ssl.policy.bolt.enabled=true\n");
         confFile.write("dbms.ssl.policy.bolt.client_auth=NONE\n");
         confFile.write("dbms.ssl.policy.bolt.trust_all=false\n");
         confFile.write("dbms.ssl.policy.bolt.tls_versions=TLSv1.3\n");
-        confFile.write("dbms.ssl.policy.bolt.private_key_password="+SSL_KEY_PASSPHRASE+"\n");
-        confFile.write("dbms.ssl.policy.bolt.base_directory=/certificates\n");
+        confFile.write("dbms.ssl.policy.bolt.private_key_password=$(" +
+                SSLCertificateFactory.getPassphraseDecryptCommand("/ssl")+ ")\n");
+        confFile.write("dbms.ssl.policy.bolt.base_directory=/ssl\n");
         confFile.write("dbms.ssl.policy.bolt.private_key=private.key\n");
         confFile.write("dbms.ssl.policy.bolt.public_certificate=selfsigned.crt\n");
         confFile.flush();
         confFile.close();
+        container.withEnv("EXTENDED_CONF", "true");
+        Files.setPosixFilePermissions(conf.resolve("neo4j.conf"), new HashSet<>()
+        {{
+            add(PosixFilePermission.OWNER_READ);
+            add(PosixFilePermission.OWNER_WRITE);
+            add(PosixFilePermission.GROUP_READ);
+        }});
+        temporaryFolderManager.setFolderOwnerToNeo4j(conf.resolve("neo4j.conf"));
+        return certificates;
     }
 
     @Test
@@ -174,8 +180,8 @@ public class TestFIPS
     {
         try(GenericContainer container = createFIPSContainer())
         {
-            configureContainerForSSL(container);
-            verifyEndToEndSSLEncryption(container);
+            Path certs = configureContainerForSSL(container);
+            verifyEndToEndSSLEncryption(container, certs);
         }
     }
 
@@ -184,14 +190,15 @@ public class TestFIPS
     {
         try(GenericContainer container = createFIPSContainer())
         {
-            configureContainerForSSL(container);
+            Path certs = configureContainerForSSL(container);
             container.withEnv(FIPS_FLAG, "false");
-            verifyEndToEndSSLEncryption(container);
+            verifyEndToEndSSLEncryption(container, certs);
         }
     }
 
-    void verifyEndToEndSSLEncryption(GenericContainer container) throws Exception
+    void verifyEndToEndSSLEncryption(GenericContainer container, Path certificates) throws Exception
     {
+        temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
         container.start();
         DatabaseIO dbio = new DatabaseIO(container,
                 Config.builder()
