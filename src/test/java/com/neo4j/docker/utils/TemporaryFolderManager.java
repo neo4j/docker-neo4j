@@ -69,7 +69,7 @@ Path logpath = temporaryFolderManager.createFolderAndMountAsVolume(container, "/
  * <code>CLASSNAME_METHODNAME_RANDOMNUMBER</code> and inside it, there will be a folder called <code>conf</code> and
  * a folder called <code>logs</code>. These will be mounted to <code>container</code> at <code>/conf</code> and <code>/logs</code>.
  * <p>
- * For example if your test class is TestMounting.java and the method is called <code>shouldWriteToMount</code>
+ * For example if your test class is <code>TestMounting.java</code> and the method is called <code>shouldWriteToMount</code>
  * the folders created will be together inside <code>com.neo4j.docker.coredb.TestMounting_shouldWriteToMount_RANDOMNUMBER</code>.
  *
  * <h3>HARDER: Mount the same folder to two different (consecutive) containers</h3>
@@ -180,6 +180,13 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         return tempFolder;
     }
 
+    protected String getFolderNameFromMountPoint(String containerMountPoint)
+    {
+        return containerMountPoint.substring( 1 )
+                .replace( '/', '_' )
+                .replace( ' ', '_' );
+    }
+
     public static void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint)
     {
         container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
@@ -224,13 +231,6 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
     public void setFolderOwnerToNeo4j(Path file) throws Exception
     {
         setFolderOwnerTo( SetContainerUser.getNeo4jUserString(), file );
-    }
-
-    protected String getFolderNameFromMountPoint(String containerMountPoint)
-    {
-        return containerMountPoint.substring( 1 )
-                                  .replace( '/', '_' )
-                                  .replace( ' ', '_' );
     }
 
     private void setFolderOwnerTo(String userAndGroup, Path... files) throws Exception
