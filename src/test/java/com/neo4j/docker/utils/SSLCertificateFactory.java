@@ -9,10 +9,17 @@ import java.time.Duration;
 
 public class SSLCertificateFactory
 {
+    public static final String CERTIFICATE_FILENAME="selfsigned.crt";
+    // Certificates need to be owned by the user inside the container, which means that tests using drivers
+    // cannot authenticate because they do not have permission to read the certificate file.
+    // The factory creates a copy of the certificate that can always be used by the test's client side.
+    public static final String CLIENT_CERTIFICATE_FILENAME ="localselfsigned.crt";
+    public static final String PRIVATE_KEY_FILENAME="private.key";
+    public static final String ENCRYPTED_PASSPHRASE_FILENAME="password.enc";
     private final Path outputFolder;
     private String passphrase = null;
     private boolean isPassphraseEncrypted = false;
-    private String owner = SetContainerUser.getNeo4jUserString();
+    private String owner = null;
 
     public SSLCertificateFactory(Path outputFolder)
     {
@@ -46,6 +53,10 @@ public class SSLCertificateFactory
 
     public void build() throws Exception
     {
+        if(this.owner == null)
+        {
+            throw new IllegalArgumentException("File owner has not been set for SSL certificates. This is a test error.");
+        }
         // using nginx image because it's easy to verify startup and it has openssl already installed
         try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest")))
         {
@@ -61,9 +72,9 @@ public class SSLCertificateFactory
                     "-days", "1");
             if(this.passphrase == null)
             {
-                container.execInContainer("openssl", "pkcs8", "-topk8",
-                        "-in", mountpoint+"/private.key1",
-                        "-out", mountpoint+"/private.key");
+                container.execInContainer("openssl", "pkcs8", "-topk8", "-nocrypt",
+                        "-in", mountpoint + "/private.key1",
+                        "-out", mountpoint + "/private.key");
             }
             else
             {
@@ -90,7 +101,7 @@ public class SSLCertificateFactory
 
     public static String getPassphraseDecryptCommand(String certificatesMountPoint)
     {
-        return String.format("sh -c \"base64 -w 0 %s/selfsigned.crt | openssl aes-256-cbc -a -d " +
-                "-in %s/password.enc -pass stdin\"", certificatesMountPoint, certificatesMountPoint);
+        return String.format("base64 -w 0 %s/selfsigned.crt | openssl aes-256-cbc -a -d " +
+                "-in %s/password.enc -pass stdin", certificatesMountPoint, certificatesMountPoint);
     }
 }
