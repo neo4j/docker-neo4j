@@ -75,8 +75,8 @@ public class TestFIPS
         confFile.write("dbms.ssl.policy.bolt.client_auth=NONE\n");
         confFile.write("dbms.ssl.policy.bolt.trust_all=false\n");
         confFile.write("dbms.ssl.policy.bolt.tls_versions=TLSv1.3\n");
-        confFile.write("dbms.ssl.policy.bolt.private_key_password=$(" +
-                SSLCertificateFactory.getPassphraseDecryptCommand("/ssl")+ ")\n");
+        confFile.write("dbms.ssl.policy.bolt.private_key_password=$(sh -c \"" +
+                SSLCertificateFactory.getPassphraseDecryptCommand("/ssl")+ "\")\n");
         confFile.write("dbms.ssl.policy.bolt.base_directory=/ssl\n");
         confFile.write("dbms.ssl.policy.bolt.private_key=private.key\n");
         confFile.write("dbms.ssl.policy.bolt.public_certificate=selfsigned.crt\n");
