@@ -540,13 +540,28 @@ fi
 
 # ==== CHECK IF OPENSSL FIPS MODE IS REQUESTED ====
 
-debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-$(arch).jar to ${NEO4J_HOME}/lib/"
-cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-$(arch).jar "${NEO4J_HOME}"/lib/
+debug_msg "Deleting all netty-tcnative-boringssl jars"
+find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
 
 # configure for FIPS if requested
 if [[ ${NEO4J_OPENSSL_FIPS_ENABLE-} =~ [tT][rR][uU][eE] ]]
 then
   echo "OpenSSL FIPS mode has been requested."
+  if ! grep -iq "Red Hat Enterprise Linux 9" /etc/os-release; then
+    echo >&2 "
+OpenSSL FIPS compatibility is only available in the Red Hat UBI9 Neo4j image.
+To fix this error, run the UBI9 based Neo4j docker image instead.
+See:
+* https://neo4j.com/docs/operations-manual/current/docker/introduction for more information about Neo4j base images.
+* https://neo4j.com/docs/operations-manual/current/security/ssl-framework about configuring SSL in Neo4j.
+    "
+    exit 1
+  fi
+
+  debug_msg "Deleting all netty-tcnative-boringssl jars"
+  find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
+  debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-$(arch).jar to ${NEO4J_HOME}/lib/"
+  cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-$(arch).jar "${NEO4J_HOME}"/lib/
   #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
   #debug_msg "Netty version detected as: \"${netty_version}\""
   echo "Installing FIPS module into OpenSSL"
@@ -558,8 +573,6 @@ then
   sed -i -E 's/# ?config_diagnostics = 1/config_diagnostics = 1/' /usr/local/openssl/openssl.cnf
   sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/openssl/openssl.cnf
   sed -i -E 'N;s/providers = provider_sect/providers = provider_sect\nalg_section = algorithm_sect\n\n[algorithm_sect]\ndefault_properties = fips=yes/' /usr/local/openssl/openssl.cnf
-  # fips-mode-setup --enable # > /dev/null 2>&1
-  # update-crypto-policies --set FIPS # > /dev/null 2>&1
   add_docker_default_to_conf "dbms.netty.ssl.provider" "OPENSSL"
 fi
 

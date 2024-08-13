@@ -7,8 +7,11 @@ import org.neo4j.driver.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -20,7 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 
 
-public class TestFIPS
+@Tag("BundleTest")
+public class TestSSL
 {
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
@@ -28,33 +32,26 @@ public class TestFIPS
     public static final String PASSWORD = "MYsuperSECRETpassword123";
     public static final String SSL_KEY_PASSPHRASE = "abcdef1234567890";
     public static final String OPENSSL_VERSION = "3.0.9";
+    public static final String NETTY_TCNATIVE_VERSION = "2.0.65.Final";
     public static final String OPENSSL_INSTALL_DIR = "/usr/local/openssl";
-    private static final Logger log = LoggerFactory.getLogger(TestFIPS.class);
+    private static final Logger log = LoggerFactory.getLogger(TestSSL.class);
+    private static Path tcnativeBoringSSLJar = null;
 
-    @BeforeAll
-    static void skipInvalidTestScenarios()
+
+    private void assumeFIPSCompatible()
     {
         Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5, 21, 0)),
                 "FIPS compliance was introduced after 5.21.0.");
+        Assumptions.assumeTrue(TestSettings.BASE_OS == TestSettings.BaseOS.UBI9,
+                "Test only applies to UBI9 based image.");
     }
 
-    private Path generateSSLKeys() throws Exception
-    {
-        Path certificates = temporaryFolderManager.createFolder("certificates");
-        new SSLCertificateFactory(certificates)
-                .withSSLKeyPassphrase(SSL_KEY_PASSPHRASE, true)
-                .withOwnerNeo4j()
-                .build();
-        return certificates;
-    }
-
-    GenericContainer createFIPSContainer()
+    private GenericContainer createContainer()
     {
         GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withEnv("NEO4J_AUTH", "neo4j/"+PASSWORD)
                 .withEnv("NEO4J_DEBUG", "yes")
-                .withEnv(FIPS_FLAG, "true")
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD, Duration.ofSeconds(60)));
@@ -63,8 +60,14 @@ public class TestFIPS
 
     private Path configureContainerForSSL(GenericContainer container) throws Exception
     {
-        Path certificates = generateSSLKeys();
+        // generate certificates
+        Path certificates = temporaryFolderManager.createFolder("certificates");
+        new SSLCertificateFactory(certificates)
+                .withSSLKeyPassphrase(SSL_KEY_PASSPHRASE, true)
+                .withOwnerNeo4j()
+                .build();
         temporaryFolderManager.mountHostFolderAsVolume(container, certificates, "/ssl");
+        // configure Neo4j for SSL over bolt
         Path conf = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
         FileWriter confFile = new FileWriter(conf.resolve("neo4j.conf").toFile());
         confFile.write("dbms.netty.ssl.provider=OPENSSL\n");
@@ -82,6 +85,7 @@ public class TestFIPS
         confFile.write("dbms.ssl.policy.bolt.public_certificate=selfsigned.crt\n");
         confFile.flush();
         confFile.close();
+        // use extended conf feature to expand private key passphrase
         container.withEnv("EXTENDED_CONF", "true");
         Files.setPosixFilePermissions(conf.resolve("neo4j.conf"), new HashSet<>()
         {{
@@ -96,9 +100,11 @@ public class TestFIPS
     @Test
     void testOpenSSLIsInstalledWithFIPS() throws Exception
     {
+        assumeFIPSCompatible();
         Container.ExecResult whichOpenSSL, versionOut, providersOut;
-        try(GenericContainer container = createFIPSContainer())
+        try(GenericContainer container = createContainer())
         {
+            container.withEnv(FIPS_FLAG, "true");
             container.start();
             whichOpenSSL = container.execInContainer("which", "openssl");
             log.info("OpenSSL location is \""+whichOpenSSL.getStdout()+"\"");
@@ -148,9 +154,11 @@ public class TestFIPS
     @Test
     void testFIPSOpenSSLLibrariesUsed() throws Exception
     {
+        assumeFIPSCompatible();
         String filesInUse;
-        try(GenericContainer container = createFIPSContainer())
+        try(GenericContainer container = createContainer())
         {
+            container.withEnv(FIPS_FLAG, "true");
             configureContainerForSSL(container);
             container.start();
             String neo4jPID = container.execInContainer("cat", "/var/lib/neo4j/run/neo4j.pid").getStdout();
@@ -175,29 +183,70 @@ public class TestFIPS
                     "Did not use "+filename+" under path "+expectedPath+". Actual file: "+line);
         }
     }
+
+    @Test
+    void shouldFailIfDebianAndFIPS() throws Exception
+    {
+        Assumptions.assumeTrue(TestSettings.BASE_OS == TestSettings.BaseOS.BULLSEYE,
+                "Test only applies to debian based images");
+        try(GenericContainer container = createContainer())
+        {
+            container.withEnv(FIPS_FLAG, "true");
+            container.withEnv("NEO4J_AUTH", "bum/true");
+            WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(30));
+            Assertions.assertThrows(ContainerLaunchException.class, container::start);
+            String logs = container.getLogs();
+            Assertions.assertTrue(logs.contains("OpenSSL FIPS compatibility is only available in the Red Hat UBI9 Neo4j image"),
+                    "Did not error about FIPS compatibility in Debian");
+        }
+    }
+
     @Test
     void testEndToEndSSLEncryption_withFIPS() throws Exception
     {
-        try(GenericContainer container = createFIPSContainer())
+        assumeFIPSCompatible();
+        try(GenericContainer container = createContainer())
         {
-            Path certs = configureContainerForSSL(container);
-            verifyEndToEndSSLEncryption(container, certs);
+            container.withEnv(FIPS_FLAG, "true");
+            verifyEndToEndSSLEncryption(container);
         }
     }
 
     @Test
-    void testEndToEndSSLEncryption_noFIPS() throws Exception
+    void testEndToEndSSLEncryption() throws Exception
     {
-        try(GenericContainer container = createFIPSContainer())
+        try(GenericContainer container = createContainer())
         {
-            Path certs = configureContainerForSSL(container);
             container.withEnv(FIPS_FLAG, "false");
-            verifyEndToEndSSLEncryption(container, certs);
+            Path pluginDir = getTCNativeBoringSSL();
+            TemporaryFolderManager.mountHostFolderAsVolume(container, pluginDir.getParent(), "/plugins");
+            verifyEndToEndSSLEncryption(container);
         }
     }
 
-    void verifyEndToEndSSLEncryption(GenericContainer container, Path certificates) throws Exception
+    private synchronized Path getTCNativeBoringSSL() throws Exception
     {
+        if(tcnativeBoringSSLJar == null)
+        {
+            String boringSSLJarName = "netty-tcnative-boringssl.jar";
+            try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"))) {
+                Path boringjar = temporaryFolderManager.createFolderAndMountAsVolume(container, "/boringssljar");
+                container.waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
+                container.start();
+                String arch = container.execInContainer("arch").getStdout().trim();
+                container.execInContainer("curl", "-sL", "-o", "/boringssljar/"+boringSSLJarName,
+                        "https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/" + NETTY_TCNATIVE_VERSION +
+                                "/netty-tcnative-boringssl-static-"+NETTY_TCNATIVE_VERSION+"-linux-"+arch+".jar");
+                tcnativeBoringSSLJar = boringjar.resolve(boringSSLJarName);
+                Assertions.assertTrue(tcnativeBoringSSLJar.toFile().exists(), "Could not download TCNative BoringSSL jar");
+            }
+        }
+        return tcnativeBoringSSLJar;
+    }
+
+    void verifyEndToEndSSLEncryption(GenericContainer container) throws Exception
+    {
+        Path certificates = configureContainerForSSL(container);
         temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
         container.start();
         DatabaseIO dbio = new DatabaseIO(container,

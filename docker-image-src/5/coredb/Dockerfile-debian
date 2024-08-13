@@ -1,59 +1,20 @@
 FROM debian:bullseye-slim
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
-
-# gather pre-requisite packages and downloads
-RUN apt update \
-    && apt-get install -y \
-        gcc \
-        git \
-        gnupg \
-        jq \
-        libapr1 \
-        make \
-        perl-modules \
-        procps \
-        tini \
-        wget \
-    # download, verify and install su-exec
-    && git clone https://github.com/ncopa/su-exec.git \
-    && cd su-exec \
-    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
-    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
-    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
-    && make \
-    && mv /su-exec/su-exec /usr/bin/su-exec \
-    # download and verify openssl
-    && openssl_url="https://www.openssl.org/source/openssl-3.0.9.tar.gz" \
-    && openssl_sha="eb1ab04781474360f77c318ab89d8c5a03abc38e63d65a603cabbf1b00a1dc90" \
-    && wget -q ${openssl_url} -O /openssl.tar.gz \
-    && wget -q ${openssl_url}.asc -O /openssl.tar.gz.asc \
-    && echo ${openssl_sha} /openssl.tar.gz  | sha256sum -c \
-    && export GNUPGHOME="$(mktemp -d)" \
-    && gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys A21FAB74B0088AA361152586B8EF1A6BA9DA2D5C \
-    && gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz \
-    && tar --extract --file /openssl.tar.gz --directory /tmp \
-    # install openssl
-    && cd /tmp/openssl-3.0.9 \
-    && ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared \
-    && make install_sw install_ssldirs install_fips \
-    && ldconfig /usr/local/openssl/lib64 \
-    && apt-get -y purge --auto-remove gcc git make perl perl-modules* \
-    && rm -rf /var/lib/apt/lists/* /su-exec ${GNUPGHOME} /openssl.tar.gz /openssl.tar.gz.asc /tmp/openssl*
-
-ENV NEO4J_SHA256=%%NEO4J_SHA%% \
+ENV PATH="${JAVA_HOME}/bin:${PATH}" \
+    NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
     NEO4J_HOME="/var/lib/neo4j" \
     LANG=C.UTF-8
 ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
 
-# install neo4j
+RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
+
 COPY ./local-package/* /startup/
+
 RUN apt update \
-    && apt-get install -y curl \
-    && addgroup --gid 7474 --system neo4j  \
-    && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j \
+    && apt-get install -y curl gcc git jq make procps tini wget \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -72,11 +33,19 @@ RUN apt update \
     && chmod -R 755 "${NEO4J_HOME}/bin" \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
-    && apt-get -y purge --auto-remove curl \
-    && rm -rf /var/lib/apt/lists/*
+    && git clone https://github.com/ncopa/su-exec.git \
+    && cd su-exec \
+    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
+    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
+    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
+    && make \
+    && mv /su-exec/su-exec /usr/bin/su-exec \
+    && apt-get -y purge --auto-remove curl gcc git make \
+    && rm -rf /var/lib/apt/lists/* /su-exec
 
-ENV PATH="${JAVA_HOME}/bin:${NEO4J_HOME}/bin:/usr/local/openssl/bin:$PATH" \
-    LD_LIBRARY_PATH="${NEO4J_HOME}/lib:/usr/local/openssl/lib64"
+
+ENV PATH="${NEO4J_HOME}"/bin:$PATH
+
 WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs
