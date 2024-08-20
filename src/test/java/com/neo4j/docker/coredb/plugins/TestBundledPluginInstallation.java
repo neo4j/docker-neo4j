@@ -208,7 +208,7 @@ public class TestBundledPluginInstallation
                 if(plugins.isEmpty())
                 {
                     // no plugins were downloaded, which is correct if we are testing an unreleased neo4j
-                    String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s",
+                    String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s.*",
                             plugin.name, TestSettings.NEO4J_VERSION);
                     Assertions.assertTrue(
                         Stream.of(errlogs.split( "\n" ))
