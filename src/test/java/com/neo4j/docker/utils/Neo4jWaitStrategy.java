@@ -61,9 +61,9 @@ public class Neo4jWaitStrategy extends HttpWaitStrategy
                 String fullCommand =
                         "if [ -f /var/lib/neo4j/run/neo4j.pid ]; then\n" +
                                 doThreadDumpCmd + "\n" +
-                                "else\n" +
-                                "echo \"could not dump threads, Neo4j is not running.\"\n" +
-                                "fi";
+                            "else\n" +
+                                "echo >&2 \"could not dump threads, Neo4j is not running.\"\n" +
+                            "fi";
                 Container.ExecResult threadDumpResponse = waitStrategyTarget.execInContainer("sh", "-c", fullCommand);
                 log.warn(threadDumpResponse.getStderr());
             }

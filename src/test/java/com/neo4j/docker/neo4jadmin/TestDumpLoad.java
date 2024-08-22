@@ -100,10 +100,13 @@ public class TestDumpLoad
         Path firstDataDir;
         Path secondDataDir;
         Path backupDir;
+        Path logs;
+        Path adminLogs;
 
         // start a database and populate it
         try(GenericContainer container = createDBContainer( asDefaultUser, password ))
         {
+            logs = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             firstDataDir = temporaryFolderManager.createNamedFolderAndMountAsVolume(container,"data1", "/data");
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
@@ -114,9 +117,10 @@ public class TestDumpLoad
         // use admin container to create dump
         try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
-            temporaryFolderManager.mountHostFolderAsVolume( admin, firstDataDir, "/data" );
+            adminLogs = temporaryFolderManager.createNamedFolderAndMountAsVolume(admin,"admin-logs", "/logs");
+            temporaryFolderManager.mountHostFolderAsVolume(admin, firstDataDir, "/data");
             backupDir = temporaryFolderManager.createFolderAndMountAsVolume(admin, "/backups");
-            admin.withCommand( "neo4j-admin", "database", "dump", "neo4j", "--to-path=/backups" );
+            admin.withCommand("neo4j-admin", "database", "dump", "neo4j", "--to-path=/backups");
             admin.start();
         }
         Assertions.assertTrue( backupDir.resolve( "neo4j.dump" ).toFile().exists(), "dump file not created");
@@ -126,6 +130,7 @@ public class TestDumpLoad
         try(GenericContainer admin = createAdminContainer( asDefaultUser ))
         {
             secondDataDir = temporaryFolderManager.createNamedFolderAndMountAsVolume(admin, "data2", "/data");
+            temporaryFolderManager.mountHostFolderAsVolume(admin, adminLogs, "/logs");
             temporaryFolderManager.mountHostFolderAsVolume( admin, backupDir, "/backups" );
             admin.withCommand( "neo4j-admin", "database", "load", "neo4j", "--from-path=/backups" );
             admin.start();
@@ -134,6 +139,7 @@ public class TestDumpLoad
         // verify data in 2nd data directory by starting a database and verifying data we populated earlier
         try(GenericContainer container = createDBContainer( asDefaultUser, password ))
         {
+            temporaryFolderManager.mountHostFolderAsVolume(container, logs, "/logs");
             temporaryFolderManager.mountHostFolderAsVolume( container, secondDataDir, "/data" );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
