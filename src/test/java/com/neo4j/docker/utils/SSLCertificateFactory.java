@@ -4,7 +4,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 
 public class SSLCertificateFactory
@@ -16,6 +18,7 @@ public class SSLCertificateFactory
     public static final String CLIENT_CERTIFICATE_FILENAME ="localselfsigned.crt";
     public static final String PRIVATE_KEY_FILENAME="private.key";
     public static final String ENCRYPTED_PASSPHRASE_FILENAME="password.enc";
+    private static final Path CERT_CONF = Paths.get("src", "test", "resources", "ssl", "server.conf");
     private final Path outputFolder;
     private String passphrase = null;
     private boolean isPassphraseEncrypted = false;
@@ -62,11 +65,14 @@ public class SSLCertificateFactory
         {
             String mountpoint = "/certgen";
             TemporaryFolderManager.mountHostFolderAsVolume(container, this.outputFolder, mountpoint);
+            Files.copy(CERT_CONF, this.outputFolder.resolve("cert.conf"));
             container.withExposedPorts(80)
                     .waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
             container.start();
             container.execInContainer("openssl", "req", "-x509", "-sha1", "-nodes",
-                    "-newkey", "rsa:2048", "-keyout", mountpoint+"/private.key1",
+                    "-newkey", "rsa:2048",
+                    "-keyout", mountpoint+"/private.key1",
+                    "-config", mountpoint+"/cert.conf",
                     "-out", mountpoint+"/selfsigned.crt",
                     "-subj", "/C=SE/O=Example/OU=ExampleCluster/CN=localhost",
                     "-days", "1");
@@ -74,7 +80,8 @@ public class SSLCertificateFactory
             {
                 container.execInContainer("openssl", "pkcs8", "-topk8", "-nocrypt",
                         "-in", mountpoint + "/private.key1",
-                        "-out", mountpoint + "/private.key");
+                        "-out", mountpoint + "/private.key",
+                        "-passout", "pass:" + this.passphrase);
             }
             else
             {
@@ -82,15 +89,17 @@ public class SSLCertificateFactory
                         "-in", mountpoint+"/private.key1",
                         "-out", mountpoint+"/private.key",
                         "-passout", "pass:" + this.passphrase);
-                if(this.isPassphraseEncrypted)
-                {
-                    container.execInContainer("sh", "-c", "echo " + this.passphrase + " > /tmp/passfile");
-                    container.execInContainer("sh", "-c", "base64 -w 0 " + mountpoint+"/selfsigned.crt | " +
-                            "openssl aes-256-cbc -a -salt -pass stdin -in /tmp/passfile -out " + mountpoint + "/password.enc");
-                    container.execInContainer("rm", "/tmp/passfile");
-                }
             }
             container.execInContainer("rm", mountpoint+"/private.key1");
+
+            if(this.isPassphraseEncrypted)
+            {
+                container.execInContainer("sh", "-c", "echo " + this.passphrase + " > /tmp/passfile");
+                container.execInContainer("sh", "-c", "base64 -w 0 " + mountpoint+"/selfsigned.crt | " +
+                        "openssl aes-256-cbc -a -salt -pass stdin -in /tmp/passfile -out " + mountpoint + "/password.enc");
+                container.execInContainer("rm", "/tmp/passfile");
+            }
+
             container.execInContainer("chown", "-R", this.owner, mountpoint);
             // copy the certificate and make it readable by the user running the unit tests
             // otherwise we can't validate commands on the client side

@@ -560,8 +560,9 @@ See:
 
   debug_msg "Deleting all netty-tcnative-boringssl jars"
   find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
-  debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-$(arch).jar to ${NEO4J_HOME}/lib/"
-  cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-$(arch).jar "${NEO4J_HOME}"/lib/
+  _arch_str=$(arch | sed 's/aarch64/aarch_64/g')
+  debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-${_arch_str}.jar to ${NEO4J_HOME}/lib/"
+  cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-${_arch_str}.jar "${NEO4J_HOME}"/lib/
   #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
   #debug_msg "Netty version detected as: \"${netty_version}\""
   echo "Installing FIPS module into OpenSSL"
