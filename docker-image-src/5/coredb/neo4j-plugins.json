@@ -21,19 +21,6 @@
       "dbms.bloom.license_file": "/licenses/bloom.license"
     }
   },
-  "graphql": {
-    "versions": "https://neo4j-graphql.github.io/neo4j-graphql/versions.json",
-    "properties": {
-      "dbms.unmanaged_extension_classes": "org.neo4j.graphql=/graphql",
-      "dbms.security.procedures.unrestricted": "graphql.*"
-    }
-  },
-  "graph-algorithms": {
-    "versions": "https://neo4j-contrib.github.io/neo4j-graph-algorithms/versions.json",
-    "properties": {
-      "dbms.security.procedures.unrestricted": "algo.*"
-    }
-  },
   "graph-data-science": {
     "versions": "https://graphdatascience.ninja/versions.json",
     "location": "/var/lib/neo4j/products/neo4j-graph-data-science-*.jar",

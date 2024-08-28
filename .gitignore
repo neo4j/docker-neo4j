@@ -8,7 +8,7 @@
 /local-mounts/
 /target/
 /build/
-
+.DS_Store
 # simlinks to dev scripts in https://github.com/neo-technology/teamcity-witchcraft
 download_tool.py
 docker_tests_get_installers.py
