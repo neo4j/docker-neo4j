@@ -1,0 +1,11 @@
+services:
+  simplecontainer:
+    image: ${NEO4J_IMAGE}
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    volumes:
+      - ${HOST_ROOT}/neo4j/data:/data
+      - ${HOST_ROOT}/neo4j/logs:/logs
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+      - "${BOLT_PORT}:${BOLT_PORT}"
