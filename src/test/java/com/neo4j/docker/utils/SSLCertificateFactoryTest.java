@@ -59,6 +59,15 @@ public class SSLCertificateFactoryTest
                 .build();
         verifyFileOwnership(outdir, NEO4J_USER_ID);
         verifyCertificatesAndKeysMatch(outdir, passphrase);
+        try(GenericContainer container = makeOpenSSLContainer(outdir))
+        {
+            container.start();
+            Container.ExecResult keyModulus = container.execInContainer("openssl", "rsa",
+                    "-in", "/certificates/" + SSLCertificateFactory.PRIVATE_KEY_FILENAME,
+                    "-inform", "pem", "-noout");
+            Assertions.assertNotEquals(0, keyModulus.getExitCode(),
+                    "Should have failed to read private key without passphrase.");
+        }
     }
 
     @Test

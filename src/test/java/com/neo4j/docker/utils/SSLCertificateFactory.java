@@ -1,5 +1,6 @@
 package com.neo4j.docker.utils;
 
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
@@ -8,17 +9,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SSLCertificateFactory
 {
-    public static final String CERTIFICATE_FILENAME="selfsigned.crt";
+    public static final String CERTIFICATE_FILENAME = "casigned.crt";
     // Certificates need to be owned by the user inside the container, which means that tests using drivers
     // cannot authenticate because they do not have permission to read the certificate file.
     // The factory creates a copy of the certificate that can always be used by the test's client side.
-    public static final String CLIENT_CERTIFICATE_FILENAME ="localselfsigned.crt";
-    public static final String PRIVATE_KEY_FILENAME="private.key";
-    public static final String ENCRYPTED_PASSPHRASE_FILENAME="password.enc";
-    private static final Path CERT_CONF = Paths.get("src", "test", "resources", "ssl", "server.conf");
+    public static final String CLIENT_CERTIFICATE_FILENAME = "local"+CERTIFICATE_FILENAME;
+    public static final String PRIVATE_KEY_FILENAME = "private.key";
+    public static final String ENCRYPTED_PASSPHRASE_FILENAME = "passphrase.enc";
+    private static final Path SSL_RESOURCES = Paths.get("src", "test", "resources", "ssl");
     private final Path outputFolder;
     private String passphrase = null;
     private boolean isPassphraseEncrypted = false;
@@ -65,52 +68,54 @@ public class SSLCertificateFactory
         {
             String mountpoint = "/certgen";
             TemporaryFolderManager.mountHostFolderAsVolume(container, this.outputFolder, mountpoint);
-            Files.copy(CERT_CONF, this.outputFolder.resolve("cert.conf"));
-            container.withExposedPorts(80)
-                    .waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
-            container.start();
-            container.execInContainer("openssl", "req", "-x509", "-sha1", "-nodes",
-                    "-newkey", "rsa:2048",
-                    "-keyout", mountpoint+"/private.key1",
-                    "-config", mountpoint+"/cert.conf",
-                    "-out", mountpoint+"/selfsigned.crt",
-                    "-subj", "/C=SE/O=Example/OU=ExampleCluster/CN=localhost",
-                    "-days", "1");
-            if(this.passphrase == null)
-            {
-                container.execInContainer("openssl", "pkcs8", "-topk8", "-nocrypt",
-                        "-in", mountpoint + "/private.key1",
-                        "-out", mountpoint + "/private.key",
-                        "-passout", "pass:" + this.passphrase);
-            }
-            else
-            {
-                container.execInContainer("openssl", "pkcs8", "-topk8",
-                        "-in", mountpoint+"/private.key1",
-                        "-out", mountpoint+"/private.key",
-                        "-passout", "pass:" + this.passphrase);
-            }
-            container.execInContainer("rm", mountpoint+"/private.key1");
 
+            // copy ssl certificate generating script to mounted folder
+            Path scriptPath = this.outputFolder.resolve("gen-scripts");
+            Files.createDirectory(scriptPath);
+            Files.copy(SSL_RESOURCES.resolve("ca.conf"), scriptPath.resolve("ca.conf"));
+            Files.copy(SSL_RESOURCES.resolve("server.conf"), scriptPath.resolve("server.conf"));
+            Files.copy(SSL_RESOURCES.resolve("gen-ssl-cert.sh"), scriptPath.resolve("gen-ssl-cert.sh"));
+
+            container.withExposedPorts(80)
+                    .withWorkingDirectory(mountpoint + "/gen-scripts")
+                    .waitingFor(Wait.forHttp("/")
+                            .withStartupTimeout(Duration.ofSeconds(20)));
+            container.start();
+
+            List<String> genCertCommand = new ArrayList<>();
+            genCertCommand.add("./gen-ssl-cert.sh");
+            genCertCommand.add("--folder");
+            genCertCommand.add(mountpoint);
+            if(this.passphrase != null)
+            {
+                genCertCommand.add("--passphrase");
+                genCertCommand.add(this.passphrase);
+            }
             if(this.isPassphraseEncrypted)
             {
-                container.execInContainer("sh", "-c", "echo " + this.passphrase + " > /tmp/passfile");
-                container.execInContainer("sh", "-c", "base64 -w 0 " + mountpoint+"/selfsigned.crt | " +
-                        "openssl aes-256-cbc -a -salt -pass stdin -in /tmp/passfile -out " + mountpoint + "/password.enc");
-                container.execInContainer("rm", "/tmp/passfile");
+                genCertCommand.add("--encrypt");
+            }
+
+            Container.ExecResult cmd = container.execInContainer(genCertCommand.toArray(String[]::new));
+            if(cmd.getExitCode() != 0)
+            {
+                throw new IllegalArgumentException("Could not generate SSL keys. Error:\n" + cmd);
             }
 
             container.execInContainer("chown", "-R", this.owner, mountpoint);
             // copy the certificate and make it readable by the user running the unit tests
             // otherwise we can't validate commands on the client side
-            container.execInContainer("cp", mountpoint+"/selfsigned.crt", mountpoint+"/localselfsigned.crt");
-            container.execInContainer("chown", SetContainerUser.getNonRootUserString(), mountpoint+"/localselfsigned.crt");
+            container.execInContainer("cp", mountpoint+"/"+CERTIFICATE_FILENAME,
+                    mountpoint+"/"+CLIENT_CERTIFICATE_FILENAME);
+            container.execInContainer("chown", SetContainerUser.getNonRootUserString(), mountpoint+"/"+CLIENT_CERTIFICATE_FILENAME);
+            container.execInContainer("sh", "-c",
+                    String.format("cd %s; rm -rf %s/%s", mountpoint, mountpoint, scriptPath.getFileName()));
         }
     }
 
     public static String getPassphraseDecryptCommand(String certificatesMountPoint)
     {
         return String.format("base64 -w 0 %s/selfsigned.crt | openssl aes-256-cbc -a -d " +
-                "-in %s/password.enc -pass stdin", certificatesMountPoint, certificatesMountPoint);
+                "-in %s/%s -pass stdin", certificatesMountPoint, certificatesMountPoint, ENCRYPTED_PASSPHRASE_FILENAME);
     }
 }

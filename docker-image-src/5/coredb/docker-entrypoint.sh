@@ -566,6 +566,9 @@ See:
   #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
   #debug_msg "Netty version detected as: \"${netty_version}\""
   echo "Installing FIPS module into OpenSSL"
+  if [ "$(rpm --query --queryformat='%{ARCH}' rpm)" = "aarch64" ]; then
+    ln -s /usr/local/openssl/lib /usr/local/openssl/lib64
+  fi
   ldconfig /usr/local/openssl/lib64
   /usr/local/openssl/bin/openssl fipsinstall -out /usr/local/openssl/fipsmodule.cnf -module /usr/local/openssl/lib64/ossl-modules/fips.so
   debug_msg "Configuring OpenSSL to run with FIPS enabled"

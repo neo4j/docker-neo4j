@@ -81,8 +81,8 @@ public class TestSSL
         confFile.write("dbms.ssl.policy.bolt.private_key_password=$(sh -c \"" +
                 SSLCertificateFactory.getPassphraseDecryptCommand("/ssl")+ "\")\n");
         confFile.write("dbms.ssl.policy.bolt.base_directory=/ssl\n");
-        confFile.write("dbms.ssl.policy.bolt.private_key=private.key\n");
-        confFile.write("dbms.ssl.policy.bolt.public_certificate=selfsigned.crt\n");
+        confFile.write("dbms.ssl.policy.bolt.private_key="+SSLCertificateFactory.PRIVATE_KEY_FILENAME+"\n");
+        confFile.write("dbms.ssl.policy.bolt.public_certificate="+SSLCertificateFactory.CERTIFICATE_FILENAME+"\n");
         confFile.flush();
         confFile.close();
         // use extended conf feature to expand private key passphrase
@@ -254,7 +254,7 @@ public class TestSSL
                         .withEncryption()
                         .withTrustStrategy(Config.TrustStrategy
                                 .trustCustomCertificateSignedBy(
-                                        certificates.resolve("localselfsigned.crt").toFile()
+                                        certificates.resolve(SSLCertificateFactory.CLIENT_CERTIFICATE_FILENAME).toFile()
                                 ))
                         .build());
         dbio.verifyConnectivity("neo4j", PASSWORD);

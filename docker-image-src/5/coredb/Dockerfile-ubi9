@@ -57,7 +57,10 @@ RUN set -eux; \
     cd /tmp/openssl-3.0.9; \
     ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared; \
     make install_sw install_ssldirs install_fips; \
-    ldconfig /usr/local/openssl/lib64; \
+    if [ ${arch} = "aarch64" ]; \
+      then ldconfig /usr/local/openssl/lib; \
+      else ldconfig /usr/local/openssl/lib64; \
+    fi; \
     cd /; \
     # download, verify and install su-exec
     git clone https://github.com/ncopa/su-exec.git; \
