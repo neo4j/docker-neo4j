@@ -359,6 +359,36 @@ If Neo4j fails to start, you can:
 # ==== CODE STARTS ====
 debug_msg "DEBUGGING ENABLED"
 
+## == EXTRACT SECRETS FROM FILES ===
+# These environment variables are set by using docker secrets and they override their equivalent env vars
+# They are suffixed with _FILE and prefixed by the name of the env var they should override
+# e.g. NEO4J_AUTH_FILE will override the value of the NEO4J_AUTH
+# It's best to do this first so that the secrets are available for the rest of the script
+
+# Loop through all environment variables
+for varriable_name in $(printenv | awk -F= '{print $1}'); do
+  # Check if the variable ends with "_FILE"
+  if [[ $varriable_name == *_FILE ]]; then
+    # Create a new variable name by removing the "_FILE" suffix
+    base_variable_name=${varriable_name%_FILE}
+
+    # Get the value of the _FILE variable
+    secret_file_path="${!varriable_name}"
+
+    # Check if the file exists and is readable, then read its contents
+    if [[ -f "$secret_file_path" ]]; then
+      secret_value=$(<"$secret_file_path")
+    else
+      # If it's not a file error
+      echo >&2 "The secret file '$secret_file_path' does not exist or is not readable. Make sure you have correctly configured docker secrets."
+      exit 1
+    fi
+
+    # Assign the value to the new variable
+    eval "$base_variable_name=$secret_value"
+  fi
+done
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -583,34 +613,6 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
             echo >&2 "WARNING: ${setting} not written to conf file. Settings that start with a number are not permitted."
         fi
     fi
-done
-
-## == EXTRACT SECRETS FROM FILES ===
-# These environment variables are set by using docker secrets and they override their equivalent env vars
-# They are suffixed with _FILE and prefixed by the name of the env var they should override
-# e.g. NEO4J_AUTH_FILE will override the value of the NEO4J_AUTH
-# Loop through all environment variables
-for varriable_name in $(printenv | awk -F= '{print $1}'); do
-  # Check if the variable ends with "_FILE"
-  if [[ $varriable_name == *_FILE ]]; then
-    # Create a new variable name by removing the "_FILE" suffix
-    base_variable_name=${varriable_name%_FILE}
-
-    # Get the value of the _FILE variable
-    secret_file_path="${!varriable_name}"
-
-    # Check if the file exists and is readable, then read its contents
-    if [[ -f "$secret_file_path" ]]; then
-      secret_value=$(<"$secret_file_path")
-    else
-      # If it's not a file error
-      echo >&2 "The secret file '$secret_file_path' does not exist or is not readable. Make sure you have correctly configured docker secrets."
-      exit 1
-    fi
-
-    # Assign the value to the new variable
-    eval "$base_variable_name=$secret_value"
-  fi
 done
 
 # ==== SET PASSWORD ====

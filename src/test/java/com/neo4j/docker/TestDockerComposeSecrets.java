@@ -41,15 +41,11 @@ public class TestDockerComposeSecrets
 
         try ( var dockerComposeContainer = new DockerComposeContainer( composeFile ) )
         {
-            dockerComposeContainer
-                    .withExposedService( serviceName, DEFAULT_BOLT_PORT )
-                    .withExposedService( serviceName, DEFAULT_HTTP_PORT,
-                                         Wait.forHttp( "/" )
-                                             .forPort( DEFAULT_HTTP_PORT )
-                                             .forStatusCode( 200 )
-                                             .withStartupTimeout( Duration.ofSeconds( 300 ) ) )
-                    .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) )
-                    .withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
+            dockerComposeContainer.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
+                                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
+                                                                                                                .forStatusCode( 200 ).withStartupTimeout(
+                                                                                                                        Duration.ofSeconds( 300 ) ) )
+                                  .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
 
             dockerComposeContainer.start();
 
@@ -70,15 +66,11 @@ public class TestDockerComposeSecrets
 
         try ( var dockerComposeContainer = new DockerComposeContainer( composeFile ) )
         {
-            dockerComposeContainer
-                    .withExposedService( serviceName, DEFAULT_BOLT_PORT )
-                    .withExposedService( serviceName, DEFAULT_HTTP_PORT,
-                                         Wait.forHttp( "/" )
-                                             .forPort( DEFAULT_HTTP_PORT )
-                                             .forStatusCode( 200 )
-                                             .withStartupTimeout( Duration.ofSeconds( 300 ) ) )
-                    .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) )
-                    .withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
+            dockerComposeContainer.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
+                                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
+                                                                                                                .forStatusCode( 200 ).withStartupTimeout(
+                                                                                                                        Duration.ofSeconds( 300 ) ) )
+                                  .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
 
             dockerComposeContainer.start();
 
@@ -86,11 +78,40 @@ public class TestDockerComposeSecrets
         }
     }
 
+    @Test
+    void shouldOverrideVariableWithSecretValue() throws Exception
+    {
+        var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, "container-compose-with-secrets-override.yml" );
+        var serviceName = "secretsoverridecontainer";
+
+        var newSecretPageCache = "50M";
+        Files.createFile( tmpDir.resolve( "neo4j_pagecache.txt" ) );
+        Files.writeString( tmpDir.resolve( "neo4j_pagecache.txt" ), newSecretPageCache );
+
+        try ( var dockerComposeContainer = new DockerComposeContainer( composeFile ) )
+        {
+            dockerComposeContainer.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
+                                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
+                                                                                                                .forStatusCode( 200 ).withStartupTimeout(
+                                                                                                                        Duration.ofSeconds( 300 ) ) )
+                                  .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
+
+            dockerComposeContainer.start();
+
+            var configFile = tmpDir.resolve( "neo4j" ).resolve( "config" ).resolve( "neo4j.conf" ).toFile();
+            Assertions.assertTrue( configFile.exists(), "neo4j.conf file does not exist" );
+            Assertions.assertTrue( configFile.canRead(), "cannot read neo4j.conf file" );
+
+            Assertions.assertFalse( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=10M" ) );
+            Assertions.assertTrue( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=50M" ) );
+        }
+    }
+
     private void assertSuccessfulAuth( DockerComposeContainer container, String serviceName, String username, String password )
     {
-        String serviceUri = "neo4j://" + container.getServiceHost( serviceName, DEFAULT_BOLT_PORT )
-                            + ":" +
-                            container.getServicePort( serviceName, DEFAULT_BOLT_PORT );
+        String serviceUri =
+                "neo4j://" + container.getServiceHost( serviceName, DEFAULT_BOLT_PORT ) + ":" + container.getServicePort( serviceName, DEFAULT_BOLT_PORT );
 
         try ( Driver coreDriver = GraphDatabase.driver( serviceUri, AuthTokens.basic( username, password ) ) )
         {
