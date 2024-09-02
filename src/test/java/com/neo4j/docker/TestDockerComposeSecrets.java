@@ -1,7 +1,6 @@
 package com.neo4j.docker;
 
 import com.neo4j.docker.utils.TemporaryFolderManager;
-import org.junit.ClassRule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,21 +31,28 @@ public class TestDockerComposeSecrets
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
+    private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName )
+    {
+        var container = new DockerComposeContainer( composeFile );
+
+        container.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
+                                                                                           Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
+                                                                                               .forStatusCode( 200 ).withStartupTimeout(
+                                                                                                       Duration.ofSeconds( 300 ) ) )
+                 .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() );
+
+        return container;
+    }
+
     @Test
-    void shouldCreateContainer() throws Exception
+    void shouldCreateContainerAndConnect() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Simple_Container_Compose" );
         var composeFile = copyDockerComposeResourceFile( tmpDir, "simple-container-compose.yml" );
         var serviceName = "simplecontainer";
 
-        try ( var dockerComposeContainer = new DockerComposeContainer( composeFile ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
-            dockerComposeContainer.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
-                                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
-                                                                                                                .forStatusCode( 200 ).withStartupTimeout(
-                                                                                                                        Duration.ofSeconds( 300 ) ) )
-                                  .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
-
             dockerComposeContainer.start();
 
             assertSuccessfulAuth( dockerComposeContainer, serviceName, "neo4j", "simplecontainerpassword" );
@@ -54,7 +60,7 @@ public class TestDockerComposeSecrets
     }
 
     @Test
-    void shouldCreateContainerWithSecrets() throws Exception
+    void shouldCreateContainerWithSecretPasswordAndConnect() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets" );
         var composeFile = copyDockerComposeResourceFile( tmpDir, "container-compose-with-secrets.yml" );
@@ -64,14 +70,8 @@ public class TestDockerComposeSecrets
         Files.createFile( tmpDir.resolve( "neo4j_auth.txt" ) );
         Files.writeString( tmpDir.resolve( "neo4j_auth.txt" ), newSecretPassword );
 
-        try ( var dockerComposeContainer = new DockerComposeContainer( composeFile ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
-            dockerComposeContainer.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
-                                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
-                                                                                                                .forStatusCode( 200 ).withStartupTimeout(
-                                                                                                                        Duration.ofSeconds( 300 ) ) )
-                                  .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
-
             dockerComposeContainer.start();
 
             assertSuccessfulAuth( dockerComposeContainer, serviceName, "neo4j", "newSecretPassword" );
@@ -89,14 +89,8 @@ public class TestDockerComposeSecrets
         Files.createFile( tmpDir.resolve( "neo4j_pagecache.txt" ) );
         Files.writeString( tmpDir.resolve( "neo4j_pagecache.txt" ), newSecretPageCache );
 
-        try ( var dockerComposeContainer = new DockerComposeContainer( composeFile ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
-            dockerComposeContainer.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
-                                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
-                                                                                                                .forStatusCode( 200 ).withStartupTimeout(
-                                                                                                                        Duration.ofSeconds( 300 ) ) )
-                                  .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", tmpDir.toAbsolutePath().toString() );
-
             dockerComposeContainer.start();
 
             var configFile = tmpDir.resolve( "neo4j" ).resolve( "config" ).resolve( "neo4j.conf" ).toFile();
