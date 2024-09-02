@@ -1,5 +1,6 @@
 package com.neo4j.docker;
 
+import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,12 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Objects;
-
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 
 import static java.lang.System.getenv;
 
@@ -55,7 +50,9 @@ public class TestDockerComposeSecrets
         {
             dockerComposeContainer.start();
 
-            assertSuccessfulAuth( dockerComposeContainer, serviceName, "neo4j", "simplecontainerpassword" );
+            var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
+                                       dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
+            dbio.verifyConnectivity( "neo4j", "simplecontainerpassword" );
         }
     }
 
@@ -73,8 +70,9 @@ public class TestDockerComposeSecrets
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             dockerComposeContainer.start();
-
-            assertSuccessfulAuth( dockerComposeContainer, serviceName, "neo4j", "newSecretPassword" );
+            var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
+                                       dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
+            dbio.verifyConnectivity( "neo4j", "newSecretPassword" );
         }
     }
 
@@ -99,24 +97,6 @@ public class TestDockerComposeSecrets
 
             Assertions.assertFalse( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=10M" ) );
             Assertions.assertTrue( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=50M" ) );
-        }
-    }
-
-    private void assertSuccessfulAuth( DockerComposeContainer container, String serviceName, String username, String password )
-    {
-        String serviceUri =
-                "neo4j://" + container.getServiceHost( serviceName, DEFAULT_BOLT_PORT ) + ":" + container.getServicePort( serviceName, DEFAULT_BOLT_PORT );
-
-        try ( Driver coreDriver = GraphDatabase.driver( serviceUri, AuthTokens.basic( username, password ) ) )
-        {
-            Session session = coreDriver.session();
-            Result rs = session.run( "CREATE (god {name:'Zeus'})-[:FATHERS]->(demigod {name:'Hercules'}) RETURN demigod.name" );
-            Assertions.assertEquals( "Hercules", rs.single().get( 0 ).asString(), "did not receive expected result from cypher CREATE query" );
-        }
-        catch ( Exception e )
-        {
-            Assertions.fail( "Failed to connect to neo4j" );
-            container.stop();
         }
     }
 
