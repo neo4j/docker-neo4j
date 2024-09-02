@@ -33,10 +33,10 @@ public class DatabaseIO
         this.boltUri = "bolt://"+container.getHost()+":"+container.getMappedPort( 7687 );
 	}
 
-	public DatabaseIO( String host, Integer boltPort )
-	{
-		this.boltUri = "bolt://"+host+":"+boltPort;
-	}
+    public DatabaseIO( String host, Integer boltPort )
+    {
+        this.boltUri = "bolt://" + host + ":" + boltPort;
+    }
 
 	public void putInitialDataIntoContainer( String user, String password )
 	{
