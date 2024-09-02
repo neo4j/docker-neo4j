@@ -40,10 +40,10 @@ public class DatabaseIO
 		this.driverConfig = driverConfig;
 	}
 
-	public DatabaseIO( String host, Integer boltPort )
-	{
-		this.boltUri = "bolt://"+host+":"+boltPort;
-	}
+    public DatabaseIO( String host, Integer boltPort )
+    {
+        this.boltUri = "bolt://" + host + ":" + boltPort;
+    }
 
 	public void putInitialDataIntoContainer( String user, String password )
 	{
