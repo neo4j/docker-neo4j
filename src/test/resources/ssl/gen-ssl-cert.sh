@@ -22,34 +22,16 @@ if ${ENCRYPT_PASSPHRASE} && [ -z "${PASSPHRASE}" ]; then
   exit 1
 fi
 
-echo "creating temporary CA"
-CAFOLDER="${SRCFOLDER}/ca"
-mkdir -p "${CAFOLDER}"
-touch ${CAFOLDER}/testca.db
-echo 01 > ${CAFOLDER}/testca.crt.srl
-echo 01 > ${CAFOLDER}/testca.crl.srl
-
-openssl req -new \
-    -config "${SRCFOLDER}/ca.conf" \
-    -out "${CAFOLDER}/testca.csr" \
-    -keyout "${CAFOLDER}/testca.key"
-echo "self-signing the CA certificate"
-openssl ca -batch -selfsign -days 1 \
-    -config "${SRCFOLDER}/ca.conf" \
-    -keyfile "${CAFOLDER}/testca.key" \
-    -in ${CAFOLDER}/testca.csr \
-    -out ${CAFOLDER}/testca.crt \
-    -outdir ${CAFOLDER} \
-    -extensions signing_ca_ext
+echo "generating private key"
+if [ -n "${PASSPHRASE}" ]; then # if a passphrase was set
+  PASSPHRASE_IN_ARG="-passin=pass:${PASSPHRASE}"
+  PASSPHRASE_OUT_ARG="-passout=pass:${PASSPHRASE}"
+else # if no passphrase
+  PASSPHRASE_IN_ARG=
+  PASSPHRASE_OUT_ARG="-nocrypt"
+fi
 
 echo "Generating self signed SSL certificate into ${OUTFOLDER}"
-if [ -n "${PASSPHRASE}" ]; then
-  PASSPHRASE_OUT_ARG="-passout=pass:${PASSPHRASE}"
-  PASSPHRASE_IN_ARG="-passin=pass:${PASSPHRASE}"
-else
-  PASSPHRASE_OUT_ARG="-nocrypt"
-  PASSPHRASE_IN_ARG=
-fi
 openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 1 \
     -keyout "${OUTFOLDER}/private.key1" \
     -config "${SRCFOLDER}/server.conf" \
@@ -62,27 +44,25 @@ openssl pkcs8 -topk8 \
     -out "${OUTFOLDER}/private.key" \
     ${PASSPHRASE_OUT_ARG}
 rm "${OUTFOLDER}/private.key1"
+rm "${OUTFOLDER}/selfsigned.crt"
 
+echo "Generating certificate sign request"
+openssl req -new -nodes -utf8 \
+    -key "${OUTFOLDER}/private.key" \
+    -config server.conf \
+    -extensions csr_reqext \
+    -out "${OUTFOLDER}/selfsigned.csr" \
+    -subj ${SUBJ} \
+     ${PASSPHRASE_IN_ARG}
 
 echo "making signing request for normal certificate"
-openssl req -new \
-    -config "${SRCFOLDER}/server.conf" \
+openssl req -x509 -nodes -utf8 -days 1 \
+    -in "${OUTFOLDER}/selfsigned.csr" \
     -key "${OUTFOLDER}/private.key" \
-    -out "${OUTFOLDER}/casigned.csr" \
-    ${PASSPHRASE_IN_ARG} \
-    -subj ${SUBJ}
-# openssl req -noout -text -in ${OUTFOLDER}/casigned.csr
-
-echo "signing certificate as test CA"
-openssl ca -batch -days 1 \
-    -config "${SRCFOLDER}/ca.conf" \
-    -in "${OUTFOLDER}/casigned.csr" \
-    -out "${OUTFOLDER}/casigned.crt" \
-    -keyfile "${CAFOLDER}/testca.key" \
-    -extensions server_ext
-# openssl x509 -noout -text -in ${OUTFOLDER}/casigned.crt
-
-rm -rf "${CAFOLDER}"
+    -config server.conf \
+    -extensions server_reqext \
+    -out "${OUTFOLDER}/selfsigned.crt" \
+     ${PASSPHRASE_IN_ARG}
 
 if ${ENCRYPT_PASSPHRASE}; then
   echo "Creating encrypted passphrase file"

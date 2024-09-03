@@ -2,28 +2,29 @@ package com.neo4j.docker.utils;
 
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SSLCertificateFactory
 {
-    public static final String CERTIFICATE_FILENAME = "casigned.crt";
+    public static final String CERTIFICATE_FILENAME = "selfsigned.crt";
     // Certificates need to be owned by the user inside the container, which means that tests using drivers
     // cannot authenticate because they do not have permission to read the certificate file.
     // The factory creates a copy of the certificate that can always be used by the test's client side.
     public static final String CLIENT_CERTIFICATE_FILENAME = "local"+CERTIFICATE_FILENAME;
     public static final String PRIVATE_KEY_FILENAME = "private.key";
     public static final String ENCRYPTED_PASSPHRASE_FILENAME = "passphrase.enc";
+    protected static final String DEFAULT_HOST_NAME = "localhost";
     private static final Path SSL_RESOURCES = Paths.get("src", "test", "resources", "ssl");
     private final Path outputFolder;
     private String passphrase = null;
+    private String hostNameOrIP = DEFAULT_HOST_NAME;
     private boolean isPassphraseEncrypted = false;
     private String owner = null;
 
@@ -57,14 +58,31 @@ public class SSLCertificateFactory
         return this;
     }
 
+    public SSLCertificateFactory forHostIPOrName(String host)
+    {
+        this.hostNameOrIP = host;
+        return this;
+    }
+
+    private void appendHostSettingToConfig(Path config) throws IOException
+    {
+        if(this.hostNameOrIP.matches("\\d+\\.\\d+\\.\\d+\\.\\d+"))
+        {
+            Files.writeString(config, "IP.0 = "+this.hostNameOrIP +"\n", StandardOpenOption.APPEND);
+        }
+        else
+        {
+            Files.writeString(config, "DNS.1 = "+this.hostNameOrIP +"\n", StandardOpenOption.APPEND);
+        }
+    }
+
     public void build() throws Exception
     {
         if(this.owner == null)
         {
             throw new IllegalArgumentException("File owner has not been set for SSL certificates. This is a test error.");
         }
-        // using nginx image because it's easy to verify startup and it has openssl already installed
-        try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest")))
+        try (GenericContainer container = HelperContainers.nginx())
         {
             String mountpoint = "/certgen";
             TemporaryFolderManager.mountHostFolderAsVolume(container, this.outputFolder, mountpoint);
@@ -72,14 +90,11 @@ public class SSLCertificateFactory
             // copy ssl certificate generating script to mounted folder
             Path scriptPath = this.outputFolder.resolve("gen-scripts");
             Files.createDirectory(scriptPath);
-            Files.copy(SSL_RESOURCES.resolve("ca.conf"), scriptPath.resolve("ca.conf"));
             Files.copy(SSL_RESOURCES.resolve("server.conf"), scriptPath.resolve("server.conf"));
             Files.copy(SSL_RESOURCES.resolve("gen-ssl-cert.sh"), scriptPath.resolve("gen-ssl-cert.sh"));
+            appendHostSettingToConfig(scriptPath.resolve("server.conf"));
 
-            container.withExposedPorts(80)
-                    .withWorkingDirectory(mountpoint + "/gen-scripts")
-                    .waitingFor(Wait.forHttp("/")
-                            .withStartupTimeout(Duration.ofSeconds(20)));
+            container.withWorkingDirectory(mountpoint + "/gen-scripts");
             container.start();
 
             List<String> genCertCommand = new ArrayList<>();

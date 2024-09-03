@@ -557,9 +557,6 @@ See:
     "
     exit 1
   fi
-
-  debug_msg "Deleting all netty-tcnative-boringssl jars"
-  find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
   _arch_str=$(arch | sed 's/aarch64/aarch_64/g')
   debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-${_arch_str}.jar to ${NEO4J_HOME}/lib/"
   cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-${_arch_str}.jar "${NEO4J_HOME}"/lib/

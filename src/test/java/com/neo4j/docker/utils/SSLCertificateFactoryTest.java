@@ -2,18 +2,19 @@ package com.neo4j.docker.utils;
 
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 
+// This is a test for a test utility. It does not actually test anything to do with the docker image.
+// This is disabled unless we're actually trying to develop/fix the SSLCertificateFactory utility.
+@Disabled
 public class SSLCertificateFactoryTest
 {
     private static final int NEO4J_USER_ID = Integer.parseInt(SetContainerUser.getNeo4jUserString().split(":")[0]);
@@ -22,17 +23,13 @@ public class SSLCertificateFactoryTest
     @RegisterExtension
     static TemporaryFolderManager folderManager = new TemporaryFolderManager();
 
-    // Certificate generator needs to follow requirements from
-    // https://neo4j.com/docs/operations-manual/current/security/ssl-framework/#ssl-certificates
-    // Of all the artifacts produces by SSLCertificateFactory only the client certificate MUST be readable by the test user.
-    // The rest of the artifacts should be owned by neo4j (default) or the test user if specified.
-
     @Test
-    void generatesMatchingCertificateAndKey() throws Exception
+    void generatesUnencryptedCertificateAndKey() throws Exception
     {
         Path outdir = folderManager.createFolder("certificates");
         new SSLCertificateFactory(outdir)
                 .withOwnerNeo4j()
+                .withoutSSLKeyPassphrase()
                 .build();
         File cert = outdir.resolve(SSLCertificateFactory.CERTIFICATE_FILENAME).toFile();
         File clientCert = outdir.resolve(SSLCertificateFactory.CLIENT_CERTIFICATE_FILENAME).toFile();
@@ -45,11 +42,11 @@ public class SSLCertificateFactoryTest
         Assertions.assertTrue(clientCert.canRead(), "Client certificate is not readable by test user");
 
         verifyFileOwnership(outdir, NEO4J_USER_ID);
-        verifyCertificatesAndKeysMatch(outdir, null);
+        verifyCertificatesAndKey(outdir, SSLCertificateFactory.DEFAULT_HOST_NAME, null);
     }
 
     @Test
-    void shouldPassphraseProtectKey() throws Exception
+    void generatesEncryptedCertificateAndKey() throws Exception
     {
         String passphrase = "a123long456passphrase";
         Path outdir = folderManager.createFolder("certificates");
@@ -58,16 +55,7 @@ public class SSLCertificateFactoryTest
                 .withSSLKeyPassphrase(passphrase, false)
                 .build();
         verifyFileOwnership(outdir, NEO4J_USER_ID);
-        verifyCertificatesAndKeysMatch(outdir, passphrase);
-        try(GenericContainer container = makeOpenSSLContainer(outdir))
-        {
-            container.start();
-            Container.ExecResult keyModulus = container.execInContainer("openssl", "rsa",
-                    "-in", "/certificates/" + SSLCertificateFactory.PRIVATE_KEY_FILENAME,
-                    "-inform", "pem", "-noout");
-            Assertions.assertNotEquals(0, keyModulus.getExitCode(),
-                    "Should have failed to read private key without passphrase.");
-        }
+        verifyCertificatesAndKey(outdir, SSLCertificateFactory.DEFAULT_HOST_NAME, passphrase);
     }
 
     @Test
@@ -82,11 +70,12 @@ public class SSLCertificateFactoryTest
         Path encryptedPassphrase = outdir.resolve(SSLCertificateFactory.ENCRYPTED_PASSPHRASE_FILENAME);
         Assertions.assertTrue(encryptedPassphrase.toFile().exists(), "Encrypted passphrase file was not created");
         verifyFileOwnership(outdir, NEO4J_USER_ID);
-        verifyCertificatesAndKeysMatch(outdir, passphrase);
+        verifyCertificatesAndKey(outdir, SSLCertificateFactory.DEFAULT_HOST_NAME, passphrase);
 
         // verify the decrypt command works
-        try(GenericContainer container = makeOpenSSLContainer(outdir))
+        try(GenericContainer container = HelperContainers.nginx())
         {
+            TemporaryFolderManager.mountHostFolderAsVolume(container, outdir, "/certificates");
             String decryptCommand = SSLCertificateFactory.getPassphraseDecryptCommand("/certificates");
             container.start();
             Container.ExecResult decryptResult = container.execInContainer("sh", "-c", decryptCommand);
@@ -106,6 +95,52 @@ public class SSLCertificateFactoryTest
                 .withSSLKeyPassphrase("somepassphrasedoesntmatter", true)
                 .build();
         verifyFileOwnership(outdir, CURRENT_USER_ID);
+    }
+
+    @Test
+    void shouldCreateUnencryptedKeyByDefault() throws Exception
+    {
+        Path outdir = folderManager.createFolder("certificates");
+        new SSLCertificateFactory(outdir)
+                .withOwnerNeo4j()
+                .build();
+        verifyCertificatesAndKey(outdir, SSLCertificateFactory.DEFAULT_HOST_NAME, null);
+    }
+
+    @Test
+    void shouldSetHostCoveredByCertificate_hostIsIP() throws Exception
+    {
+        Path outdir = folderManager.createFolder("certificates");
+        new SSLCertificateFactory(outdir)
+                .withOwnerNeo4j()
+                .forHostIPOrName("10.0.1.42")
+                .withSSLKeyPassphrase("password12345", true)
+                .build();
+        verifyCertificatesAndKey(outdir, "10.0.1.42", "password12345");
+    }
+
+    @Test
+    void shouldSetHostCoveredByCertificate_hostIsLocalhost() throws Exception
+    {
+        Path outdir = folderManager.createFolder("certificates");
+        new SSLCertificateFactory(outdir)
+                .withOwnerNeo4j()
+                .forHostIPOrName("localhost")
+                .withSSLKeyPassphrase("password12345", true)
+                .build();
+        verifyCertificatesAndKey(outdir, "localhost", "password12345");
+    }
+
+    @Test
+    void shouldSetHostCoveredByCertificate_hostIsSomeName() throws Exception
+    {
+        Path outdir = folderManager.createFolder("certificates");
+        new SSLCertificateFactory(outdir)
+                .withOwnerNeo4j()
+                .forHostIPOrName("myserver")
+                .withSSLKeyPassphrase("password12345", true)
+                .build();
+        verifyCertificatesAndKey(outdir, "myserver", "password12345");
     }
 
     @Test
@@ -137,20 +172,11 @@ public class SSLCertificateFactoryTest
         }
     }
 
-    private GenericContainer makeOpenSSLContainer(Path certificateDir)
+    private void verifyCertificatesAndKey(Path certificateDir, String expectedHostName, @Nullable String keyPassphrase) throws Exception
     {
-        GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"));
-        TemporaryFolderManager.mountHostFolderAsVolume(container, certificateDir, "/certificates");
-        container.withExposedPorts(80)
-                .waitingFor(Wait.forHttp("/")
-                        .withStartupTimeout(Duration.ofSeconds(20)));
-        return container;
-    }
-
-    private void verifyCertificatesAndKeysMatch(Path certificateDir, @Nullable String keyPassphrase) throws Exception
-    {
-        try(GenericContainer container = makeOpenSSLContainer(certificateDir))
+        try(GenericContainer container = HelperContainers.nginx())
         {
+            TemporaryFolderManager.mountHostFolderAsVolume(container, certificateDir, "/certificates");
             container.start();
             // verify certificates and key are pem format and match
             // the `-inform pem` means that the commands will fail if certs/keys are not in PEM format.
@@ -158,6 +184,9 @@ public class SSLCertificateFactoryTest
                     "-in", "/certificates/"+SSLCertificateFactory.CERTIFICATE_FILENAME,
                     "-inform", "pem",
                     "-noout", "-modulus");
+            Container.ExecResult certSAN = container.execInContainer("sh", "-c",
+                    "openssl x509 -text -noout -in /certificates/"+SSLCertificateFactory.CERTIFICATE_FILENAME +
+                    " | grep \"Subject Alternative Name\" -A1");
             Container.ExecResult clientCertModulus = container.execInContainer("openssl", "x509",
                     "-in", "/certificates/"+SSLCertificateFactory.CLIENT_CERTIFICATE_FILENAME,
                     "-inform", "pem",
@@ -172,6 +201,13 @@ public class SSLCertificateFactoryTest
             }
             else
             {
+                // verify cannot read the key without a passphrase
+                Container.ExecResult keyRead = container.execInContainer("openssl", "rsa",
+                        "-in", "/certificates/" + SSLCertificateFactory.PRIVATE_KEY_FILENAME,
+                        "-inform", "pem", "-noout");
+                Assertions.assertNotEquals(0, keyRead.getExitCode(),
+                        "Should have failed to read private key without passphrase.");
+                // now read the key
                 keyModulus = container.execInContainer("openssl", "rsa",
                         "-in", "/certificates/" + SSLCertificateFactory.PRIVATE_KEY_FILENAME,
                         "-inform", "pem",
@@ -186,6 +222,9 @@ public class SSLCertificateFactoryTest
                     "Private key was not created in PEM format.\n"+keyModulus);
             Assertions.assertEquals(certModulus.getStdout(), keyModulus.getStdout(), "Certificate and private key do not match");
             Assertions.assertEquals(clientCertModulus.getStdout(), keyModulus.getStdout(), "Client certificate and private key do not match");
+            Assertions.assertFalse(certSAN.getStdout().isEmpty(), "Certificate should have a Subject Alternative Name");
+            Assertions.assertTrue(certSAN.getStdout().contains(expectedHostName),
+                    "Certificate should list IP "+expectedHostName+" as an address covered");
         }
     }
 }

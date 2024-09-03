@@ -1,7 +1,16 @@
 package com.neo4j.docker.coredb;
 
-import com.neo4j.docker.utils.*;
-import org.junit.jupiter.api.*;
+import com.neo4j.docker.utils.DatabaseIO;
+import com.neo4j.docker.utils.HelperContainers;
+import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.SSLCertificateFactory;
+import com.neo4j.docker.utils.TemporaryFolderManager;
+import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.WaitStrategies;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.slf4j.Logger;
@@ -10,8 +19,6 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -62,9 +69,11 @@ public class TestSSL
     {
         // generate certificates
         Path certificates = temporaryFolderManager.createFolder("certificates");
+        container.withNetworkAliases("neo4j");
         new SSLCertificateFactory(certificates)
                 .withSSLKeyPassphrase(SSL_KEY_PASSPHRASE, true)
                 .withOwnerNeo4j()
+                .forHostIPOrName(container.getHost())
                 .build();
         temporaryFolderManager.mountHostFolderAsVolume(container, certificates, "/ssl");
         // configure Neo4j for SSL over bolt
@@ -126,7 +135,7 @@ public class TestSSL
                 "OpenSSL "+ OPENSSL_VERSION +" is not installed.\n"+versionOut);
         Assertions.assertTrue(openssl.stream().anyMatch(s -> s.matches("OPENSSLDIR:\s*\""+OPENSSL_INSTALL_DIR+"\"?\\s*")),
                 "OpenSSL is not using the expected ssl config directory:\n"+versionOut);
-        Assertions.assertTrue(openssl.stream().anyMatch(s -> s.matches("MODULESDIR:\s*\""+OPENSSL_INSTALL_DIR+"/lib64/ossl-modules\"?\\s*")),
+        Assertions.assertTrue(openssl.stream().anyMatch(s -> s.matches("MODULESDIR:\s*\""+OPENSSL_INSTALL_DIR+"/lib(64)?/ossl-modules\"?\\s*")),
                 "OpenSSL is not using the expected modules directory:\n"+versionOut);
 
         // verify FIPS provider is set
@@ -217,6 +226,7 @@ public class TestSSL
     {
         try(GenericContainer container = createContainer())
         {
+            log.info("Container host is "+container.getHost());
             container.withEnv(FIPS_FLAG, "false");
             Path pluginDir = getTCNativeBoringSSL();
             TemporaryFolderManager.mountHostFolderAsVolume(container, pluginDir.getParent(), "/plugins");
@@ -229,14 +239,15 @@ public class TestSSL
         if(tcnativeBoringSSLJar == null)
         {
             String boringSSLJarName = "netty-tcnative-boringssl.jar";
-            try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"))) {
+            try (GenericContainer container = HelperContainers.nginx()) {
                 Path boringjar = temporaryFolderManager.createFolderAndMountAsVolume(container, "/boringssljar");
-                container.waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
                 container.start();
                 String arch = container.execInContainer("arch").getStdout().trim();
-                container.execInContainer("curl", "-sL", "-o", "/boringssljar/"+boringSSLJarName,
-                        "https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/" + NETTY_TCNATIVE_VERSION +
-                                "/netty-tcnative-boringssl-static-"+NETTY_TCNATIVE_VERSION+"-linux-"+arch+".jar");
+                arch.replace("aarch64", "aarch_64"); // for some reason netty arm libs use aarch_64 instead of aarch64
+                String url = String.format("https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/" +
+                        "%s/netty-tcnative-boringssl-static-%s-linux-%s.jar", NETTY_TCNATIVE_VERSION, NETTY_TCNATIVE_VERSION, arch);
+                log.info("Downloading tcnative boringSSL from "+url);
+                Container.ExecResult curlCmd = container.execInContainer("curl", "-sL", "-o", "/boringssljar/" + boringSSLJarName, url);
                 tcnativeBoringSSLJar = boringjar.resolve(boringSSLJarName);
                 Assertions.assertTrue(tcnativeBoringSSLJar.toFile().exists(), "Could not download TCNative BoringSSL jar");
             }

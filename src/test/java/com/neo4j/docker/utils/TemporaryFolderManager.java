@@ -10,18 +10,14 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -236,13 +232,9 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
     private void setFolderOwnerTo(String userAndGroup, Path... files) throws Exception
     {
         // uses docker privileges to set file owner, since probably the current user is not a sudoer.
-
         // Using nginx because it's easy to verify that the image started.
-        try(GenericContainer container = new GenericContainer( DockerImageName.parse( "nginx:latest")))
+        try(GenericContainer container = HelperContainers.nginx())
         {
-            container.withExposedPorts( 80 )
-                     .waitingFor( Wait.forHttp( "/" )
-                     .withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             for(Path p : files)
             {
                 mountHostFolderAsVolume( container, p, p.toAbsolutePath().toString() );
