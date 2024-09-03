@@ -2,6 +2,7 @@ package com.neo4j.docker;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.TemporaryFolderManager;
+import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,8 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Objects;
-
-import static java.lang.System.getenv;
 
 public class TestDockerComposeSecrets
 {
@@ -34,7 +33,7 @@ public class TestDockerComposeSecrets
                                                                                            Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
                                                                                                .forStatusCode( 200 ).withStartupTimeout(
                                                                                                        Duration.ofSeconds( 300 ) ) )
-                 .withEnv( "NEO4J_IMAGE", getenv( "NEO4J_IMAGE" ) ).withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() );
+                 .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() ).withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() );
 
         return container;
     }
