@@ -15,15 +15,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Objects;
 
 public class TestDockerComposeSecrets
 {
     private static final int DEFAULT_BOLT_PORT = 7687;
     private static final int DEFAULT_HTTP_PORT = 7474;
+    private static final Path TEST_RESOURCES_PATH = Paths.get( "src", "test", "resources", "dockersecrets" );
 
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
+
 
     private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName )
     {
@@ -42,7 +43,7 @@ public class TestDockerComposeSecrets
     void shouldCreateContainerAndConnect() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Simple_Container_Compose" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, "simple-container-compose.yml" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve(  "simple-container-compose.yml").toFile() );
         var serviceName = "simplecontainer";
 
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
@@ -59,7 +60,7 @@ public class TestDockerComposeSecrets
     void shouldCreateContainerWithSecretPasswordAndConnect() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, "container-compose-with-secrets.yml" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve(  "container-compose-with-secrets.yml").toFile() );
         var serviceName = "secretscontainer";
 
         var newSecretPassword = "neo4j/newSecretPassword";
@@ -79,7 +80,7 @@ public class TestDockerComposeSecrets
     void shouldOverrideVariableWithSecretValue() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, "container-compose-with-secrets-override.yml" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve(  "container-compose-with-secrets-override.yml").toFile() );
         var serviceName = "secretsoverridecontainer";
 
         var newSecretPageCache = "50M";
@@ -99,14 +100,12 @@ public class TestDockerComposeSecrets
         }
     }
 
-    private File copyDockerComposeResourceFile( Path targetDirectory, String fileName ) throws IOException
-    {
-        File compose_file = new File( targetDirectory.toString(), fileName );
-        if ( compose_file.exists() )
-        {
-            Files.delete( compose_file.toPath() );
+    private File copyDockerComposeResourceFile(Path targetDirectory, File resourceFile) throws IOException{
+        File compose_file = new File(targetDirectory.toString(), resourceFile.getName());
+        if (compose_file.exists()) {
+            Files.delete(compose_file.toPath());
         }
-        Files.copy( Objects.requireNonNull( getClass().getClassLoader().getResourceAsStream( fileName ) ), Paths.get( compose_file.getPath() ) );
+        Files.copy(resourceFile.toPath(), Paths.get(compose_file.getPath()));
         return compose_file;
     }
 }
