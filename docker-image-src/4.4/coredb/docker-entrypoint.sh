@@ -389,7 +389,7 @@ fi
 # Loop through all environment variables
 for variable_name in $(printenv | awk -F= '{print $1}'); do
   # Check if the variable ends with "_FILE"
-  if [[ $variable_name == "*_FILE" ]]; then
+  if [[ $variable_name == *"_FILE" ]]; then
     # Create a new variable name by removing the "_FILE" suffix
     base_variable_name=${variable_name%_FILE}
 
