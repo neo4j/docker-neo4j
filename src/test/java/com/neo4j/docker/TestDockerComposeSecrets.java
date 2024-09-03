@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+
+import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
 public class TestDockerComposeSecrets
 {
@@ -25,16 +26,15 @@ public class TestDockerComposeSecrets
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
-
-    private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName )
+    private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName, String password )
     {
         var container = new DockerComposeContainer( composeFile );
 
-        container.withExposedService( serviceName, DEFAULT_BOLT_PORT ).withExposedService( serviceName, DEFAULT_HTTP_PORT,
-                                                                                           Wait.forHttp( "/" ).forPort( DEFAULT_HTTP_PORT )
-                                                                                               .forStatusCode( 200 ).withStartupTimeout(
-                                                                                                       Duration.ofSeconds( 300 ) ) )
-                 .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() ).withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() );
+        container.withExposedService( serviceName, DEFAULT_BOLT_PORT )
+                 .withExposedService( serviceName, DEFAULT_HTTP_PORT )
+                 .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() )
+                 .withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() )
+                 .waitingFor( serviceName, waitForBoltReady( Duration.ofSeconds( 90 ) ) );
 
         return container;
     }
@@ -43,10 +43,10 @@ public class TestDockerComposeSecrets
     void shouldCreateContainerAndConnect() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Simple_Container_Compose" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve(  "simple-container-compose.yml").toFile() );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "simple-container-compose.yml" ).toFile() );
         var serviceName = "simplecontainer";
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "simplecontainerpassword" ) )
         {
             dockerComposeContainer.start();
 
@@ -60,14 +60,14 @@ public class TestDockerComposeSecrets
     void shouldCreateContainerWithSecretPasswordAndConnect() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve(  "container-compose-with-secrets.yml").toFile() );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets.yml" ).toFile() );
         var serviceName = "secretscontainer";
 
         var newSecretPassword = "neo4j/newSecretPassword";
         Files.createFile( tmpDir.resolve( "neo4j_auth.txt" ) );
         Files.writeString( tmpDir.resolve( "neo4j_auth.txt" ), newSecretPassword );
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "newSecretPassword" ) )
         {
             dockerComposeContainer.start();
             var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
@@ -80,14 +80,14 @@ public class TestDockerComposeSecrets
     void shouldOverrideVariableWithSecretValue() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve(  "container-compose-with-secrets-override.yml").toFile() );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets-override.yml" ).toFile() );
         var serviceName = "secretsoverridecontainer";
 
         var newSecretPageCache = "50M";
         Files.createFile( tmpDir.resolve( "neo4j_pagecache.txt" ) );
         Files.writeString( tmpDir.resolve( "neo4j_pagecache.txt" ), newSecretPageCache );
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "none" ) )
         {
             dockerComposeContainer.start();
 
@@ -100,12 +100,14 @@ public class TestDockerComposeSecrets
         }
     }
 
-    private File copyDockerComposeResourceFile(Path targetDirectory, File resourceFile) throws IOException{
-        File compose_file = new File(targetDirectory.toString(), resourceFile.getName());
-        if (compose_file.exists()) {
-            Files.delete(compose_file.toPath());
+    private File copyDockerComposeResourceFile( Path targetDirectory, File resourceFile ) throws IOException
+    {
+        File compose_file = new File( targetDirectory.toString(), resourceFile.getName() );
+        if ( compose_file.exists() )
+        {
+            Files.delete( compose_file.toPath() );
         }
-        Files.copy(resourceFile.toPath(), Paths.get(compose_file.getPath()));
+        Files.copy( resourceFile.toPath(), Paths.get( compose_file.getPath() ) );
         return compose_file;
     }
 }
