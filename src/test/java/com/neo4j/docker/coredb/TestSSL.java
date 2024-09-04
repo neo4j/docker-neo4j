@@ -224,6 +224,10 @@ public class TestSSL
     @Test
     void testEndToEndSSLEncryption() throws Exception
     {
+        Assumptions.assumeFalse(TestSettings.BASE_OS == TestSettings.BaseOS.UBI9 &&
+                System.getProperty( "os.arch" ).equals( "aarch64" ),
+                "BoringSSL library isn't compatible with ubi9 and arm64");
+
         try(GenericContainer container = createContainer())
         {
             log.info("Container host is "+container.getHost());
