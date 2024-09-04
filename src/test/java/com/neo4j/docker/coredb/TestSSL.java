@@ -243,11 +243,11 @@ public class TestSSL
                 Path boringjar = temporaryFolderManager.createFolderAndMountAsVolume(container, "/boringssljar");
                 container.start();
                 String arch = container.execInContainer("arch").getStdout().trim();
-                arch.replace("aarch64", "aarch_64"); // for some reason netty arm libs use aarch_64 instead of aarch64
+                arch = arch.replace("aarch64", "aarch_64"); // for some reason netty arm libs use aarch_64 instead of aarch64
                 String url = String.format("https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/" +
                         "%s/netty-tcnative-boringssl-static-%s-linux-%s.jar", NETTY_TCNATIVE_VERSION, NETTY_TCNATIVE_VERSION, arch);
                 log.info("Downloading tcnative boringSSL from "+url);
-                Container.ExecResult curlCmd = container.execInContainer("curl", "-sL", "-o", "/boringssljar/" + boringSSLJarName, url);
+                container.execInContainer("curl", "-sSL", "-o", "/boringssljar/" + boringSSLJarName, url);
                 tcnativeBoringSSLJar = boringjar.resolve(boringSSLJarName);
                 Assertions.assertTrue(tcnativeBoringSSLJar.toFile().exists(), "Could not download TCNative BoringSSL jar");
             }
