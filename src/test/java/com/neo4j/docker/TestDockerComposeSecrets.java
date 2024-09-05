@@ -40,7 +40,7 @@ public class TestDockerComposeSecrets
                  .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() )
                  .withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() )
                  .waitingFor( serviceName, waitForBoltReady( Duration.ofSeconds( 90 ) ) )
-                 .withLogConsumer(serviceName, new Slf4jLogConsumer( log));
+                 .withLogConsumer( serviceName, new Slf4jLogConsumer( log ) );
 
         return container;
     }
@@ -86,6 +86,8 @@ public class TestDockerComposeSecrets
     void shouldOverrideVariableWithSecretValue() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
+        Files.createDirectories( tmpDir.resolve( "neo4j" ).resolve( "config" ) );
+
         var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets-override.yml" ).toFile() );
         var serviceName = "secretsoverridecontainer";
 
@@ -103,6 +105,23 @@ public class TestDockerComposeSecrets
 
             Assertions.assertFalse( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=10M" ) );
             Assertions.assertTrue( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=50M" ) );
+        }
+    }
+
+    @Test
+    void shouldFailIfSecretFileDoesNotExist() throws Exception
+    {
+        var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets-override.yml" ).toFile() );
+        var serviceName = "secretsoverridecontainer";
+
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "none" ) )
+        {
+            dockerComposeContainer.start();
+        }
+        catch ( Exception e )
+        {
+            Assertions.assertTrue( e.getMessage().contains( "Container startup failed for image" ) );
         }
     }
 
