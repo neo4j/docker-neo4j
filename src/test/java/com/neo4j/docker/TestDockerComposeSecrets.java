@@ -6,7 +6,10 @@ import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +22,8 @@ import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
 public class TestDockerComposeSecrets
 {
+    private static final Logger log = LoggerFactory.getLogger( TestDockerComposeSecrets.class );
+
     private static final int DEFAULT_BOLT_PORT = 7687;
     private static final int DEFAULT_HTTP_PORT = 7474;
     private static final Path TEST_RESOURCES_PATH = Paths.get( "src", "test", "resources", "dockersecrets" );
@@ -34,7 +39,8 @@ public class TestDockerComposeSecrets
                  .withExposedService( serviceName, DEFAULT_HTTP_PORT )
                  .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() )
                  .withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() )
-                 .waitingFor( serviceName, waitForBoltReady( Duration.ofSeconds( 90 ) ) );
+                 .waitingFor( serviceName, waitForBoltReady( Duration.ofSeconds( 90 ) ) )
+                 .withLogConsumer(serviceName, new Slf4jLogConsumer( log));
 
         return container;
     }

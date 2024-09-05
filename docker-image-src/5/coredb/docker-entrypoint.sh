@@ -410,7 +410,7 @@ for variable_name in $(printenv | awk -F= '{print $1}'); do
     # Get the value of the _FILE variable
     secret_file_path="${!variable_name}"
 
-    # Check if the file exists and is readable, then read its contents
+    # Check if the file exists, then read its contents
     if [[ -f "$secret_file_path" ]]; then
       secret_value=$(<"$secret_file_path")
     else
