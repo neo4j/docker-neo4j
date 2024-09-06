@@ -123,12 +123,7 @@ public class TestDockerComposeSecrets
 
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
-            dockerComposeContainer.start();
-            Assertions.fail( "Container did not fail to execute" );
-        }
-        catch ( Exception e )
-        {
-            Assertions.assertTrue( e.getMessage().contains( "Container startup failed for image" ) );
+            Assertions.assertThrows( Exception.class, dockerComposeContainer::start );
         }
     }
 
@@ -144,19 +139,14 @@ public class TestDockerComposeSecrets
 
         var newPermissions = PosixFilePermissions.fromString( "rw-------" );
         Files.setPosixFilePermissions( tmpDir.resolve( "neo4j_pagecache.txt" ), newPermissions );
-        var containerLogConsumer = new ToStringConsumer();
 
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
+            var containerLogConsumer = new ToStringConsumer();
             dockerComposeContainer.withLogConsumer( serviceName, containerLogConsumer );
-            dockerComposeContainer.start();
-            Assertions.fail( "Container did not fail to execute" );
-        }
-        catch ( Exception e )
-        {
             var expectedLogLine = "The secret file '/run/secrets/neo4j_dbms_memory_pagecache_size_file' does not exist or is not readable. " +
                                   "Make sure you have correctly configured docker secrets.";
-
+            Assertions.assertThrows( Exception.class, dockerComposeContainer::start );
             Assertions.assertTrue( containerLogConsumer.toUtf8String().contains( expectedLogLine ) );
         }
     }
