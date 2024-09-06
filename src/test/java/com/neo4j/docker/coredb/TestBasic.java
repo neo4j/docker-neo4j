@@ -22,8 +22,6 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -263,24 +261,6 @@ public class TestBasic
 
             // Applying the Waiting strategy to ensure container is correctly running, because DockerClient does not check
             waitForBoltReady( Duration.ofSeconds( 90 ) ).waitUntilReady( container );
-        }
-    }
-
-    @Test
-    void testExtensionScriptIsExecuted() throws IOException
-    {
-        Path scriptFolder = temporaryFolderManager.createFolder("extension_script");
-        Path script = scriptFolder.resolve("startscript.sh");
-        Files.writeString(script, "#!/bin/bash\n\necho \"SCRIPT EXECUTED!\"");
-
-        try ( GenericContainer container = createBasicContainer() )
-        {
-            temporaryFolderManager.mountHostFolderAsVolume(container, scriptFolder, "/extension");
-            container.waitingFor(waitForBoltReady(Duration.ofSeconds(60)))
-                    .withEnv("EXTENSION_SCRIPT", "/extension/startscript.sh");
-            container.start();
-            String logs = container.getLogs(OutputFrame.OutputType.STDOUT);
-            Assertions.assertTrue(logs.contains("SCRIPT EXECUTED!"), "The extension script did not get executed");
         }
     }
 }

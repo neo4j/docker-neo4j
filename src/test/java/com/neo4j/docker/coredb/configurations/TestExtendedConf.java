@@ -59,7 +59,7 @@ public class TestExtendedConf
         GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
                 .withEnv( "NEO4J_AUTH", password == null || password.isEmpty() ? "none" : "neo4j/" + password )
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                .withEnv( "EXTENDED_CONF", "true" )
+                .withEnv( "EXTENDED_CONF", "yeppers" )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
                 .waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds(90)));
