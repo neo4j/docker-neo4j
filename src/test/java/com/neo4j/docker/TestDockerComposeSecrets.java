@@ -1,5 +1,7 @@
 package com.neo4j.docker;
 
+import com.neo4j.docker.coredb.configurations.Configuration;
+import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
@@ -31,7 +33,7 @@ public class TestDockerComposeSecrets
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
-    private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName, String password )
+    private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName )
     {
         var container = new DockerComposeContainer( composeFile );
 
@@ -52,7 +54,7 @@ public class TestDockerComposeSecrets
         var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "simple-container-compose.yml" ).toFile() );
         var serviceName = "simplecontainer";
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "simplecontainerpassword" ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             dockerComposeContainer.start();
 
@@ -73,7 +75,7 @@ public class TestDockerComposeSecrets
         Files.createFile( tmpDir.resolve( "neo4j_auth.txt" ) );
         Files.writeString( tmpDir.resolve( "neo4j_auth.txt" ), newSecretPassword );
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "newSecretPassword" ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             dockerComposeContainer.start();
             var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
@@ -95,16 +97,18 @@ public class TestDockerComposeSecrets
         Files.createFile( tmpDir.resolve( "neo4j_pagecache.txt" ) );
         Files.writeString( tmpDir.resolve( "neo4j_pagecache.txt" ), newSecretPageCache );
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "none" ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             dockerComposeContainer.start();
 
-            var configFile = tmpDir.resolve( "neo4j" ).resolve( "config" ).resolve( "neo4j.conf" ).toFile();
-            Assertions.assertTrue( configFile.exists(), "neo4j.conf file does not exist" );
-            Assertions.assertTrue( configFile.canRead(), "cannot read neo4j.conf file" );
+            var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
+                                       dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
 
-            Assertions.assertFalse( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=10M" ) );
-            Assertions.assertTrue( Files.readAllLines( configFile.toPath() ).contains( "dbms.memory.pagecache.size=50M" ) );
+            var secretSetting = dbio.getConfigurationSettingAsString( "neo4j",
+                                                                      "secretsoverridecontainerpassword",
+                                                                      Configuration.getConfigurationNameMap().get( Setting.MEMORY_PAGECACHE_SIZE ) );
+
+            Assertions.assertTrue( secretSetting.contains( newSecretPageCache ) );
         }
     }
 
@@ -115,7 +119,7 @@ public class TestDockerComposeSecrets
         var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets-override.yml" ).toFile() );
         var serviceName = "secretsoverridecontainer";
 
-        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName, "none" ) )
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             dockerComposeContainer.start();
         }
