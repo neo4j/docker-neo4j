@@ -10,18 +10,14 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -69,7 +65,7 @@ Path logpath = temporaryFolderManager.createFolderAndMountAsVolume(container, "/
  * <code>CLASSNAME_METHODNAME_RANDOMNUMBER</code> and inside it, there will be a folder called <code>conf</code> and
  * a folder called <code>logs</code>. These will be mounted to <code>container</code> at <code>/conf</code> and <code>/logs</code>.
  * <p>
- * For example if your test class is TestMounting.java and the method is called <code>shouldWriteToMount</code>
+ * For example if your test class is <code>TestMounting.java</code> and the method is called <code>shouldWriteToMount</code>
  * the folders created will be together inside <code>com.neo4j.docker.coredb.TestMounting_shouldWriteToMount_RANDOMNUMBER</code>.
  *
  * <h3>HARDER: Mount the same folder to two different (consecutive) containers</h3>
@@ -126,9 +122,9 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
             methodOutputFolderName += "_" + extensionContext.getDisplayName()
                                                             .replace( ' ', '_' );
         }
-        // finally add some salt so  that we can run the same test method twice and not get naming clashes.
+        // finally add some salt so that we can run the same test method twice and not get naming clashes.
         methodOutputFolderName += String.format( "_%04d", rng.nextInt(10000 ) );
-        log.info( "Recommended folder prefix is " + methodOutputFolderName );
+        log.info( "Test output folder is " + methodOutputFolderName );
         methodOutputFolder = folderRoot.resolve( methodOutputFolderName );
     }
 
@@ -149,31 +145,7 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         // create tar archive of data
         for(Path p : toCompressAfterAll)
         {
-            String tarOutName = p.getFileName().toString() + ".tar.gz";
-            try ( OutputStream fo = Files.newOutputStream( p.getParent().resolve( tarOutName ) );
-                  OutputStream gzo = new GzipCompressorOutputStream( fo );
-                  TarArchiveOutputStream archiver = new TarArchiveOutputStream( gzo ) )
-            {
-                archiver.setLongFileMode( TarArchiveOutputStream.LONGFILE_POSIX );
-                List<Path> files = Files.walk( p ).toList();
-                for(Path fileToBeArchived : files)
-                {
-                    // don't archive directories...
-                    if(fileToBeArchived.toFile().isDirectory()) continue;
-                    try( InputStream fileStream = Files.newInputStream( fileToBeArchived ))
-                    {
-                        ArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, folderRoot.relativize( fileToBeArchived ).toString() );
-                        archiver.putArchiveEntry( entry );
-                        IOUtils.copy( fileStream, archiver );
-                        archiver.closeArchiveEntry();
-                    } catch (IOException ioe)
-                    {
-                        // consume the error, because sometimes, file permissions won't let us copy
-                        log.warn( "Could not archive "+ fileToBeArchived, ioe);
-                    }
-                }
-                archiver.finish();
-            }
+            createTarGzOfPath(p);
         }
         // delete original folders
         log.debug( "Re owning folders: {}", toCompressAfterAll.stream()
@@ -204,23 +176,14 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         return tempFolder;
     }
 
-//    public Path createNamedFolderAndMountAsVolume( GenericContainer container, String hostFolderName,
-//                                                   Path parentFolder, String containerMountPoint ) throws IOException
-//    {
-//        Path tempFolder = createFolder( hostFolderName, parentFolder );
-//        mountHostFolderAsVolume( container, tempFolder, containerMountPoint );
-//        return tempFolder;
-//    }
+    protected String getFolderNameFromMountPoint(String containerMountPoint)
+    {
+        return containerMountPoint.substring( 1 )
+                .replace( '/', '_' )
+                .replace( ' ', '_' );
+    }
 
-//    public Path createFolderAndMountAsVolume( GenericContainer container, String containerMountPoint, Path parentFolder ) throws IOException
-//    {
-//        return null;
-//        Path hostFolder = createTempFolder( hostFolderNamePrefix, parentFolder );
-//        mountHostFolderAsVolume( container, hostFolder, containerMountPoint );
-//        return hostFolder;
-//    }
-
-    public void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint)
+    public static void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint)
     {
         container.withFileSystemBind( hostFolder.toAbsolutePath().toString(),
                                       containerMountPoint,
@@ -263,25 +226,15 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
 
     public void setFolderOwnerToNeo4j(Path file) throws Exception
     {
-        setFolderOwnerTo( "7474:7474", file );
-    }
-
-    protected String getFolderNameFromMountPoint(String containerMountPoint)
-    {
-        return containerMountPoint.substring( 1 )
-                                  .replace( '/', '_' )
-                                  .replace( ' ', '_' );
+        setFolderOwnerTo( SetContainerUser.getNeo4jUserString(), file );
     }
 
     private void setFolderOwnerTo(String userAndGroup, Path... files) throws Exception
     {
         // uses docker privileges to set file owner, since probably the current user is not a sudoer.
-
         // Using nginx because it's easy to verify that the image started.
-        try(GenericContainer container = new GenericContainer( DockerImageName.parse( "nginx:latest")))
+        try(GenericContainer container = HelperContainers.nginx())
         {
-            container.withExposedPorts( 80 )
-                     .waitingFor( Wait.forHttp( "/" ).withStartupTimeout( Duration.ofSeconds( 20 ) ) );
             for(Path p : files)
             {
                 mountHostFolderAsVolume( container, p, p.toAbsolutePath().toString() );
@@ -289,11 +242,39 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
             container.start();
             for(Path p : files)
             {
-                Container.ExecResult x =
-                        container.execInContainer( "chown", "-R", userAndGroup,
-                                                   p.toAbsolutePath().toString() );
+                container.execInContainer( "chown", "-R", userAndGroup, p.toAbsolutePath().toString() );
             }
             container.stop();
         }
+    }
+
+    private Path createTarGzOfPath(Path pathToArchive) throws IOException
+    {
+        Path outTarGz = pathToArchive.getParent().resolve(pathToArchive.getFileName().toString() + ".tar.gz");
+        try ( OutputStream fo = Files.newOutputStream( outTarGz );
+              OutputStream gzo = new GzipCompressorOutputStream( fo );
+              TarArchiveOutputStream archiver = new TarArchiveOutputStream( gzo ) )
+        {
+            archiver.setLongFileMode( TarArchiveOutputStream.LONGFILE_POSIX );
+            List<Path> files = Files.walk( pathToArchive ).toList();
+            for(Path fileToArchive : files)
+            {
+                // don't archive directories...
+                if(fileToArchive.toFile().isDirectory()) continue;
+                try( InputStream fileStream = Files.newInputStream( fileToArchive ))
+                {
+                    ArchiveEntry entry = archiver.createArchiveEntry( fileToArchive, folderRoot.relativize( fileToArchive ).toString() );
+                    archiver.putArchiveEntry( entry );
+                    IOUtils.copy( fileStream, archiver );
+                    archiver.closeArchiveEntry();
+                } catch (IOException ioe)
+                {
+                    // consume the error, because sometimes, file permissions won't let us copy
+                    log.warn( "Could not archive "+ fileToArchive, ioe);
+                }
+            }
+            archiver.finish();
+        }
+        return outTarGz;
     }
 }

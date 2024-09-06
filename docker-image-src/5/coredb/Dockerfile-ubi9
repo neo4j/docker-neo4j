@@ -14,7 +14,11 @@ RUN set -eux; \
             ;; \
         *) echo >&2 "Neo4j does not currently have a docker image for architecture $arch"; exit 1 ;; \
     esac; \
+    openssl_url="https://www.openssl.org/source/openssl-3.0.9.tar.gz"; \
+    openssl_sha="eb1ab04781474360f77c318ab89d8c5a03abc38e63d65a603cabbf1b00a1dc90"; \
     microdnf install -y --nodocs \
+        apr \
+        crypto-policies-scripts \
         findutils \
         gcc \
         git \
@@ -23,6 +27,11 @@ RUN set -eux; \
         java-17-openjdk-headless \
         jq \
         make \
+        perl-Digest-SHA \
+        perl-File-Compare \
+        perl-File-Copy \
+        perl-FindBin \
+        perl-IPC-Cmd \
         procps \
         shadow-utils \
         tar \
@@ -33,11 +42,27 @@ RUN set -eux; \
     wget -q ${tini_url}.asc -O tini.asc; \
     echo "${tini_sha}"  /usr/bin/tini | sha256sum -c --strict --quiet; \
     chmod a+x /usr/bin/tini; \
+    wget -q ${openssl_url} -O /openssl.tar.gz; \
+    wget -q ${openssl_url}.asc -O /openssl.tar.gz.asc; \
+    # verify tini and openssl shasum and gpg signatures
+    echo ${openssl_sha} /openssl.tar.gz  | sha256sum -c; \
     export GNUPGHOME="$(mktemp -d)"; \
-    gpg --batch --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys \
-        595E85A6B1B4779EA4DAAEC70B588DFF0527A9B7 \
-        B42F6819007F00F88E364FD4036A9C25BF357DD4; \
+    gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \
+        6380DC428747F6C393FEACA59A84159D7001A4E5 \
+        A21FAB74B0088AA361152586B8EF1A6BA9DA2D5C; \
     gpg --batch --verify tini.asc /usr/bin/tini; \
+    gpg --batch --verify /openssl.tar.gz.asc /openssl.tar.gz; \
+    # install openssl
+    tar -xzf /openssl.tar.gz --directory /tmp; \
+    cd /tmp/openssl-3.0.9; \
+    ./Configure --prefix=/usr/local/openssl --openssldir=/usr/local/openssl enable-fips no-tests no-legacy shared; \
+    make install_sw install_ssldirs install_fips; \
+    if [ ${arch} = "aarch64" ]; \
+      then ldconfig /usr/local/openssl/lib; \
+      else ldconfig /usr/local/openssl/lib64; \
+    fi; \
+    cd /; \
+    # download, verify and install su-exec
     git clone https://github.com/ncopa/su-exec.git; \
     cd su-exec; \
     git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af; \
@@ -45,8 +70,9 @@ RUN set -eux; \
     echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c; \
     make; \
     mv /su-exec/su-exec /usr/bin/su-exec; \
+    # clean up build files and downloads
     gpgconf --kill all; \
-    rm -rf "$GNUPGHOME" /tini.asc /su-exec; \
+    rm -rf "$GNUPGHOME" /tini.asc /su-exec /openssl.tar.gz /openssl.tar.gz.asc /tmp/openssl*; \
     microdnf remove -y git* perl* make gcc glibc-headers glibc-devel libxcrypt-devel; \
     microdnf clean all
 
@@ -80,8 +106,7 @@ RUN set -eux; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /logs "${NEO4J_HOME}"/logs
 
-ENV PATH "${NEO4J_HOME}"/bin:$PATH
-
+ENV PATH="${NEO4J_HOME}/bin:/usr/local/openssl/bin:$PATH"
 WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs
