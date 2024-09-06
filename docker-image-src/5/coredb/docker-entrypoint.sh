@@ -401,8 +401,6 @@ fi
 # They are suffixed with _FILE and prefixed by the name of the env var they should override
 # e.g. NEO4J_AUTH_FILE will override the value of the NEO4J_AUTH
 # It's best to do this first so that the secrets are available for the rest of the script
-
-# Loop through all environment variables
 for variable_name in $(printenv | awk -F= '{print $1}'); do
   # Check if the variable ends with "_FILE"
   if [[ $variable_name == *"_FILE" ]]; then
@@ -411,8 +409,15 @@ for variable_name in $(printenv | awk -F= '{print $1}'); do
 
     # Get the value of the _FILE variable
     secret_file_path="${!variable_name}"
-    secret_value=$(<"$secret_file_path")
 
+    if is_readable "${secret_file_path}"; then
+      # Read the secret value from the file
+      secret_value=$(<"$secret_file_path")
+    else
+      # File not readable
+      echo >&2 "The secret file '$secret_file_path' does not exist or is not readable. Make sure you have correctly configured docker secrets."
+      exit 1
+    fi
     # Assign the value to the new variable
     eval "$base_variable_name=$secret_value"
   fi
