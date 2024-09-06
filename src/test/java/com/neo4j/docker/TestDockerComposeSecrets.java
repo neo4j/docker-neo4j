@@ -3,7 +3,6 @@ package com.neo4j.docker;
 import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -13,12 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.output.ToStringConsumer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
@@ -123,10 +124,40 @@ public class TestDockerComposeSecrets
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             dockerComposeContainer.start();
+            Assertions.fail( "Container did not fail to execute" );
         }
         catch ( Exception e )
         {
             Assertions.assertTrue( e.getMessage().contains( "Container startup failed for image" ) );
+        }
+    }
+
+    @Test
+    void shouldFailAndPrintMessageIfFileIsNotReadable() throws Exception
+    {
+        var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets-override.yml" ).toFile() );
+        var serviceName = "secretsoverridecontainer";
+
+        Files.createFile( tmpDir.resolve( "neo4j_pagecache.txt" ) );
+        Files.writeString( tmpDir.resolve( "neo4j_pagecache.txt" ), "50M" );
+
+        var newPermissions = PosixFilePermissions.fromString( "rw-------" );
+        Files.setPosixFilePermissions( tmpDir.resolve( "neo4j_pagecache.txt" ), newPermissions );
+        var containerLogConsumer = new ToStringConsumer();
+
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
+        {
+            dockerComposeContainer.withLogConsumer( serviceName, containerLogConsumer );
+            dockerComposeContainer.start();
+            Assertions.fail( "Container did not fail to execute" );
+        }
+        catch ( Exception e )
+        {
+            var expectedLogLine = "The secret file '/run/secrets/neo4j_dbms_memory_pagecache_size_file' does not exist or is not readable. " +
+                                  "Make sure you have correctly configured docker secrets.";
+
+            Assertions.assertTrue( containerLogConsumer.toUtf8String().contains( expectedLogLine ) );
         }
     }
 
