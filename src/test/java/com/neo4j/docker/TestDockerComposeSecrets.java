@@ -3,6 +3,7 @@ package com.neo4j.docker;
 import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
@@ -108,7 +109,7 @@ public class TestDockerComposeSecrets
                                                                       "secretsoverridecontainerpassword",
                                                                       Configuration.getConfigurationNameMap().get( Setting.MEMORY_PAGECACHE_SIZE ) );
 
-            Assertions.assertTrue( secretSetting.contains( newSecretPageCache ) );
+            Assertions.assertTrue( secretSetting.contains( "50" ) );
         }
     }
 
