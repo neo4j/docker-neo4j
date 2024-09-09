@@ -380,6 +380,33 @@ if running_as_root; then
     find "${NEO4J_HOME}"/conf -type f -exec chmod -R 600 {} \;
 fi
 
+## == EXTRACT SECRETS FROM FILES ===
+# These environment variables are set by using docker secrets and they override their equivalent env vars
+# They are suffixed with _FILE and prefixed by the name of the env var they should override
+# e.g. NEO4J_AUTH_FILE will override the value of the NEO4J_AUTH
+# It's best to do this first so that the secrets are available for the rest of the script
+for variable_name in $(printenv | awk -F= '{print $1}'); do
+  # Check if the variable ends with "_FILE"
+  if [[ $variable_name == *"_FILE" ]]; then
+    # Create a new variable name by removing the "_FILE" suffix
+    base_variable_name=${variable_name%_FILE}
+
+    # Get the value of the _FILE variable
+    secret_file_path="${!variable_name}"
+
+    if is_readable "${secret_file_path}"; then
+      # Read the secret value from the file
+      secret_value=$(<"$secret_file_path")
+    else
+      # File not readable
+      echo >&2 "The secret file '$secret_file_path' does not exist or is not readable. Make sure you have correctly configured docker secrets."
+      exit 1
+    fi
+    # Assign the value to the new variable
+    eval "$base_variable_name=$secret_value"
+  fi
+done
+
 # ==== CHECK LICENSE AGREEMENT ====
 
 # Only prompt for license agreement if command contains "neo4j" in it
@@ -553,6 +580,12 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     if containsElement "$i" "${not_configs[@]}"; then
         continue
     fi
+
+    # Skip env variables with suffix _FILE, these are docker secrets
+    if [[ "$i" == *"_FILE" ]]; then
+        continue
+    fi
+
     setting=$(echo "${i}" | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
     value=$(echo "${!i}")
     # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
