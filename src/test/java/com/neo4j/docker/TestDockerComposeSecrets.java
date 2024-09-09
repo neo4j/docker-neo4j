@@ -6,6 +6,7 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -130,6 +131,7 @@ public class TestDockerComposeSecrets
     @Test
     void shouldFailAndPrintMessageIfFileIsNotReadable() throws Exception
     {
+        Assumptions.assumeFalse( System.getProperty( "os.arch" ).equals( "aarch64" ), "This test is ignored on ARM architecture." );
         var tmpDir = temporaryFolderManager.createFolder( "Container_Compose_With_Secrets_Override" );
         var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "container-compose-with-secrets-override.yml" ).toFile() );
         var serviceName = "secretsoverridecontainer";
