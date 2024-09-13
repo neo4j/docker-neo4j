@@ -16,9 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
-import org.testcontainers.utility.DockerImageName;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -26,7 +24,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -148,7 +145,7 @@ class TemporaryFolderManagerTest
     @Test
     void shouldMountAnyFolderToContainer(@TempDir Path tempFolder) throws Exception
     {
-        try(GenericContainer container = makeContainer())
+        try(GenericContainer container = HelperContainers.nginx())
         {
             manager.mountHostFolderAsVolume( container, tempFolder, "/root" );
             container.start();
@@ -217,7 +214,7 @@ class TemporaryFolderManagerTest
         String expectedMethodNameFolderRegex = this.getClass().getName() + "_createNamedFolderAndMount_\\d{4}";
         String expectedFolderName = "aFolder";
         Path actualTempFolder;
-        try(GenericContainer container = makeContainer())
+        try(GenericContainer container = HelperContainers.nginx())
         {
             actualTempFolder = manager.createNamedFolderAndMountAsVolume( container, expectedFolderName, "/root" );
             container.start();
@@ -243,7 +240,7 @@ class TemporaryFolderManagerTest
         String expectedMethodNameFolderRegex = this.getClass().getName() + "_createAutomaticallyNamedFolderAndMount_\\d{4}";
         String expectedFolderName = "root";
         Path actualTempFolder;
-        try(GenericContainer container = makeContainer())
+        try(GenericContainer container = HelperContainers.nginx())
         {
             actualTempFolder = manager.createFolderAndMountAsVolume( container, "/root" );
             container.start();
@@ -481,16 +478,6 @@ class TemporaryFolderManagerTest
         verifyTarIsCreatedAndUnique( expectedTarRegex );
         Assertions.assertFalse( tempFolderNormal.toFile().exists(), "Did not successfully delete "+tempFolderNormal );
         Assertions.assertFalse( tempFolder7474.toFile().exists(), "Did not successfully delete "+tempFolder7474 );
-    }
-
-    private GenericContainer makeContainer()
-    {
-        // we don't want to test the neo4j container, just use a generic container debian to check mounting.
-        // using nginx here just because there is a straightforward way of waiting for it to be ready
-        GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"))
-                .withExposedPorts(80)
-                .waitingFor(Wait.forHttp("/").withStartupTimeout( Duration.ofSeconds( 5 ) ));
-        return container;
     }
 
     private List<String> listFilesInTar(File tar) throws IOException

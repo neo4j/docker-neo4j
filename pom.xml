@@ -35,6 +35,12 @@
                 <profile.include>BundleTest</profile.include>
             </properties>
         </profile>
+        <profile>
+            <id>all-tests</id>
+            <properties>
+                <profile.include></profile.include>
+            </properties>
+        </profile>
     </profiles>
 
 	<build>
