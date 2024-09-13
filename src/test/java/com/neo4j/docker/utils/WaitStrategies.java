@@ -19,17 +19,7 @@ public class WaitStrategies
 
     public static WaitStrategy waitForNeo4jReady( String username, String password, String database, Duration timeout )
     {
-        if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE &&
-            TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500)) {
-            return Wait.forHttp("/db/" + database + "/cluster/available")
-                       .withBasicCredentials(username, password)
-                       .forPort(7474)
-                       .forStatusCode(200)
-                       .withStartupTimeout(timeout);
-        } else
-        {
-            return waitForBoltReady( timeout );
-        }
+        return Neo4jWaitStrategy.waitForNeo4jReady(username, password, database, timeout);
     }
 
     public static WaitStrategy waitForNeo4jReady( String password ) {
@@ -46,10 +36,7 @@ public class WaitStrategies
 
     public static WaitStrategy waitForBoltReady( Duration timeout )
     {
-        return Wait.forHttp("/")
-                   .forPort(7687)
-                   .forStatusCode(200)
-                   .withStartupTimeout(timeout);
+        return Neo4jWaitStrategy.waitForBoltReady(timeout);
     }
 
     /**For containers that will just run a command and exit automatically.

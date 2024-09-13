@@ -105,11 +105,13 @@ public class TestBackupRestore
     {
         final String dbUser = "neo4j";
         Path backupDir;
+        Path adminLogDir;
 
         // BACKUP
         // start a database and populate data
         try(GenericContainer neo4j = createDBContainer( asDefaultUser, password ))
         {
+            temporaryFolderManager.createFolderAndMountAsVolume(neo4j, "/logs");
             Path dataDir = temporaryFolderManager.createFolderAndMountAsVolume(neo4j, "/data");
             neo4j.start();
             DatabaseIO dbio = new DatabaseIO( neo4j );
@@ -129,7 +131,7 @@ public class TestBackupRestore
                                          "--include-metadata=all",
                                          "--from=" + neoDBAddress,
                                          "neo4j" );
-
+                adminLogDir = temporaryFolderManager.createNamedFolderAndMountAsVolume(adminBackup, "admin-logs", "/logs");
                 backupDir = temporaryFolderManager.createFolderAndMountAsVolume(adminBackup, "/backups");
                 adminBackup.start();
 
@@ -164,6 +166,7 @@ public class TestBackupRestore
                                           "--overwrite-destination=true",
                                           "--from-path=/backups/" + backupFile.getName(),
                                           "neo4j" );
+                temporaryFolderManager.mountHostFolderAsVolume( adminRestore, adminLogDir, "/logs" );
                 temporaryFolderManager.mountHostFolderAsVolume( adminRestore, backupDir, "/backups" );
                 temporaryFolderManager.mountHostFolderAsVolume( adminRestore, dataDir, "/data" );
                 adminRestore.start();

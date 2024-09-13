@@ -12,6 +12,7 @@
 	<properties>
         <java.version>17</java.version>
         <junit.version>5.10.0</junit.version>
+		<log4j.version>1.7.32</log4j.version>
         <neo4j.driver.version>4.4.11</neo4j.driver.version>
         <surefire.version>3.1.2</surefire.version>
         <testcontainers.version>1.18.0</testcontainers.version>
@@ -71,12 +72,12 @@
 			<!-- logging library -->
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.32</version>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.32</version>
+			<version>${log4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>

@@ -4,6 +4,7 @@ import com.github.dockerjava.api.command.KillContainerCmd;
 import com.github.dockerjava.api.command.StopContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.Network;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -28,10 +29,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static com.neo4j.docker.utils.Network.getUniqueHostPort;
-import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
-import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
-
 public class TestBasic
 {
     private static Logger log = LoggerFactory.getLogger( TestBasic.class );
@@ -52,7 +49,7 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.waitingFor(WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
             String stdout = container.getLogs();
@@ -68,7 +65,7 @@ public class TestBasic
                                  "UBI8 based images are expected to have a warning in stderr" );
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -113,7 +110,7 @@ public class TestBasic
                                 "No unified license acceptance method before 5.0.0" );
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -134,7 +131,7 @@ public class TestBasic
         try ( GenericContainer container = createBasicContainer() )
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "eval" )
-                     .waitingFor( waitForNeo4jReady( "neo4j" ) );
+                     .waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
 
@@ -151,7 +148,7 @@ public class TestBasic
         String expectedCypherShellPath = "/var/lib/neo4j/bin/cypher-shell";
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
 
             Container.ExecResult whichResult = container.execInContainer( "which", "cypher-shell" );
@@ -165,7 +162,7 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.setWorkingDirectory( "/tmp" );
             Assertions.assertDoesNotThrow( container::start,
                                            "Could not start neo4j from workdir other than NEO4J_HOME" );
@@ -179,7 +176,7 @@ public class TestBasic
                 "No packaging_info file before 5.0.0" );
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor( waitForNeo4jReady( "neo4j" ) );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             String packagingInfo = container.execInContainer("cat", "/var/lib/neo4j/packaging_info").getStdout();
             List<String> actualPackageType = Stream.of(packagingInfo.split( "\n" ))
@@ -199,7 +196,7 @@ public class TestBasic
         try ( GenericContainer container = createBasicContainer() )
         {
             container.withEnv( "NEO4J_AUTH", "none" )
-                     .waitingFor( waitForNeo4jReady( "none" ) );
+                     .waitingFor( WaitStrategies.waitForNeo4jReady( "none" ) );
             container.start();
             DatabaseIO dbio = new DatabaseIO( container );
             dbio.putInitialDataIntoContainer( "neo4j", "none" );
@@ -240,10 +237,10 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            int boltHostPort = getUniqueHostPort();
-            int browserHostPort = getUniqueHostPort();
+            int boltHostPort = Network.getUniqueHostPort();
+            int browserHostPort = Network.getUniqueHostPort();
 
-            container.waitingFor( waitForBoltReady( Duration.ofSeconds( 90 ) ) );
+            container.waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90 ) ) );
             container.withEnv( "NEO4J_AUTH", "none" );
 
             // Ensuring host ports are constant with container restarts
@@ -262,7 +259,7 @@ public class TestBasic
             container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
 
             // Applying the Waiting strategy to ensure container is correctly running, because DockerClient does not check
-            waitForBoltReady( Duration.ofSeconds( 90 ) ).waitUntilReady( container );
+            WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90 ) ).waitUntilReady( container );
         }
     }
 
