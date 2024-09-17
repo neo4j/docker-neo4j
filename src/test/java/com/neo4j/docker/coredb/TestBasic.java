@@ -243,7 +243,7 @@ public class TestBasic
             int boltHostPort = getUniqueHostPort();
             int browserHostPort = getUniqueHostPort();
 
-            container.waitingFor( waitForBoltReady( Duration.ofSeconds( 90 ) ) );
+            container.waitingFor( waitForBoltReady() );
             container.withEnv( "NEO4J_AUTH", "none" );
 
             // Ensuring host ports are constant with container restarts
@@ -262,7 +262,7 @@ public class TestBasic
             container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
 
             // Applying the Waiting strategy to ensure container is correctly running, because DockerClient does not check
-            waitForBoltReady( Duration.ofSeconds( 90 ) ).waitUntilReady( container );
+            waitForBoltReady().waitUntilReady( container );
         }
     }
 
@@ -276,7 +276,7 @@ public class TestBasic
         try ( GenericContainer container = createBasicContainer() )
         {
             temporaryFolderManager.mountHostFolderAsVolume(container, scriptFolder, "/extension");
-            container.waitingFor(waitForBoltReady(Duration.ofSeconds(60)))
+            container.waitingFor(waitForBoltReady())
                     .withEnv("EXTENSION_SCRIPT", "/extension/startscript.sh");
             container.start();
             String logs = container.getLogs(OutputFrame.OutputType.STDOUT);

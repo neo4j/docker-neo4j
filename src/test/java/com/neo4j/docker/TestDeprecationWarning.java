@@ -31,7 +31,7 @@ public class TestDeprecationWarning
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withExposedPorts( 7474, 7687 )
                      .withLogConsumer( new Slf4jLogConsumer( log ))
-                     .waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90 ) ) );
+                     .waitingFor( WaitStrategies.waitForBoltReady() );
             container.start();
             // container should successfully start
             String logs = container.getLogs( OutputFrame.OutputType.STDERR );
@@ -92,7 +92,7 @@ public class TestDeprecationWarning
                      .withEnv( DEPRECATION_WARN_SUPPRESS_FLAG, "suppress" )
                      .withExposedPorts( 7474, 7687 )
                      .withLogConsumer( new Slf4jLogConsumer( log ))
-                     .waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90 ) ) );
+                     .waitingFor( WaitStrategies.waitForBoltReady() );
             container.start();
             // container should successfully start
             String logs = container.getLogs( OutputFrame.OutputType.STDERR );

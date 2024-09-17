@@ -47,7 +47,7 @@ public class TestDumpLoad
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForNeo4jReady( password, Duration.ofSeconds( 90 )) );
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( password) );
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );

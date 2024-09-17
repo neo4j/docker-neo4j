@@ -57,7 +57,7 @@ public class TestBackupRestore44
                  .withEnv( confNames.get( Setting.BACKUP_LISTEN_ADDRESS ).envName, "0.0.0.0:6362" )
                  .withExposedPorts( 7474, 7687, 6362 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor(WaitStrategies.waitForNeo4jReady( password, Duration.ofSeconds( 90 )));
+                 .waitingFor(WaitStrategies.waitForNeo4jReady( password ));
         if(!asDefaultUser)
         {
             SetContainerUser.nonRootUser( container );
