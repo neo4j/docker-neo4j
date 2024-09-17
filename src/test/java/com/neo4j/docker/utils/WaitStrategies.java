@@ -15,6 +15,9 @@ import org.testcontainers.utility.DockerStatus;
 
 public class WaitStrategies
 {
+
+    private final static Duration STARTUP_TIMEOUT_SECONDS = Duration.ofSeconds(150);
+
     private WaitStrategies() {}
 
     public static WaitStrategy waitForNeo4jReady( String username, String password, String database, Duration timeout )
@@ -28,28 +31,20 @@ public class WaitStrategies
                        .withStartupTimeout(timeout);
         } else
         {
-            return waitForBoltReady( timeout );
+            return waitForBoltReady();
         }
     }
 
     public static WaitStrategy waitForNeo4jReady( String password ) {
-        return waitForNeo4jReady( "neo4j", password, "neo4j", Duration.ofSeconds(60));
+        return waitForNeo4jReady( "neo4j", password, "neo4j", STARTUP_TIMEOUT_SECONDS);
     }
 
-    public static WaitStrategy waitForNeo4jReady( String password, Duration timeout ) {
-        return waitForNeo4jReady( "neo4j", password, "neo4j", timeout);
-    }
-
-    public static WaitStrategy waitForNeo4jReady( String user, String password, Duration timeout ) {
-        return waitForNeo4jReady( user, password, "neo4j", timeout);
-    }
-
-    public static WaitStrategy waitForBoltReady( Duration timeout )
+    public static WaitStrategy waitForBoltReady()
     {
         return Wait.forHttp("/")
                    .forPort(7687)
                    .forStatusCode(200)
-                   .withStartupTimeout(timeout);
+                   .withStartupTimeout(STARTUP_TIMEOUT_SECONDS);
     }
 
     /**For containers that will just run a command and exit automatically.

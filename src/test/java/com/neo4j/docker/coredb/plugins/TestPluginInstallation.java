@@ -88,7 +88,7 @@ public class TestPluginInstallation
                  .withEnv( Neo4jPluginEnv.get(), "[\"_testing\"]" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForNeo4jReady( DB_USER, DB_PASSWORD, Duration.ofSeconds( 60 )));
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( DB_PASSWORD));
         SetContainerUser.nonRootUser( container );
         return container;
     }

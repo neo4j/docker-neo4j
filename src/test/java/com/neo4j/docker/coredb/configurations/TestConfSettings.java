@@ -125,7 +125,7 @@ public class TestConfSettings
         try(GenericContainer container = createContainer())
         {
             container.withEnv( "NEO4J_1a", "1" )
-                     .waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90 ) ) );
+                     .waitingFor( WaitStrategies.waitForBoltReady() );
             container.start();
             Assertions.assertTrue( container.isRunning() );
             String errorLogs = container.getLogs( OutputFrame.OutputType.STDERR);

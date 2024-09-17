@@ -61,7 +61,7 @@ public class TestSSL
                 .withEnv("NEO4J_DEBUG", "yes")
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log))
-                .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD, Duration.ofSeconds(60)));
+                .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD ));
         return container;
     }
 

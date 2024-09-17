@@ -99,7 +99,7 @@ public class TestBundledPluginInstallation
                  .withEnv("NEO4J_DEBUG", "yes")
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForBoltReady(Duration.ofSeconds(60)) );
+                 .waitingFor( WaitStrategies.waitForBoltReady() );
         return container;
     }
 

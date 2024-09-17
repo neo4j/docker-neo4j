@@ -51,7 +51,7 @@ public class TestDumpLoad44
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForNeo4jReady( password, Duration.ofSeconds( 90 )) )
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( password ) )
                  // the default testcontainer framework behaviour is to just stop the process entirely,
                  // preventing clean shutdown. This means we can run the stop command and
                  // it'll send a SIGTERM to initiate neo4j shutdown. See also stopContainer method.

@@ -52,7 +52,7 @@ public class TestDockerComposeSecrets
                  .withExposedService( serviceName, DEFAULT_HTTP_PORT )
                  .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() )
                  .withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() )
-                 .waitingFor( serviceName, waitForBoltReady( Duration.ofSeconds( 90 ) ) )
+                 .waitingFor( serviceName, waitForBoltReady() )
                  .withLogConsumer( serviceName, new Slf4jLogConsumer( log ) );
 
         return container;

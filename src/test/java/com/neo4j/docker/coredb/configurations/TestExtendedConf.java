@@ -62,7 +62,7 @@ public class TestExtendedConf
                 .withEnv( "EXTENDED_CONF", "true" )
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                .waitingFor( WaitStrategies.waitForBoltReady( Duration.ofSeconds(90)));
+                .waitingFor( WaitStrategies.waitForBoltReady());
        return container;
     }
 

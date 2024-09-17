@@ -42,7 +42,7 @@ public class TestAuthentication
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor(WaitStrategies.waitForBoltReady( Duration.ofSeconds( 90) ));
+                 .waitingFor(WaitStrategies.waitForBoltReady());
         if(asCurrentUser)
         {
             SetContainerUser.nonRootUser( container );
@@ -100,9 +100,7 @@ public class TestAuthentication
 		try(GenericContainer container = createContainer( true ))
         {
             log.info( "Starting first container as current user and not specifying NEO4J_AUTH" );
-            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j",
-                                                                    "neo4j",
-                                                                    Duration.ofSeconds( 90)) );
+            container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             // try with no password, this should fail because the default password should be applied with no NEO4J_AUTH env variable
@@ -272,7 +270,7 @@ public class TestAuthentication
             String intialPass = "apassword";
             String resetPass = "new_password";
             container.withEnv("NEO4J_AUTH", user+"/"+intialPass+"/true" )
-                     .waitingFor(   WaitStrategies.waitForNeo4jReady( user, intialPass, Duration.ofSeconds(60)) );
+                     .waitingFor(   WaitStrategies.waitForNeo4jReady( intialPass ) );
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             Assertions.assertThrows( org.neo4j.driver.exceptions.ClientException.class,
