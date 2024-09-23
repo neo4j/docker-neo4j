@@ -52,7 +52,7 @@ public class TestCausalCluster
         int i = 0;
 
         for (String line : contentLines) {
-            editedLines[i] = line.replaceAll("%%IMAGE%%", TestSettings.IMAGE_ID.asCanonicalNameString());
+            editedLines[i] = line.replaceAll("%%IMAGE%%", TestSettings.NEO4J_IMAGE_ID.asCanonicalNameString());
             editedLines[i] = editedLines[i].replaceAll("%%LOGS_DIR%%", tmpDir.toAbsolutePath().toString());
             editedLines[i] = editedLines[i].replaceAll("%%USERIDGROUPID%%", SetContainerUser.getNonRootUserString());
             i++;

@@ -50,7 +50,7 @@ public class TestBackupRestore44
             auth = "neo4j/"+password;
         }
         Map<Setting,Configuration> confNames = Configuration.getConfigurationNameMap();
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID);
         container.withEnv( "NEO4J_AUTH", auth )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withEnv( confNames.get( Setting.BACKUP_ENABLED ).envName, "true" )
@@ -67,7 +67,7 @@ public class TestBackupRestore44
 
     private GenericContainer createAdminContainer( boolean asDefaultUser )
     {
-        GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_ADMIN_IMAGE_ID);
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
         WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 180) );

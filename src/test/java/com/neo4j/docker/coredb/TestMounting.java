@@ -66,7 +66,7 @@ public class TestMounting
                   asCurrentUser ? "non-root" : "root",
                   isSecurityFlagSet ? "with secure file permissions" : "with unsecured file permissions" );
 
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID);
         container.withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )

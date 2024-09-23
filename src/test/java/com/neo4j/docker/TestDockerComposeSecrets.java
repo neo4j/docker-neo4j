@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.Duration;
 
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
@@ -50,7 +49,7 @@ public class TestDockerComposeSecrets
 
         container.withExposedService( serviceName, DEFAULT_BOLT_PORT )
                  .withExposedService( serviceName, DEFAULT_HTTP_PORT )
-                 .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() )
+                 .withEnv( "NEO4J_IMAGE", TestSettings.NEO4J_IMAGE_ID.asCanonicalNameString() )
                  .withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() )
                  .waitingFor( serviceName, waitForBoltReady() )
                  .withLogConsumer( serviceName, new Slf4jLogConsumer( log ) );

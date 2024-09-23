@@ -1,11 +1,6 @@
 package com.neo4j.docker.coredb;
 
-import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.WaitStrategies;
-import com.neo4j.docker.utils.TemporaryFolderManager;
-import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -47,27 +42,12 @@ public class TestAdminReport
             reportDestinationFlag = "--to-path";
         }
     }
-
-    private GenericContainer createNeo4jContainer( boolean asCurrentUser)
-    {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
-                .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                .withEnv( "NEO4J_AUTH", "neo4j/"+PASSWORD )
-                .withExposedPorts( 7474, 7687 )
-                .withLogConsumer( new Slf4jLogConsumer( log ) )
-                .waitingFor(WaitStrategies.waitForNeo4jReady( PASSWORD ));
-        if(asCurrentUser)
-        {
-            SetContainerUser.nonRootUser( container );
-        }
-        return container;
-    }
-
+    
     @ParameterizedTest(name = "ascurrentuser_{0}")
     @ValueSource(booleans = {true, false})
     void testMountToTmpReports(boolean asCurrentUser) throws Exception
     {
-        try(GenericContainer container = createNeo4jContainer(asCurrentUser))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer(asCurrentUser))
         {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             Path reportFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/tmp/reports");
@@ -102,7 +82,7 @@ public class TestAdminReport
 
     private void verifyCanWriteToMountedLocation(boolean asCurrentUser, String testFolderPrefix, String[] execArgs) throws Exception
     {
-        try(GenericContainer container = createNeo4jContainer(asCurrentUser))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer(asCurrentUser))
         {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             Path reportFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/reports");
@@ -120,7 +100,7 @@ public class TestAdminReport
     @Test
     void shouldShowNeo4jAdminHelpText_whenCMD() throws Exception
     {
-        try(GenericContainer container = createNeo4jContainer(false))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer(false))
         {
             container.withCommand( "neo4j-admin-report", "--help" );
             WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 20 ) );
@@ -142,7 +122,7 @@ public class TestAdminReport
     @Test
     void shouldShowNeo4jAdminHelpText_whenEXEC() throws Exception
     {
-        try(GenericContainer container = createNeo4jContainer(false))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer(false))
         {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             container.start();

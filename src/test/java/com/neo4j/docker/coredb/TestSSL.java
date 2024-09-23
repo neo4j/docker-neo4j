@@ -55,7 +55,7 @@ public class TestSSL
 
     private GenericContainer createContainer()
     {
-        GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID)
+        GenericContainer<?> container = new GenericContainer<>(TestSettings.NEO4J_IMAGE_ID)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withEnv("NEO4J_AUTH", "neo4j/"+PASSWORD)
                 .withEnv("NEO4J_DEBUG", "yes")

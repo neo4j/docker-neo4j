@@ -80,7 +80,7 @@ public class TestPluginInstallation
     private GenericContainer createContainerWithTestingPlugin()
     {
         Testcontainers.exposeHostPorts( httpServer.PORT );
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID);
 
         container.withEnv( "NEO4J_AUTH", DB_USER + "/" + DB_PASSWORD )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
@@ -98,7 +98,7 @@ public class TestPluginInstallation
         log.info( "Running as user {}, {}",
                   asCurrentUser ? "non-root" : "root" );
 
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID);
         container.withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
@@ -257,7 +257,7 @@ public class TestPluginInstallation
     void invalidPluginNameShouldGiveOptionsAndError()
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
-        try ( GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID ) )
+        try ( GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID) )
         {
             // if we try to set a plugin that doesn't exist
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
@@ -276,7 +276,7 @@ public class TestPluginInstallation
     void invalidPluginNameShouldGiveOptionsAndError_mulitpleplugins()
     {
         Assumptions.assumeTrue( NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_440 ) );
-        try ( GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID ) )
+        try ( GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID) )
         {
             // if we try to set a plugin that doesn't exist
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )

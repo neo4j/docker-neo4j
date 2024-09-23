@@ -18,7 +18,7 @@ public class TestReport
 
     private GenericContainer createAdminContainer()
     {
-        GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID )
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_ADMIN_IMAGE_ID)
                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" ).withEnv( "NEO4J_DEBUG", "yes" )
                 .withCommand( "neo4j-admin", "server", "report" )
                 .withLogConsumer( new Slf4jLogConsumer( log ) );

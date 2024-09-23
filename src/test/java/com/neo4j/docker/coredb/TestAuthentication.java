@@ -2,12 +2,7 @@ package com.neo4j.docker.coredb;
 
 import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
-import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
-import com.neo4j.docker.utils.WaitStrategies;
-import com.neo4j.docker.utils.TemporaryFolderManager;
-import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -35,21 +30,7 @@ public class TestAuthentication
 
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
-
-    private GenericContainer createContainer( boolean asCurrentUser )
-    {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-        container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor(WaitStrategies.waitForBoltReady());
-        if(asCurrentUser)
-        {
-            SetContainerUser.nonRootUser( container );
-        }
-        return container;
-    }
-
+    
     private Path setInitialPasswordWithSecretsFile(GenericContainer container, String password) throws IOException
     {
         Path secretsFolder = temporaryFolderManager.createFolderAndMountAsVolume( container, "/secrets" );
@@ -63,7 +44,7 @@ public class TestAuthentication
 	{
 		// we test that setting NEO4J_AUTH to "none" lets the database start in TestBasic.java,
         // but that does not test that we can read/write the database
-		try(GenericContainer container = createContainer( false ))
+		try(GenericContainer container = HelperContainers.createNeo4jContainer( false ))
 		{
 			container.withEnv( "NEO4J_AUTH", "none");
 			container.start();
@@ -76,7 +57,7 @@ public class TestAuthentication
 	@Test
     void testPasswordCantBeNeo4j() throws Exception
     {
-        try(GenericContainer failContainer = new GenericContainer( TestSettings.IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) ))
+        try(GenericContainer failContainer = new GenericContainer( TestSettings.NEO4J_IMAGE_ID ).withLogConsumer( new Slf4jLogConsumer( log ) ))
         {
             if ( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE )
             {
@@ -97,7 +78,7 @@ public class TestAuthentication
 	@Test
 	void testDefaultPasswordAndPasswordResetIfNoNeo4jAuthSet()
 	{
-		try(GenericContainer container = createContainer( true ))
+		try(GenericContainer container = HelperContainers.createNeo4jContainer( true ))
         {
             log.info( "Starting first container as current user and not specifying NEO4J_AUTH" );
             container.waitingFor( WaitStrategies.waitForNeo4jReady( "neo4j" ) );
@@ -123,7 +104,7 @@ public class TestAuthentication
         String password = "some_valid_password";
         Path dataMount;
 
-        try(GenericContainer firstContainer = createContainer( asCurrentUser ))
+        try(GenericContainer firstContainer = HelperContainers.createNeo4jContainer( asCurrentUser ))
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password )
                           .waitingFor(WaitStrategies.waitForNeo4jReady(password));
@@ -137,7 +118,7 @@ public class TestAuthentication
         }
 
         // with a new container, check the database data.
-        try(GenericContainer secondContainer = createContainer( asCurrentUser )
+        try(GenericContainer secondContainer = HelperContainers.createNeo4jContainer( asCurrentUser )
                 .waitingFor(WaitStrategies.waitForNeo4jReady(password)))
         {
             temporaryFolderManager.mountHostFolderAsVolume( secondContainer, dataMount, "/data" );
@@ -154,7 +135,7 @@ public class TestAuthentication
     {
         String password = "some_valid_password";
 
-        try(GenericContainer container = createContainer( asCurrentUser )
+        try(GenericContainer container = HelperContainers.createNeo4jContainer( asCurrentUser )
                 .waitingFor(WaitStrategies.waitForNeo4jReady(password)))
 		{
 			setInitialPasswordWithSecretsFile( container, password );
@@ -173,7 +154,7 @@ public class TestAuthentication
         String password = "some_valid_password";
         String wrongPassword = "not_the_password";
 
-        try(GenericContainer container = createContainer(false )
+        try(GenericContainer container = HelperContainers.createNeo4jContainer(false )
                 .waitingFor(WaitStrategies.waitForNeo4jReady(password)))
 		{
             container.withEnv( "NEO4J_AUTH", "neo4j/" + wrongPassword );
@@ -192,7 +173,7 @@ public class TestAuthentication
     @Test
     void testFailsIfSecretsFileSetButMissing()
     {
-        try(GenericContainer failContainer = createContainer( false ))
+        try(GenericContainer failContainer = HelperContainers.createNeo4jContainer( false ))
 		{
             WaitStrategies.waitUntilContainerFinished( failContainer, Duration.ofSeconds( 30 ) );
             failContainer.withEnv( NEO4J_AUTH_FILE_ENV, "/secrets/doesnotexist.secret" );
@@ -211,7 +192,7 @@ public class TestAuthentication
     {
         String password = "some_valid_password";
 
-        try ( GenericContainer container = createContainer( false  ) )
+        try ( GenericContainer container = HelperContainers.createNeo4jContainer( false  ) )
         {
             container.withEnv( "NEO4J_AUTH", "neo4j/" + password )
                      .withEnv( "NEO4J_DEBUG", "yes" )
@@ -230,7 +211,7 @@ public class TestAuthentication
         String password = "some_valid_password";
         Path dataMount;
 
-		try(GenericContainer firstContainer = createContainer( asCurrentUser ))
+		try(GenericContainer firstContainer = HelperContainers.createNeo4jContainer( asCurrentUser ))
 		{
 			firstContainer.withEnv( "NEO4J_AUTH", "neo4j/"+password )
                           .waitingFor(WaitStrategies.waitForNeo4jReady( password));
@@ -245,7 +226,7 @@ public class TestAuthentication
         }
 
         // with a new container, check the database data.
-        try(GenericContainer secondContainer = createContainer( asCurrentUser ))
+        try(GenericContainer secondContainer = HelperContainers.createNeo4jContainer( asCurrentUser ))
         {
             String wrongPassword = "not_the_password";
             secondContainer.withEnv( "NEO4J_AUTH", "neo4j/"+wrongPassword );
@@ -264,7 +245,7 @@ public class TestAuthentication
     {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 3,6,0 ) ),
                                 "Require password reset is only a feature in 3.6 onwards");
-        try(GenericContainer container = createContainer( false ))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer( false ))
         {
             String user = "neo4j";
             String intialPass = "apassword";
@@ -290,7 +271,7 @@ public class TestAuthentication
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
                                 "Minimum password length introduced in 5.2.0");
         String shortPassword = "123";
-        try(GenericContainer failContainer = createContainer( false ))
+        try(GenericContainer failContainer = HelperContainers.createNeo4jContainer( false ))
         {
             if(usePasswordFile)
             {
@@ -318,7 +299,7 @@ public class TestAuthentication
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
                                 "Minimum password length introduced in 5.2.0");
         String shortPassword = "123";
-        try(GenericContainer failContainer = createContainer( false ))
+        try(GenericContainer failContainer = HelperContainers.createNeo4jContainer( false ))
         {
             if(usePasswordFile)
             {
@@ -348,7 +329,7 @@ public class TestAuthentication
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
                                 "Minimum password length introduced in 5.2.0");
         String shortPassword = "123";
-        try(GenericContainer container = createContainer( false ))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer( false ).waitingFor(WaitStrategies.waitForBoltReady()))
         {
             if(usePasswordFile)
             {
@@ -370,7 +351,7 @@ public class TestAuthentication
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( new Neo4jVersion( 5,2,0 ) ),
                                 "Minimum password length introduced in 5.2.0");
         String shortPassword = "123";
-        try(GenericContainer container = createContainer( false ))
+        try(GenericContainer container = HelperContainers.createNeo4jContainer( false ))
         {
             if(usePasswordFile)
             {

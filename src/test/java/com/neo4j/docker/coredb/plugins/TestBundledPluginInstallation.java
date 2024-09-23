@@ -1,10 +1,6 @@
 package com.neo4j.docker.coredb.plugins;
 
-import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.WaitStrategies;
-import com.neo4j.docker.utils.TemporaryFolderManager;
-import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.*;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -91,21 +87,12 @@ public class TestBundledPluginInstallation
         );
     }
 
-    private GenericContainer createContainer()
-    {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
-        container.withEnv( "NEO4J_AUTH", "none" )
-                 .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                 .withEnv("NEO4J_DEBUG", "yes")
-                 .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForBoltReady() );
-        return container;
-    }
-
     private GenericContainer createContainerWithBundledPlugin(BundledPlugin plugin)
     {
-        return createContainer().withEnv( Neo4jPluginEnv.get(), "[\"" +plugin.name+ "\"]" );
+        return HelperContainers.createNeo4jContainer( false )
+                .withEnv( Neo4jPluginEnv.get(), "[\"" +plugin.name+ "\"]" )
+                .withEnv( "NEO4J_AUTH", "none" )
+                .waitingFor(WaitStrategies.waitForBoltReady());
     }
 
     @ParameterizedTest(name = "testBundledPlugin_{0}")
@@ -253,7 +240,7 @@ public class TestBundledPluginInstallation
     @Test
     void testBrowserListensOn7474()
     {
-        try(GenericContainer container = createContainer())
+        try(GenericContainer container = HelperContainers.createNeo4jContainer( false ))
         {
             container.waitingFor( new HttpWaitStrategy()
                                           .forPort(7474)

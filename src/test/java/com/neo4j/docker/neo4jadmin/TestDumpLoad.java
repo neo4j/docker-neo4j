@@ -42,7 +42,7 @@ public class TestDumpLoad
             auth = "neo4j/"+password;
         }
 
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_IMAGE_ID);
         container.withEnv( "NEO4J_AUTH", auth )
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
@@ -57,7 +57,7 @@ public class TestDumpLoad
 
     private GenericContainer createAdminContainer( boolean asDefaultUser )
     {
-        GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
+        GenericContainer container = new GenericContainer( TestSettings.NEO4J_ADMIN_IMAGE_ID);
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )

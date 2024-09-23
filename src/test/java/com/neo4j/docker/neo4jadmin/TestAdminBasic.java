@@ -20,7 +20,7 @@ public class TestAdminBasic
     @Test
     void testCannotRunNeo4j()
     {
-        GenericContainer admin = new GenericContainer( TestSettings.ADMIN_IMAGE_ID );
+        GenericContainer admin = new GenericContainer( TestSettings.NEO4J_ADMIN_IMAGE_ID);
         admin.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
              .withExposedPorts( 7474, 7687 )
              .withLogConsumer( new Slf4jLogConsumer( log ) )
@@ -37,7 +37,7 @@ public class TestAdminBasic
                                 "No license checks for community edition");
 
         String logsOut;
-        try(GenericContainer container = new GenericContainer( TestSettings.ADMIN_IMAGE_ID )
+        try(GenericContainer container = new GenericContainer( TestSettings.NEO4J_ADMIN_IMAGE_ID)
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
             WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30) );

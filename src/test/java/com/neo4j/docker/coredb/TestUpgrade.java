@@ -11,13 +11,11 @@ import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 
-import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,7 +146,7 @@ public class TestUpgrade
 			container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
 		}
 
-		try(GenericContainer container = makeContainer( TestSettings.IMAGE_ID ))
+		try(GenericContainer container = makeContainer( TestSettings.NEO4J_IMAGE_ID))
 		{
 			temporaryFolderManager.mountHostFolderAsVolume( container, data, "/data" );
 			temporaryFolderManager.mountHostFolderAsVolume( container, logs, "/logs" );
@@ -185,7 +183,7 @@ public class TestUpgrade
 			container.getDockerClient().stopContainerCmd( container.getContainerId() ).exec();
 		}
 
-		try(GenericContainer container = makeContainer( TestSettings.IMAGE_ID ))
+		try(GenericContainer container = makeContainer( TestSettings.NEO4J_IMAGE_ID))
 		{
 			container.withCreateContainerCmdModifier(
 					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(

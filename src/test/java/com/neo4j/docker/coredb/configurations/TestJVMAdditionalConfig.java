@@ -41,7 +41,7 @@ public class TestJVMAdditionalConfig
 
     private GenericContainer createContainer()
     {
-        return new GenericContainer(TestSettings.IMAGE_ID)
+        return new GenericContainer(TestSettings.NEO4J_IMAGE_ID)
                 .withEnv("NEO4J_AUTH", AUTH)
                 .withEnv("NEO4J_DEBUG", AUTH)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")

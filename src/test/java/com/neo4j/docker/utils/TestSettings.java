@@ -9,8 +9,8 @@ import java.nio.file.Paths;
 public class TestSettings
 {
     public static final Neo4jVersion NEO4J_VERSION = getVersion();
-    public static final DockerImageName IMAGE_ID = getImage();
-    public static final DockerImageName ADMIN_IMAGE_ID = getNeo4jAdminImage();
+    public static final DockerImageName NEO4J_IMAGE_ID = getNeo4jImage();
+    public static final DockerImageName NEO4J_ADMIN_IMAGE_ID = getNeo4jAdminImage();
     public static final Path TEST_TMP_FOLDER = Paths.get("local-mounts" );
     public static final Edition EDITION = getEdition();
     public static final BaseOS BASE_OS = getBaseOS();
@@ -47,7 +47,7 @@ public class TestSettings
         return Neo4jVersion.fromVersionString( getValueFromPropertyOrEnv( "version", "NEO4JVERSION" ));
     }
 
-    private static DockerImageName getImage()
+    private static DockerImageName getNeo4jImage()
     {
         return DockerImageName.parse(getValueFromPropertyOrEnv("image", "NEO4J_IMAGE"));
     }

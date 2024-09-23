@@ -26,7 +26,7 @@ public class TestDeprecationWarning
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
-        try(GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID))
+        try(GenericContainer container = new GenericContainer(TestSettings.NEO4J_IMAGE_ID))
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withExposedPorts( 7474, 7687 )
@@ -45,7 +45,7 @@ public class TestDeprecationWarning
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
-        try(GenericContainer container = new GenericContainer(TestSettings.ADMIN_IMAGE_ID))
+        try(GenericContainer container = new GenericContainer(TestSettings.NEO4J_ADMIN_IMAGE_ID))
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withExposedPorts( 7474, 7687 )
@@ -66,7 +66,7 @@ public class TestDeprecationWarning
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
-        try(GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID))
+        try(GenericContainer container = new GenericContainer(TestSettings.NEO4J_IMAGE_ID))
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withExposedPorts( 7474, 7687 )
@@ -86,7 +86,7 @@ public class TestDeprecationWarning
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
-        try(GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID))
+        try(GenericContainer container = new GenericContainer(TestSettings.NEO4J_IMAGE_ID))
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withEnv( DEPRECATION_WARN_SUPPRESS_FLAG, "suppress" )
@@ -106,7 +106,7 @@ public class TestDeprecationWarning
     {
         Assumptions.assumeTrue( TestSettings.BASE_OS == TestSettings.BaseOS.UBI8,
                                 "Deprecation warning should only exist in UBI8 images");
-        try(GenericContainer container = new GenericContainer(TestSettings.ADMIN_IMAGE_ID))
+        try(GenericContainer container = new GenericContainer(TestSettings.NEO4J_ADMIN_IMAGE_ID))
         {
             container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withEnv( DEPRECATION_WARN_SUPPRESS_FLAG, "suppress" )
