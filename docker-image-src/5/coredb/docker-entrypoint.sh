@@ -417,7 +417,7 @@ for variable_name in $(printenv | awk -F= '{print $1}'); do
       exit 1
     fi
     # Assign the value to the new variable
-    eval "$base_variable_name=$secret_value"
+    export "$base_variable_name"="$secret_value"
   fi
 done
 
