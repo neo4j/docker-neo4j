@@ -93,7 +93,7 @@ public class TestBasic
         {
             WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
             // container start should fail due to licensing.
-            Assertions.assertThrows( ContainerLaunchException.class, () -> container.start(),
+            Assertions.assertThrows( ContainerLaunchException.class, container::start,
                                      "Neo4j did not notify about accepting the license agreement" );
             logsOut = container.getLogs();
         }

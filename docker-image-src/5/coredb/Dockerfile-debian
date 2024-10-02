@@ -44,7 +44,7 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/* /su-exec
 
 
-ENV PATH="${NEO4J_HOME}"/bin:$PATH
+ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
 WORKDIR "${NEO4J_HOME}"
 
