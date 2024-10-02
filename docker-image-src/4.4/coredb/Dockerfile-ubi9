@@ -84,7 +84,7 @@ RUN set -eux; \
     ln -s /logs "${NEO4J_HOME}"/logs; \
     ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh
 
-ENV PATH="${NEO4J_HOME}"/bin:$PATH
+ENV PATH "${NEO4J_HOME}"/bin:$PATH
 
 WORKDIR "${NEO4J_HOME}"
 

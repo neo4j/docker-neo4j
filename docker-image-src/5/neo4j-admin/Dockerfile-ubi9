@@ -36,7 +36,7 @@ RUN set -eux; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh
 
-ENV PATH="${NEO4J_HOME}"/bin:$PATH
+ENV PATH "${NEO4J_HOME}"/bin:$PATH
 VOLUME /data /backups
 WORKDIR "${NEO4J_HOME}"
 

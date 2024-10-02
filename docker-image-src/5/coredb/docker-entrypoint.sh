@@ -250,9 +250,7 @@ function install_neo4j_plugins
 
 function add_docker_default_to_conf
 {
-    # configuration settings should have this order of priority:
-    # neo4j default < docker default < neo4j.conf < setting from environment
-    # Basically, docker defaults should NOT overwrite values already explicitly set in the conf files
+    # docker defaults should NOT overwrite values already in the conf file
     local _setting="${1}"
     local _value="${2}"
 
@@ -564,46 +562,6 @@ if [ "${NEO4J_EDITION}" == "enterprise" ];
    : ${NEO4J_server_cluster_raft_advertised__address:=${NEO4J_causal__clustering_raft__advertised__address:-}}
 fi
 
-
-# ==== CHECK IF OPENSSL FIPS MODE IS REQUESTED ====
-
-debug_msg "Deleting all netty-tcnative-boringssl jars"
-find "${NEO4J_HOME}"/lib/ -iname '*boringssl*.jar' -delete
-
-# configure for FIPS if requested
-if [[ ${NEO4J_OPENSSL_FIPS_ENABLE-} =~ [tT][rR][uU][eE] ]]
-then
-  echo "OpenSSL FIPS mode has been requested."
-  if ! grep -iq "Red Hat Enterprise Linux 9" /etc/os-release; then
-    echo >&2 "
-OpenSSL FIPS compatibility is only available in the Red Hat UBI9 Neo4j image.
-To fix this error, run the UBI9 based Neo4j docker image instead.
-See:
-* https://neo4j.com/docs/operations-manual/current/docker/introduction for more information about Neo4j base images.
-* https://neo4j.com/docs/operations-manual/current/security/ssl-framework about configuring SSL in Neo4j.
-    "
-    exit 1
-  fi
-  _arch_str=$(arch | sed 's/aarch64/aarch_64/g')
-  debug_msg "Copying ${NEO4J_HOME}/plugins/netty-tcnative/netty-tcnative-*-linux-${_arch_str}.jar to ${NEO4J_HOME}/lib/"
-  cp -p "${NEO4J_HOME}"/lib/netty-tcnative/netty-tcnative-*-linux-${_arch_str}.jar "${NEO4J_HOME}"/lib/
-  #netty_version=$(find "${NEO4J_HOME}"/lib/ -iname "netty-tcnative-classes-*" -print0 | tail -n 1 | sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+.*)\.jar/\1/g')
-  #debug_msg "Netty version detected as: \"${netty_version}\""
-  echo "Installing FIPS module into OpenSSL"
-  if [ "$(rpm --query --queryformat='%{ARCH}' rpm)" = "aarch64" ]; then
-    ln -s /usr/local/openssl/lib /usr/local/openssl/lib64
-  fi
-  ldconfig /usr/local/openssl/lib64
-  /usr/local/openssl/bin/openssl fipsinstall -out /usr/local/openssl/fipsmodule.cnf -module /usr/local/openssl/lib64/ossl-modules/fips.so
-  debug_msg "Configuring OpenSSL to run with FIPS enabled"
-  sed -i 's/# fips = fips_sect/fips = fips_sect/g' /usr/local/openssl/openssl.cnf
-  sed -i 's|# \.include fipsmodule\.cnf|\.include /usr/local/openssl/fipsmodule\.cnf|g' /usr/local/openssl/openssl.cnf
-  sed -i -E 's/# ?config_diagnostics = 1/config_diagnostics = 1/' /usr/local/openssl/openssl.cnf
-  sed -i -E 'N;s/\[default_sect\]\n# activate = 1/[default_sect\]\nactivate = 1/' /usr/local/openssl/openssl.cnf
-  sed -i -E 'N;s/providers = provider_sect/providers = provider_sect\nalg_section = algorithm_sect\n\n[algorithm_sect]\ndefault_properties = fips=yes/' /usr/local/openssl/openssl.cnf
-  add_docker_default_to_conf "dbms.netty.ssl.provider" "OPENSSL"
-fi
-
 # ==== SET CONFIGURATIONS ====
 
 ## == DOCKER SPECIFIC DEFAULT CONFIGURATIONS ===
@@ -628,8 +586,7 @@ fi
 
 # these are docker control envs that have the NEO4J_ prefix but we don't want to add to the config.
 not_configs=("NEO4J_ACCEPT_LICENSE_AGREEMENT" "NEO4J_AUTH" "NEO4J_AUTH_PATH" "NEO4J_DEBUG" "NEO4J_EDITION" \
-             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" \
-             "NEO4J_DEPRECATION_WARNING" "NEO4J_OPENSSL_FIPS_ENABLE")
+             "NEO4J_HOME" "NEO4J_PLUGINS" "NEO4J_SHA256" "NEO4J_TARBALL" "NEO4J_DEPRECATION_WARNING")
 
 debug_msg "Applying configuration settings that have been set using environment variables."
 # list env variables with prefix NEO4J_ and create settings from them
