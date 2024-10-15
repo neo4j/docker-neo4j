@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.Duration;
 
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
@@ -157,6 +156,23 @@ public class TestDockerComposeSecrets
                                   "Make sure you have correctly configured docker secrets.";
             Assertions.assertThrows( Exception.class, dockerComposeContainer::start );
             Assertions.assertTrue( containerLogConsumer.toUtf8String().contains( expectedLogLine ) );
+        }
+    }
+
+    @Test
+    void shouldIgnoreNonNeo4jFileEnvVars() throws Exception
+    {
+        var tmpDir = temporaryFolderManager.createFolder( "Simple_Container_Compose_With_File_Var" );
+        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "simple-container-compose-with-external-file-var.yml" ).toFile() );
+        var serviceName = "simplecontainer";
+
+        try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
+        {
+            dockerComposeContainer.start();
+
+            var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
+                                       dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
+            dbio.verifyConnectivity( "neo4j", "simplecontainerpassword" );
         }
     }
 

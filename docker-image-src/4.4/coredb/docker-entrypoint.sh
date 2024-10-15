@@ -386,8 +386,9 @@ fi
 # e.g. NEO4J_AUTH_FILE will override the value of the NEO4J_AUTH
 # It's best to do this first so that the secrets are available for the rest of the script
 for variable_name in $(printenv | awk -F= '{print $1}'); do
-  # Check if the variable ends with "_FILE"
-  if [[ $variable_name == *"_FILE" ]]; then
+  # Check if the variable ends with "_FILE" and starts with "NEO4J_"
+  if [[ $variable_name == *"_FILE" &&
+        $variable_name == "NEO4J_"* ]]; then
     # Create a new variable name by removing the "_FILE" suffix
     base_variable_name=${variable_name%_FILE}
 
