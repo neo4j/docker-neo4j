@@ -43,7 +43,6 @@ import org.neo4j.driver.Record;
 
 import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
 
-
 public class TestPluginInstallation
 {
     private static final String DB_USER = "neo4j";
@@ -88,7 +87,7 @@ public class TestPluginInstallation
                  .withEnv( Neo4jPluginEnv.get(), "[\"_testing\"]" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) )
-                 .waitingFor( WaitStrategies.waitForNeo4jReady( DB_PASSWORD));
+                 .waitingFor( WaitStrategies.waitForNeo4jReady( DB_PASSWORD ) );
         SetContainerUser.nonRootUser( container );
         return container;
     }
@@ -263,7 +262,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
-            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds(30));
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();
@@ -282,7 +281,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
-            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds(30));
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();
@@ -316,19 +315,21 @@ public class TestPluginInstallation
         }
     }
 
-    @Disabled("Test is flaky for unknown reasons. Needs further investigation.")
+    @Disabled( "Test is flaky for unknown reasons. Needs further investigation." )
     @Test
     void testMissingVersionsJsonGivesWarning()
     {
         // make double sure there are no versions.json files being served.
-        httpServer.unregisterEndpoint("/versions.json");
-        try ( GenericContainer container = createContainerWithTestingPlugin() ) {
+        httpServer.unregisterEndpoint( "/versions.json" );
+        try ( GenericContainer container = createContainerWithTestingPlugin() )
+        {
             container.start();
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
-            Assertions.assertTrue(startupErrors.contains("could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
-                    "Did not error about missing versions.json. Actual errors:\n\""+startupErrors+"\"");
+            Assertions.assertTrue(
+                    startupErrors.contains( "could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information" ),
+                    "Did not error about missing versions.json. Actual errors:\n\"" + startupErrors + "\"" );
             Assertions.assertFalse( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION ),
-                    "Should not have errored about incompatible versions in versions.json" );
+                                    "Should not have errored about incompatible versions in versions.json" );
             // make sure plugin did not load
             DatabaseIO db = new DatabaseIO( container );
             List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
@@ -478,14 +479,15 @@ public class TestPluginInstallation
         }
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest( name = "as_current_user_{0}" )
     @ValueSource( booleans = {true, false} )
     void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly( boolean asCurrentUser ) throws Exception
     {
         try ( GenericContainer container = setupContainerWithUser( asCurrentUser ) )
         {
-            var pluginsFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
+            var pluginsFolder = temporaryFolderManager.createFolderAndMountAsVolume( container, "/plugins" );
             container.withEnv( "NEO4J_PLUGINS", "[\"bloom\"]" );
+            container.withEnv( "DEBUG", "1" );
             container.start();
             Assertions.assertTrue( pluginsFolder.resolve( "bloom.jar" ).toFile().exists(), "Did not find bloom.jar in plugins folder" );
 
