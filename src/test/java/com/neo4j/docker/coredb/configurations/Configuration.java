@@ -15,7 +15,6 @@ public class Configuration
         put( Setting.BACKUP_ENABLED, new Configuration("server.backup.enabled"));
         put( Setting.BACKUP_LISTEN_ADDRESS, new Configuration("server.backup.listen_address"));
         put( Setting.BROWSER_ALLOW_OUTGOING_CONNECTIONS, new Configuration("browser.allow_outgoing_connections"));
-        put( Setting.CLUSTER_DISCOVERY_ADDRESS, new Configuration("server.discovery.advertised_address"));
         put( Setting.CLUSTER_RAFT_ADDRESS, new Configuration("server.cluster.raft.advertised_address"));
         put( Setting.CLUSTER_ROUTING_ADDRESS, new Configuration("server.routing.advertised_address"));
         put( Setting.CLUSTER_TRANSACTION_ADDRESS, new Configuration("server.cluster.advertised_address"));

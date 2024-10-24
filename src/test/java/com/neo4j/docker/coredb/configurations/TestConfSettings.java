@@ -13,14 +13,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.driver.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,13 +32,11 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.exceptions.ClientException;
-
 public class TestConfSettings
 {
     private static final String PASSWORD = "none";
     private static final String AUTH = "none"; // or "neo4j/"+PASSWORD if we want authentication
-    private static Logger log = LoggerFactory.getLogger(TestConfSettings.class);
+    private static final Logger log = LoggerFactory.getLogger(TestConfSettings.class);
     private static Path confFolder;
     private static Map<Setting,Configuration> confNames;
     @RegisterExtension
@@ -63,20 +60,9 @@ public class TestConfSettings
 
     private GenericContainer makeContainerDumpConfig(GenericContainer container)
     {
-        container.setWaitStrategy( Wait.forLogMessage( ".*Config Dumped.*", 1 )
-                                       .withStartupTimeout( Duration.ofSeconds( 30 ) ) );
-        container.setCommand("dump-config");
-        // what is StartupCheckStrategy you wonder. Well, let me tell you a story.
-        // There was a time all these tests were failing because the config file was being dumped
-        // and the container closed so quickly. So quickly that it exposed a race condition between the container
-        // and the TestContainers library. The container could start and finish before the container library
-        // got around to checking if the container had started.
-        // The default "Has the container started" check strategy is to see if the container is running.
-        // But our container wasn't running because it was so quick it had already finished! The check failed and we had flaky tests :(
-        // This strategy here will check to see if the container is running OR if it exited with status code 0.
-        // It seems to do what we need... FOR NOW??
-        container.setStartupCheckStrategy( new OneShotStartupCheckStrategy() );
         SetContainerUser.nonRootUser( container );
+        container.setCommand("dump-config");
+        WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(30));
         return container;
     }
 
@@ -218,12 +204,9 @@ public class TestConfSettings
             assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.DEFAULT_LISTEN_ADDRESS), expectedDefaultListenAddress, true);
             // test enterprise only default configurations are set
             if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE) {
-                String expectedDiscoveryAddress = container.getContainerId().substring(0, 12) + ":5000";
                 String expectedTxAddress = container.getContainerId().substring(0, 12) + ":6000";
                 String expectedRaftAddress = container.getContainerId().substring(0, 12) + ":7000";
                 String expectedRoutingAddress = container.getContainerId().substring(0, 12) + ":7688";
-                dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress);
-                assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_DISCOVERY_ADDRESS), expectedDiscoveryAddress,true);
                 dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress);
                 assertConfigurationPresentInDebugLog(debugLog, confNames.get( Setting.CLUSTER_TRANSACTION_ADDRESS), expectedTxAddress,true);
                 dbio.verifyConfigurationSetting("neo4j", PASSWORD, confNames.get( Setting.CLUSTER_RAFT_ADDRESS), expectedRaftAddress);
@@ -300,7 +283,6 @@ public class TestConfSettings
         }};
         if( TestSettings.EDITION == TestSettings.Edition.ENTERPRISE)
         {
-            expectedValues.put( Setting.CLUSTER_DISCOVERY_ADDRESS, "1.2.3.4:7000" );
             expectedValues.put( Setting.CLUSTER_TRANSACTION_ADDRESS, "1.2.3.4:8000" );
             expectedValues.put( Setting.CLUSTER_RAFT_ADDRESS, "1.2.3.4:9000" );
         }
