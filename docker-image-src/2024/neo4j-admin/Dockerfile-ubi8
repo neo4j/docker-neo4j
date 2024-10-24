@@ -1,0 +1,42 @@
+FROM redhat/ubi8-minimal:latest
+ENV JAVA_HOME=/usr
+
+# gather pre-requisite packages
+RUN microdnf install -y gzip java-17 procps shadow-utils tar util-linux && \
+    microdnf clean all
+
+ENV PATH="${JAVA_HOME}/bin:${PATH}" \
+    NEO4J_SHA256=%%NEO4J_SHA%% \
+    NEO4J_TARBALL=%%NEO4J_TARBALL%% \
+    NEO4J_EDITION=%%NEO4J_EDITION%% \
+    NEO4J_HOME="/var/lib/neo4j"
+ARG NEO4J_URI=%%NEO4J_DIST_SITE%%/%%NEO4J_TARBALL%%
+
+COPY ./local-package/* /startup/
+
+RUN set -eux; \
+    groupadd --gid 7474 --system neo4j; \
+    useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j; \
+    curl --fail --silent --show-error --location --remote-name ${NEO4J_URI}; \
+    echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet; \
+    tar --extract --file ${NEO4J_TARBALL} --directory /var/lib; \
+    mv /var/lib/neo4j-* "${NEO4J_HOME}"; \
+    rm ${NEO4J_TARBALL}; \
+    rm ${NEO4J_HOME}/bin/neo4j; \
+    mv "${NEO4J_HOME}"/data /data; \
+    chown -R neo4j:neo4j /data; \
+    chmod -R 777 /data; \
+    mkdir -p /backups; \
+    chown -R neo4j:neo4j /backups; \
+    chmod -R 777 /backups; \
+    chown -R neo4j:neo4j "${NEO4J_HOME}"; \
+    chmod -R 777 "${NEO4J_HOME}"; \
+    ln -s /data "${NEO4J_HOME}"/data; \
+    ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh
+
+ENV PATH "${NEO4J_HOME}"/bin:$PATH
+VOLUME /data /backups
+WORKDIR "${NEO4J_HOME}"
+
+ENTRYPOINT ["/startup/docker-entrypoint.sh"]
+CMD ["neo4j-admin"]
