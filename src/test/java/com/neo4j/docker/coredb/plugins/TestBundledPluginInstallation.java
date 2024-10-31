@@ -2,13 +2,12 @@ package com.neo4j.docker.coredb.plugins;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.WaitStrategies;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.WaitStrategies;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Tag("BundleTest")
+//@Tag("BundleTest")
 public class TestBundledPluginInstallation
 {
     private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
@@ -208,7 +207,7 @@ public class TestBundledPluginInstallation
                 if(plugins.isEmpty())
                 {
                     // no plugins were downloaded, which is correct if we are testing an unreleased neo4j
-                    String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s community\\.",
+                    String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s(-[\\d]+)? community\\.",
                             plugin.name, TestSettings.NEO4J_VERSION);
                     Assertions.assertTrue(
                         Stream.of(errlogs.split( "\n" ))
