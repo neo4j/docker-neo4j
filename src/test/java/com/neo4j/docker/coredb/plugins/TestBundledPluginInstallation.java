@@ -8,6 +8,7 @@ import com.neo4j.docker.utils.WaitStrategies;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-//@Tag("BundleTest")
+@Tag("BundleTest")
 public class TestBundledPluginInstallation
 {
     private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
