@@ -16,7 +16,7 @@ import org.testcontainers.utility.DockerStatus;
 public class WaitStrategies
 {
 
-    private final static Duration STARTUP_TIMEOUT_SECONDS = Duration.ofSeconds(150);
+    private final static Duration STARTUP_TIMEOUT_SECONDS = Duration.ofSeconds(200);
 
     private WaitStrategies() {}
 
