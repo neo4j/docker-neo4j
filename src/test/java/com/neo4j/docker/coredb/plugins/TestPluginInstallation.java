@@ -12,7 +12,6 @@ import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
@@ -199,13 +199,16 @@ public class TestPluginInstallation
         }
     }
 
-    @Disabled("Test is flaky for unknown reasons. Needs further investigation.")
+    //@Disabled("Test is flaky for unknown reasons. Needs further investigation.")
     @Test
     void testMissingVersionsJsonGivesWarning()
     {
+        Configuration securityProcedures = Configuration.getConfigurationNameMap().get(Setting.SECURITY_PROCEDURES_UNRESTRICTED);
         // make double sure there are no versions.json files being served.
         httpServer.unregisterEndpoint("/versions.json");
-        try ( GenericContainer container = createContainerWithTestingPlugin(true) ) {
+        try ( Network net = Network.newNetwork();
+              GenericContainer container = createContainerWithTestingPlugin(false)
+                      .withNetwork(net) ) {
             container.start();
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
             Assertions.assertTrue(startupErrors.contains("could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
@@ -220,6 +223,10 @@ public class TestPluginInstallation
                                               .anyMatch( x -> x.get( "name" ).asString()
                                                                .equals( "com.neo4j.docker.test.myplugin.defaultValues" ) ),
                                     "Incompatible test plugin was loaded." );
+            // make sure configuration did not set
+            String securityConf = db.getConfigurationSettingAsString(DB_USER, DB_PASSWORD, securityProcedures);
+            Assertions.assertFalse(securityConf.contains("com.neo4j.docker.neo4jserver.plugins.*"),
+                    "Test plugin configuration setting was set, even though the plugin did not load.");
         }
     }
 
