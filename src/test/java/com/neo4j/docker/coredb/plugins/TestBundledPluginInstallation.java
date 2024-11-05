@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 @Tag("BundleTest")
 public class TestBundledPluginInstallation
 {
-    private static final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
+    private final Logger log = LoggerFactory.getLogger( TestBundledPluginInstallation.class );
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 

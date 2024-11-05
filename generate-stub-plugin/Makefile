@@ -15,16 +15,16 @@ ifndef NEO4JVERSION
 endif
 
 clean: ./Dockerfile
-> rm $(<D)/../src/test/resources/testplugin/*
+> rm $(<D)/../src/test/resources/stubplugin/*
 .PHONY: clean
 
-make-plugin: ./Dockerfile ./ExampleNeo4jPlugin.java ./build.gradle.kts ./settings.gradle.kts
+plugin: ./Dockerfile ./ExampleNeo4jPlugin.java ./build.gradle.kts ./settings.gradle.kts
 > workdir=$(realpath $(<D))
-> docker build $${workdir} -t testplugin:latest
+> docker build $${workdir} -t stubplugin:latest
 > docker run -it --rm \
 	-e NEO4JVERSION \
-	-v $${workdir}/../src/test/resources/testplugin:/output \
+	-v $${workdir}/../src/test/resources/stubplugin:/output \
 	--user="$$(id -u):$$(id -g)" \
-	testplugin:latest
-> mv $${workdir}/../src/test/resources/testplugin/myPlugin-$${NEO4JVERSION}.jar $${workdir}/../src/test/resources/testplugin/myPlugin.jar
-.PHONY: make-plugin
+	stubplugin:latest
+> mv $${workdir}/../src/test/resources/stubplugin/myPlugin-$${NEO4JVERSION}.jar $${workdir}/../src/test/resources/stubplugin/myPlugin.jar
+.PHONY: plugin

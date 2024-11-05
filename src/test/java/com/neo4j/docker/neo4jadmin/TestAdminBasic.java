@@ -15,7 +15,7 @@ import java.time.Duration;
 
 public class TestAdminBasic
 {
-    private static final Logger log = LoggerFactory.getLogger( TestAdminBasic.class );
+    private final Logger log = LoggerFactory.getLogger( TestAdminBasic.class );
 
     @Test
     void testCannotRunNeo4j()

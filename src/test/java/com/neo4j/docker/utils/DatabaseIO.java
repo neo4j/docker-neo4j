@@ -2,6 +2,15 @@ package com.neo4j.docker.utils;
 
 import com.neo4j.docker.coredb.configurations.Configuration;
 import org.junit.jupiter.api.Assertions;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -9,20 +18,10 @@ import org.testcontainers.containers.GenericContainer;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.Result;
-
 public class DatabaseIO
 {
-	private static Config TEST_DRIVER_CONFIG = Config.builder().withoutEncryption().build();
-	private static final Logger log = LoggerFactory.getLogger( DatabaseIO.class );
+	private static final Config DEFAULT_DRIVER_CONFIG = Config.builder().withoutEncryption().build();
+	private final Logger log = LoggerFactory.getLogger( DatabaseIO.class );
 
 	private GenericContainer container;
 	private String boltUri;
@@ -124,7 +123,7 @@ public class DatabaseIO
         // we don't just do runCypherQuery( user, password, cypher, "neo4j")
         // because it breaks the upgrade tests from 3.5.x
         List<Record> records;
-		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), DEFAULT_DRIVER_CONFIG);
 		try ( Session session = driver.session())
 		{
 			Result rs = session.run( cypher );
@@ -137,7 +136,7 @@ public class DatabaseIO
 	public List<Record> runCypherQuery( String user, String password, String cypher, String database)
     {
         List<Record> records;
-		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), TEST_DRIVER_CONFIG );
+		Driver driver = GraphDatabase.driver( boltUri, getToken( user, password ), DEFAULT_DRIVER_CONFIG);
 		try ( Session session = driver.session(SessionConfig.forDatabase( database )))
 		{
 			Result rs = session.run( cypher );
@@ -151,7 +150,7 @@ public class DatabaseIO
 	{
 		GraphDatabase.driver( boltUri,
 							  getToken( user, password ),
-							  TEST_DRIVER_CONFIG )
+						DEFAULT_DRIVER_CONFIG)
 					 .verifyConnectivity();
 	}
 

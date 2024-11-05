@@ -15,7 +15,7 @@ import java.time.Duration;
 
 public class TestDeprecationWarning
 {
-    private static final Logger log = LoggerFactory.getLogger( TestDeprecationWarning.class );
+    private final Logger log = LoggerFactory.getLogger( TestDeprecationWarning.class );
     private static final String DEPRECATION_WARN_STRING = "Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9";
     private static final String DEPRECATION_WARN_SUPPRESS_FLAG = "NEO4J_DEPRECATION_WARNING";
 

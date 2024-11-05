@@ -36,7 +36,7 @@ public class TestConfSettings
 {
     private static final String PASSWORD = "none";
     private static final String AUTH = "none"; // or "neo4j/"+PASSWORD if we want authentication
-    private static final Logger log = LoggerFactory.getLogger(TestConfSettings.class);
+    private final Logger log = LoggerFactory.getLogger(TestConfSettings.class);
     private static Path confFolder;
     private static Map<Setting,Configuration> confNames;
     @RegisterExtension

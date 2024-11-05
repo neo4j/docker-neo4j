@@ -17,7 +17,7 @@ The only situation where you would need to even look at this is if you are activ
 The Makefile will do all the work for you, all you need to do is pick which version of Neo4j to use:
 
 ```shell
-NEO4JVERSION=4.4.11 make clean make-plugin
+NEO4JVERSION=4.4.11 make clean plugin
 ```
 
 The Dockerfile is currently set to use java 11. If that needs to change then just change the base image that the Dockerfile uses.

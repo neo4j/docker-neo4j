@@ -29,7 +29,7 @@ import java.util.List;
 
 public class TestAdminReport
 {
-    private static final Logger log = LoggerFactory.getLogger( TestAdminReport.class );
+    private final Logger log = LoggerFactory.getLogger( TestAdminReport.class );
     private final String PASSWORD = "supersecretpassword";
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();

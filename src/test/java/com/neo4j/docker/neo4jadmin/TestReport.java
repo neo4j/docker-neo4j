@@ -14,7 +14,7 @@ import java.time.Duration;
 
 public class TestReport
 {
-    private static final Logger log = LoggerFactory.getLogger( TestReport.class );
+    private final Logger log = LoggerFactory.getLogger( TestReport.class );
 
     private GenericContainer createAdminContainer()
     {

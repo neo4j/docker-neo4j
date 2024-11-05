@@ -31,7 +31,7 @@ public class TestBackupRestore
 {
     // with authentication
     // with non-default user
-    private static final Logger log = LoggerFactory.getLogger( TestBackupRestore.class );
+    private final Logger log = LoggerFactory.getLogger( TestBackupRestore.class );
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 

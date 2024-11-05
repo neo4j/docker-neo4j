@@ -6,7 +6,7 @@ RUN mkdir -p /testplugin/src/main/java/testplugins/ && \
     ln -s -T /output /testplugin/build/libs && \
     mv /testplugin/ExampleNeo4jPlugin.java /testplugin/src/main/java/testplugins/ && \
     chmod a+rw -R /testplugin
-ENV NEO4JVERSION=4.4.16
+ENV NEO4JVERSION=4.4.38
 
 VOLUME /output
 CMD gradle jar -Pversion=$NEO4JVERSION
