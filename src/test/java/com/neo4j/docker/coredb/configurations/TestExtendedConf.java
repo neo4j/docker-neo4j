@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 public class TestExtendedConf
 {
-	private static final Logger log = LoggerFactory.getLogger( TestExtendedConf.class );
+	private final Logger log = LoggerFactory.getLogger( TestExtendedConf.class );
     private static Path testConfsFolder;
     private static Configuration logRotationConfig;
     @RegisterExtension

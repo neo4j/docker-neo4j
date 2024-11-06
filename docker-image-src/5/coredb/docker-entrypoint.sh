@@ -159,7 +159,7 @@ function load_plugin_from_url
         echo >&2 "ERROR: could not query ${_versions_json_url} for plugin compatibility information.
     This could indicate a problem with your network or this container's network settings.
     Neo4j will continue to start, but \"${_plugin_name}\" will not be loaded."
-        return
+        return 1
     fi
     local _plugin_jar_url="$(echo "${_versions_json}" | jq -L/startup --raw-output "import \"semver\" as lib; [ .[] | select(.neo4j|lib::semver(\"${_neo4j_version}\")) ] | min_by(.neo4j) | .jar")"
     if [[ -z "${_plugin_jar_url}" ]] || [[ "${_plugin_jar_url}" == "null" ]]; then
@@ -238,12 +238,15 @@ function install_neo4j_plugins
         if [ "${_location}" != "null" -a -n "$(shopt -s nullglob; echo ${_location})" ]; then
             debug_msg "$plugin_name is already in the container at ${_location}"
             load_plugin_from_location "${plugin_name}" "${_location}"
+            debug_msg "Applying plugin specific configurations."
+            apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
         else
             debug_msg "$plugin_name must be downloaded."
-            load_plugin_from_url "${plugin_name}"
+            if load_plugin_from_url "${plugin_name}"; then
+                debug_msg "Applying plugin specific configurations."
+                apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
+            fi
         fi
-        debug_msg "Applying plugin specific configurations."
-        apply_plugin_default_configuration "${plugin_name}" "${_old_config}"
     done
     rm "${_old_config}"
 }

@@ -31,7 +31,7 @@ import org.testcontainers.utility.DockerImageName;
 
 public class TestUpgrade
 {
-	private static final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
+	private final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
 	private final String user = "neo4j";
 	private final String password = "verylongpassword";
     @RegisterExtension

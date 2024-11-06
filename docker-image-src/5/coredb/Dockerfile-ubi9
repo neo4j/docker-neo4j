@@ -80,7 +80,7 @@ RUN set -eux; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /logs "${NEO4J_HOME}"/logs
 
-ENV PATH "${NEO4J_HOME}"/bin:$PATH
+ENV PATH="${NEO4J_HOME}"/bin:$PATH
 
 WORKDIR "${NEO4J_HOME}"
 

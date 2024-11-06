@@ -21,7 +21,7 @@ import java.nio.file.Path;
 
 public class TestJVMAdditionalConfig
 {
-    private static final Logger log = LoggerFactory.getLogger( TestJVMAdditionalConfig.class );
+    private final Logger log = LoggerFactory.getLogger( TestJVMAdditionalConfig.class );
     private static final String PASSWORD = "SuperSecretPassword";
     private static final String AUTH = "neo4j/"+PASSWORD ;
     private static Path confFolder;

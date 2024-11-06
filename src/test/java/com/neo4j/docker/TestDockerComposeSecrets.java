@@ -27,7 +27,7 @@ import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 
 public class TestDockerComposeSecrets
 {
-    private static final Logger log = LoggerFactory.getLogger( TestDockerComposeSecrets.class );
+    private final Logger log = LoggerFactory.getLogger( TestDockerComposeSecrets.class );
 
     private static final int DEFAULT_BOLT_PORT = 7687;
     private static final int DEFAULT_HTTP_PORT = 7474;

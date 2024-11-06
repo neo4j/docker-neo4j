@@ -99,7 +99,7 @@ try(container2 = makeAContainer())
  * */
 public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallback
 {
-    private static final Logger log = LoggerFactory.getLogger( TemporaryFolderManager.class );
+    private final Logger log = LoggerFactory.getLogger( TemporaryFolderManager.class );
     // if we ever run parallel tests, random number generator and
     // list of folders to compress need to be made thread safe
     private Random rng = new Random(  );
