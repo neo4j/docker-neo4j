@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 
-# SUPPORTED_IMAGE_OS=("debian" "ubi9" "ubi8")
+# SUPPORTED_IMAGE_OS=("debian" "ubi9")
 EDITIONS=("community" "enterprise")
 
 DISTRIBUTION_SITE="https://dist.neo4j.org"
@@ -55,14 +55,14 @@ function get_compatible_dockerfile_for_os_or_error
     case ${major} in
         # Version is calver
         2024)
-                local SUPPORTED_IMAGE_OS=("debian" "ubi9" "ubi8")
+                local SUPPORTED_IMAGE_OS=("debian" "ubi9")
                 if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
                     echo  "Dockerfile-${requested_os}"
                     return 0
                 fi
                 ;;
         5)
-            local SUPPORTED_IMAGE_OS=("debian" "ubi9" "ubi8")
+            local SUPPORTED_IMAGE_OS=("debian" "ubi9")
             if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile-${requested_os}"
                 return 0
