@@ -147,7 +147,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
-            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds(30));
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();
@@ -166,7 +166,7 @@ public class TestPluginInstallation
             container.withEnv( Neo4jPluginEnv.get(), "[\"apoc\", \"notarealplugin\"]" )
                      .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                      .withLogConsumer( new Slf4jLogConsumer( log ) );
-            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds(30));
+            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
             Assertions.assertThrows( ContainerLaunchException.class, container::start );
             // the container should output a helpful message and quit
             String stdout = container.getLogs();
@@ -211,10 +211,11 @@ public class TestPluginInstallation
                       .withNetwork(net) ) {
             container.start();
             String startupErrors = container.getLogs( OutputFrame.OutputType.STDERR );
-            Assertions.assertTrue(startupErrors.contains("could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
-                    "Did not error about missing versions.json. Actual errors:\n\""+startupErrors+"\"");
+            Assertions.assertTrue(
+                    startupErrors.contains( "could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information" ),
+                    "Did not error about missing versions.json. Actual errors:\n\"" + startupErrors + "\"" );
             Assertions.assertFalse( startupErrors.contains( "No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION ),
-                    "Should not have errored about incompatible versions in versions.json" );
+                                    "Should not have errored about incompatible versions in versions.json" );
             // make sure plugin did not load
             DatabaseIO db = new DatabaseIO( container );
             List<Record> procedures = db.runCypherQuery( DB_USER, DB_PASSWORD,
@@ -250,7 +251,7 @@ public class TestPluginInstallation
         }
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest( name = "as_current_user_{0}" )
     @ValueSource( booleans = {true, false} )
     void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly( boolean asCurrentUser ) throws Exception
     {

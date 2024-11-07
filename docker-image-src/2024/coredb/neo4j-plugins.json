@@ -1,0 +1,49 @@
+{
+  "apoc-extended": {
+    "versions": "https://neo4j-contrib.github.io/neo4j-apoc-procedures/versions.json",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "apoc.*"
+    }
+  },
+  "apoc": {
+    "location": "/var/lib/neo4j/labs/apoc-*-core.jar",
+    "versions": "https://github.com/neo4j/apoc/blob/master/versions.json",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "apoc.*"
+    }
+  },
+  "bloom": {
+    "location": "/var/lib/neo4j/products/bloom-plugin-*.jar",
+    "versions": "https://bloom-plugins.s3.eu-west-2.amazonaws.com/versions.json",
+    "properties": {
+      "server.unmanaged_extension_classes": "com.neo4j.bloom.server=/browser/bloom",
+      "dbms.security.procedures.unrestricted": "bloom.*",
+      "dbms.bloom.license_file": "/licenses/bloom.license"
+    }
+  },
+  "graph-data-science": {
+    "versions": "https://graphdatascience.ninja/versions.json",
+    "location": "/var/lib/neo4j/products/neo4j-graph-data-science-*.jar",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "gds.*"
+    }
+  },
+  "n10s": {
+    "versions": "https://neo4j-labs.github.io/neosemantics/versions.json",
+    "properties": {
+      "dbms.security.procedures.unrestricted":"semantics.*"
+    }
+  },
+  "genai": {
+    "location": "/var/lib/neo4j/products/neo4j-genai-plugin-*.jar",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "genai.*"
+    }
+  },
+  "_testing": {
+    "versions": "http://host.testcontainers.internal:3000/versions.json",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "com.neo4j.docker.neo4jserver.plugins.*"
+    }
+  }
+}
