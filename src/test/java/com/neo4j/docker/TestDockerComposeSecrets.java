@@ -51,8 +51,8 @@ public class TestDockerComposeSecrets
                  .withExposedService( serviceName, DEFAULT_HTTP_PORT )
                  .withEnv( "NEO4J_IMAGE", TestSettings.IMAGE_ID.asCanonicalNameString() )
                  .withEnv( "HOST_ROOT", containerRootDir.toAbsolutePath().toString() )
-                 .waitingFor( serviceName, waitForBoltReady() );
-//                 .withLogConsumer( serviceName, new Slf4jLogConsumer( log ) );
+                 .waitingFor( serviceName, waitForBoltReady() )
+                 .withLogConsumer( serviceName, new Slf4jLogConsumer( log ) );
 
         return container;
     }
@@ -151,11 +151,11 @@ public class TestDockerComposeSecrets
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
         {
             var containerLogConsumer = new ToStringConsumer();
-//            dockerComposeContainer.withLogConsumer( serviceName, containerLogConsumer );
-//            var expectedLogLine = "The secret file '/run/secrets/neo4j_dbms_memory_pagecache_size_file' does not exist or is not readable. " +
-//                                  "Make sure you have correctly configured docker secrets.";
+            dockerComposeContainer.withLogConsumer( serviceName, containerLogConsumer );
+            var expectedLogLine = "The secret file '/run/secrets/neo4j_dbms_memory_pagecache_size_file' does not exist or is not readable. " +
+                                  "Make sure you have correctly configured docker secrets.";
             Assertions.assertThrows( Exception.class, dockerComposeContainer::start );
-//            Assertions.assertTrue( containerLogConsumer.toUtf8String().contains( expectedLogLine ) );
+            Assertions.assertTrue( containerLogConsumer.toUtf8String().contains( expectedLogLine ) );
         }
     }
 
