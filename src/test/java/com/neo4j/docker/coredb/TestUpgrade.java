@@ -1,7 +1,5 @@
 package com.neo4j.docker.coredb;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
@@ -9,15 +7,6 @@ import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Consumer;
-
-import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +17,15 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.utility.DockerImageName;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Consumer;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class TestUpgrade
 {
@@ -55,7 +53,7 @@ public class TestUpgrade
 							  new Neo4jVersion( 4, 4, 25 ));
     }
 
-    private static List<Neo4jVersion> upgradableNeo4jVersions()
+    private static List<Neo4jVersion> upgradableNeo4jVersions5x()
     {
         // instead of returning ALL 5.x versions just run a few to check that upgrading works and the volume/bind mount
         // settings do not break upgrade.
@@ -65,6 +63,11 @@ public class TestUpgrade
 		return Arrays.asList( new Neo4jVersion( 5, 1, 0 ),
                               new Neo4jVersion( 5, 5, 0 ),
 							  new Neo4jVersion( 5, 10, 0 ));
+    }
+
+    private static List<Neo4jVersion> upgradableNeo4jVersionsCalVer()
+    {
+		return Arrays.asList( new Neo4jVersion( 5, 26, 0 ));
     }
 
     private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
@@ -95,7 +98,7 @@ public class TestUpgrade
 
 	@ParameterizedTest(name = "from_{0}")
     @MethodSource( "upgradableNeo4jVersionsPre5" )
-	void canUpgradeNeo4j_fileMountsPre5( Neo4jVersion upgradeFrom) throws Exception
+	void canUpgradeNeo4j_fileMounts_Pre5( Neo4jVersion upgradeFrom) throws Exception
 	{
 		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
                     "this test only for upgrades before 5.0: " + TestSettings.NEO4J_VERSION );
@@ -104,7 +107,7 @@ public class TestUpgrade
 
 	@ParameterizedTest(name = "from_{0}")
 	@MethodSource( "upgradableNeo4jVersionsPre5" )
-	void canUpgradeNeo4j_namedVolumesPre5(Neo4jVersion upgradeFrom) throws Exception
+	void canUpgradeNeo4j_namedVolumes_Pre5(Neo4jVersion upgradeFrom) throws Exception
 	{
 		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_500 ),
                     "this test only for upgrades before 5.0: " + TestSettings.NEO4J_VERSION );
@@ -112,19 +115,41 @@ public class TestUpgrade
 	}
 
 	@ParameterizedTest(name = "from_{0}")
-    @MethodSource( "upgradableNeo4jVersions" )
-	void canUpgradeNeo4j_fileMounts( Neo4jVersion upgradeFrom) throws Exception
+    @MethodSource( "upgradableNeo4jVersions5x" )
+	void canUpgradeNeo4j_fileMounts_5x( Neo4jVersion upgradeFrom) throws Exception
 	{
 		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_527 ),
+                    "this test only for upgrades on the 5x branch" + TestSettings.NEO4J_VERSION );
+		testUpgradeFileMounts( upgradeFrom );
+	}
+
+	@ParameterizedTest(name = "from_{0}")
+	@MethodSource( "upgradableNeo4jVersions5x" )
+	void canUpgradeNeo4j_namedVolumes_5x(Neo4jVersion upgradeFrom) throws Exception
+	{
+		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_527 ),
+                    "this test only for upgrades on the 5x branch" + TestSettings.NEO4J_VERSION );
+		testUpgradeNamedVolumes( upgradeFrom );
+	}
+
+	@ParameterizedTest(name = "from_{0}")
+    @MethodSource( "upgradableNeo4jVersionsCalVer" )
+	void canUpgradeNeo4j_fileMounts_calver( Neo4jVersion upgradeFrom) throws Exception
+	{
+		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_527 ),
                     "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
 		testUpgradeFileMounts( upgradeFrom );
 	}
 
 	@ParameterizedTest(name = "from_{0}")
-	@MethodSource( "upgradableNeo4jVersions" )
-	void canUpgradeNeo4j_namedVolumes(Neo4jVersion upgradeFrom) throws Exception
+	@MethodSource( "upgradableNeo4jVersionsCalVer" )
+	void canUpgradeNeo4j_namedVolumes_calver(Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
+		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_527 ),
                     "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
 		testUpgradeNamedVolumes( upgradeFrom );
 	}
