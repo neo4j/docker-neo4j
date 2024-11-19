@@ -15,11 +15,11 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.neo4j.docker.utils.TestSettings.NEO4J_VERSION;
@@ -62,17 +62,17 @@ public class TestSemVerPluginMatching
         // testing common neo4j name variants
         List<String> neo4jVersions = new ArrayList<String>()
         {{
-            add( NEO4J_VERSION.toString() );
-            add( NEO4J_VERSION.toString() + "-drop01.1" );
-            add( NEO4J_VERSION.toString() + "-drop01" );
-            add( NEO4J_VERSION.toString() + "-beta04" );
+            add( NEO4J_VERSION.getVersionNoLabel() );
+            add( NEO4J_VERSION.getVersionNoLabel() + "-12345" );
         }};
 
         List<String> matchingCases = new ArrayList<String>()
         {{
-            add( NEO4J_VERSION.toString() );
+            add( NEO4J_VERSION.getVersionNoLabel() );
             add( major + '.' + minor + ".x" );
             add( major + '.' + minor + ".*" );
+            add( major + ".x.x" );
+            add( major + ".*.*" );
         }};
 
         List<String> nonMatchingCases = new ArrayList<String>()
@@ -99,22 +99,22 @@ public class TestSemVerPluginMatching
             String semverQuery = "echo \"{\\\"neo4j\\\":\\\"%s\\\"}\" | " +
                     "jq -L/startup --raw-output \"import \\\"semver\\\" as lib; " +
                     ".neo4j | lib::semver(\\\"%s\\\")\"";
-            for ( String neoVer : neo4jVersions )
+            for ( String verToBeMatched : neo4jVersions )
             {
-                for ( String ver : matchingCases )
+                for ( String verRegex : matchingCases )
                 {
-                    Container.ExecResult out = container.execInContainer( "sh", "-c", String.format( semverQuery, ver, neoVer ) );
+                    Container.ExecResult out = container.execInContainer( "sh", "-c", String.format( semverQuery, verRegex, verToBeMatched ) );
                     if ( !out.getStdout().trim().equals( "true" ) )
                     {
-                        failedTests.add( String.format( "%s should match %s but did not", ver, neoVer ) );
+                        failedTests.add( String.format( "%s should match %s but did not", verRegex, verToBeMatched ) );
                     }
                 }
-                for ( String ver : nonMatchingCases )
+                for ( String verRegex : nonMatchingCases )
                 {
-                    Container.ExecResult out = container.execInContainer( "sh", "-c", String.format( semverQuery, ver, neoVer ) );
+                    Container.ExecResult out = container.execInContainer( "sh", "-c", String.format( semverQuery, verRegex, verToBeMatched ) );
                     if ( !out.getStdout().trim().equals( "false" ) )
                     {
-                        failedTests.add( String.format( "%s should NOT match %s but did", ver, neoVer ) );
+                        failedTests.add( String.format( "%s should NOT match %s but did", verRegex, verToBeMatched ) );
                     }
                 }
             }
@@ -129,7 +129,8 @@ public class TestSemVerPluginMatching
     void testSemanticVersioningPlugin_catchesMatchWithX() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
-        stubPluginHelper.createStubPluginForVersion(pluginsDir, NEO4J_VERSION.getBranch() + ".x");
+        stubPluginHelper.createStubPluginForVersion(pluginsDir,
+            String.format( "%d.%d.x", NEO4J_VERSION.major, NEO4J_VERSION.minor ));
         try ( GenericContainer container = createContainerWithTestPlugin() )
         {
             container.start();
@@ -142,7 +143,8 @@ public class TestSemVerPluginMatching
     void testSemanticVersioningPlugin_catchesMatchWithStar() throws Exception
     {
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
-        stubPluginHelper.createStubPluginForVersion(pluginsDir, NEO4J_VERSION.getBranch() + ".*");
+        stubPluginHelper.createStubPluginForVersion(pluginsDir,
+            String.format( "%d.%d.*", NEO4J_VERSION.major, NEO4J_VERSION.minor ));
         try ( GenericContainer container = createContainerWithTestPlugin() )
         {
             container.start();
@@ -154,20 +156,44 @@ public class TestSemVerPluginMatching
     @Test
     void testSemanticVersioningPlugin_prefersExactMatch() throws Exception
     {
-        Path pluginsDir = temporaryFolderManager.createFolder("plugins");
-        File versionsJson = stubPluginHelper.createStubPluginsForVersionMapping(pluginsDir,
-            new HashMap<String,String>()
+        verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
             {{
                 put( NEO4J_VERSION.toString(), StubPluginHelper.PLUGIN_FILENAME);
-                put( NEO4J_VERSION.getBranch() + ".x", "notareal.jar" );
+                put( NEO4J_VERSION.major + "." + NEO4J_VERSION.minor + ".x", "notareal.jar" );
                 put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
+                put( "x.x.x", "notareal.jar" );
             }} );
-        try ( GenericContainer container = createContainerWithTestPlugin() )
-        {
+    }
+
+    @Test
+    void testSemanticVersioningPlugin_prefersMajorMinorMatch() throws Exception
+    {
+        verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
+            {{
+                put( NEO4J_VERSION.major + "." + NEO4J_VERSION.minor + ".x", StubPluginHelper.PLUGIN_FILENAME);
+                put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
+                put( "x.x.x", "notareal.jar" );
+            }} );
+    }
+
+    @Test
+    void testSemanticVersioningPlugin_prefersMajorMatch() throws Exception
+    {
+        verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
+            {{
+                put( NEO4J_VERSION.major + ".x.x", StubPluginHelper.PLUGIN_FILENAME);
+                put( "x.x.x", "notareal.jar" );
+            }} );
+    }
+
+    void verifySemanticVersioningPrefersBetterMatches(Map<String, String> versionsInJson) throws Exception {
+        Path pluginsDir = temporaryFolderManager.createFolder("plugins");
+        stubPluginHelper.createStubPluginsForVersionMapping(pluginsDir, versionsInJson);
+        try (GenericContainer container = createContainerWithTestPlugin()) {
             container.start();
-            DatabaseIO db = new DatabaseIO( container );
+            DatabaseIO db = new DatabaseIO(container);
             // if semver did not pick exact version match then it will load a non-existent plugin instead and fail.
-            stubPluginHelper.verifyStubPluginLoaded( db, DB_USER, DB_PASSWORD );
+            stubPluginHelper.verifyStubPluginLoaded(db, DB_USER, DB_PASSWORD);
         }
     }
 }
