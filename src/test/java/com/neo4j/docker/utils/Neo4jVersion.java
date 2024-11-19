@@ -17,9 +17,6 @@ public class Neo4jVersion
 
     public static Neo4jVersion fromVersionString( String version )
     {
-        // Could be one of the forms:
-        // A.B.C, A.B.C-alphaDD, A.B.C-betaDD, A.B.C-rcDD
-        // (?<major>\d)\.(?<minor>\d)\.(?<patch>[\d]+)(?<label>-(alpha|beta|[Rr][Cc])[\d]{1,2})?
         Pattern pattern = Pattern.compile( "(?<major>[\\d]+)\\.(?<minor>[\\d]+)\\.(?<patch>[\\d]+)(?<label>-(.*))?" );
         Matcher x = pattern.matcher( version );
         x.find();
@@ -88,22 +85,23 @@ public class Neo4jVersion
         return (major == that.major) && (minor == that.minor) && (patch == that.patch);
     }
 
-    public String getBranch()
+    public String getVersionNoLabel()
     {
-        return String.format( "%d.%d", major, minor );
+        if ( isCalVer() )
+        {
+            return String.format( "%d.%02d.%d", major, minor, patch);
+        }
+        return String.format( "%d.%d.%d", major, minor, patch);
+
     }
 
     @Override
     public String toString()
     {
-        if ( isCalVer() )
-        {
-            return String.format( "%d.%d.%02d%s", major, minor, patch, label );
-        }
-        return String.format( "%d.%d.%d%s", major, minor, patch, label );
+        return getVersionNoLabel() + label;
     }
 
-    private boolean isCalVer()
+    public boolean isCalVer()
     {
         return major > 5;
     }

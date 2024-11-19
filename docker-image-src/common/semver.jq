@@ -2,10 +2,10 @@ def _semver_obj2obj($req):
   if   . == $req  then true
   elif .major != $req.major    then false
   elif .minor != $req.minor and .minor != "x" and .minor != "*" then false
-  elif .patch != $req.patch and .patch != "x" and .patch != "*"   then false  
+  elif .patch != $req.patch and .patch != "x" and .patch != "*"   then false
   elif $req.minor == null and ( .minor == "x" or .minor == "*" ) then false
   elif $req.patch == null and ( .patch == "x" or .patch == "*" ) then false
-  elif $req.major == null and $req.minor == null and $req.patch == null  then false  
+  elif $req.major == null and $req.minor == null and $req.patch == null  then false
   else true end;
 
 def _ver2obj:

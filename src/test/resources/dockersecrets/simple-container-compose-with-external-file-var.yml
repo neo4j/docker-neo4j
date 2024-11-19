@@ -5,6 +5,6 @@ services:
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
       - NEO4J_AUTH=neo4j/simplecontainerpassword
       - NEO4J_DEBUG=true
-      - CERTIFICATE_FILE="CECRTIFICATE CONTENTS"
+      - CERTIFICATE_FILE="CERTIFICATE CONTENTS"
     volumes:
       - ${HOST_ROOT}/neo4j/data:/data
