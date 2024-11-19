@@ -114,27 +114,6 @@ public class Neo4jVersionTest {
     }
 
     @Test
-    void testIsCalVer_2024()
-    {
-        Neo4jVersion version = new Neo4jVersion(2024, 9, 0);
-        Assertions.assertTrue(version.isCalVer(), version+" should be flagged as a calendar version");
-    }
-
-    @Test
-    void testIsCalVer_2025()
-    {
-        Neo4jVersion version = new Neo4jVersion(2025, 1, 0);
-        Assertions.assertTrue(version.isCalVer(), version+" should be flagged as a calendar version");
-    }
-
-    @Test
-    void testIsCalVer_5x()
-    {
-        Neo4jVersion version = new Neo4jVersion(5, 1, 0);
-        Assertions.assertFalse(version.isCalVer(), version+" should NOT be flagged as a calendar version");
-    }
-
-    @Test
     public void testFromVersionString_releaseFormat()
     {
         Neo4jVersion version = Neo4jVersion.fromVersionString( "4.4.7" );

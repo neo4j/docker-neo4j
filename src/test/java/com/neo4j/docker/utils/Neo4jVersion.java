@@ -101,7 +101,7 @@ public class Neo4jVersion
         return getVersionNoLabel() + label;
     }
 
-    public boolean isCalVer()
+    private boolean isCalVer()
     {
         return major > 5;
     }
