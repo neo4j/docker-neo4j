@@ -144,7 +144,7 @@ public class TestExtendedConf
             // check that error messages from the command that failed are visible in docker logs
             Assertions.assertTrue( logs.contains( "this is an error message from inside neo4j config command expansion" ) );
             // check that the error is only encountered once (i.e. we quit the docker entrypoint the first time it was encountered)
-            Assertions.assertEquals( 1, countOccurrences( Pattern.compile( "Error evaluating value for setting" ), logs ) );
+            Assertions.assertEquals( 1, countOccurrences( Pattern.compile( "Failed to read config /var/lib/neo4j/conf/neo4j.conf: Error evaluating value for setting" ), logs ) );
         }
     }
 
