@@ -55,14 +55,13 @@ if [[ ! "${NEO4JVERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then
     echo "\"${NEO4JVERSION}\" is not a valid version number."
     usage
 fi
-# verify compatible OS
-DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${NEO4JVERSION}" "${IMAGE_OS}")
+# get source files
+SERIES=$(get_series_from_version ${NEO4JVERSION})
+DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${SERIES}" "${IMAGE_OS}")
 
 echo "Building local context for docker build"
 ADMIN_LOCALCXT_DIR=${BUILD_DIR}/${IMAGE_OS}/neo4j-admin/${NEO4JEDITION}
 mkdir -p ${ADMIN_LOCALCXT_DIR}
-
-SERIES=$(get_series_from_version ${NEO4JVERSION})
 
 # copy neo4j-admin sources
 mkdir -p ${ADMIN_LOCALCXT_DIR}/local-package
