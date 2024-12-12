@@ -8,7 +8,7 @@ function contains_element
   return 1
 }
 
-function get_series_from_version
+function get_branch_from_version
 {
     local version=$1
     local major=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
@@ -30,10 +30,10 @@ function get_series_from_version
 
 function get_compatible_dockerfile_for_os_or_error
 {
-    local series=${1}
+    local branch=${1}
     local requested_os=${2}
 
-    case ${series} in
+    case ${branch} in
         calver | 5 | 4.4 )
             local SUPPORTED_IMAGE_OS=("debian" "ubi9")
             if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
@@ -47,7 +47,7 @@ function get_compatible_dockerfile_for_os_or_error
                 echo  "Dockerfile"
                 return 0
             else
-                echo >&2 "${requested_os} is not a supported operating system for ${series}."
+                echo >&2 "${requested_os} is not a supported operating system for ${branch}."
                 return 1
             fi
             ;;

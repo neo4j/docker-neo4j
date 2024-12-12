@@ -55,8 +55,8 @@ if [[ ! "${NEO4JVERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then
 fi
 
 # get source files
-SERIES=$(get_series_from_version ${NEO4JVERSION})
-DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${SERIES}" "${IMAGE_OS}")
+BRANCH=$(get_branch_from_version ${NEO4JVERSION})
+DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${BRANCH}" "${IMAGE_OS}")
 
 echo "Building docker neo4j-${NEO4JEDITION}-${NEO4JVERSION} image based on ${IMAGE_OS}."
 
@@ -80,13 +80,13 @@ mkdir -p ${ADMIN_LOCALCXT_DIR}
 # copy coredb sources
 mkdir -p ${COREDB_LOCALCXT_DIR}/local-package
 cp ${SRC_DIR}/common/* ${COREDB_LOCALCXT_DIR}/local-package
-cp ${SRC_DIR}/${SERIES}/coredb/*.sh ${COREDB_LOCALCXT_DIR}/local-package
-cp ${SRC_DIR}/${SERIES}/coredb/*.json ${COREDB_LOCALCXT_DIR}/local-package
+cp ${SRC_DIR}/${BRANCH}/coredb/*.sh ${COREDB_LOCALCXT_DIR}/local-package
+cp ${SRC_DIR}/${BRANCH}/coredb/*.json ${COREDB_LOCALCXT_DIR}/local-package
 coredb_sha=$(shasum --algorithm=256 "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" | cut -d' ' -f1)
 cp "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" ${COREDB_LOCALCXT_DIR}/local-package/
 
 # create coredb Dockerfile
-cp "${SRC_DIR}/${SERIES}/coredb/${DOCKERFILE_NAME}" "${COREDB_LOCALCXT_DIR}/Dockerfile"
+cp "${SRC_DIR}/${BRANCH}/coredb/${DOCKERFILE_NAME}" "${COREDB_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_SHA%%|${coredb_sha}|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name "${NEO4JVERSION}" "${NEO4JEDITION}")|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${COREDB_LOCALCXT_DIR}/Dockerfile"
@@ -96,10 +96,10 @@ sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${COREDB_LOCALCXT_DIR}/
 mkdir -p ${ADMIN_LOCALCXT_DIR}/local-package
 cp ${SRC_DIR}/common/* ${ADMIN_LOCALCXT_DIR}/local-package
 cp "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" ${ADMIN_LOCALCXT_DIR}/local-package/
-cp ${SRC_DIR}/${SERIES}/neo4j-admin/*.sh ${ADMIN_LOCALCXT_DIR}/local-package
+cp ${SRC_DIR}/${BRANCH}/neo4j-admin/*.sh ${ADMIN_LOCALCXT_DIR}/local-package
 
 # create neo4j-admin Dockerfile
-cp "${SRC_DIR}/${SERIES}/neo4j-admin/${DOCKERFILE_NAME}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
+cp "${SRC_DIR}/${BRANCH}/neo4j-admin/${DOCKERFILE_NAME}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_SHA%%|${coredb_sha}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
