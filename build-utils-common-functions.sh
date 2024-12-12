@@ -8,61 +8,50 @@ function contains_element
   return 1
 }
 
-function get_series_from_version
+function get_branch_from_version
 {
     local version=$1
     local major=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
     local minor=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\2/')
-    if [[ "${major}" -ge "5" ]]; then
-        echo "${major}"
-    else
+    case ${major} in
+      1|2|3|4)
         echo "${major}.${minor}"
-    fi
+        return
+        ;;
+      5)
+        echo "${major}"
+        return
+        ;;
+      *)
+        echo "calver"
+        return
+    esac
 }
 
 function get_compatible_dockerfile_for_os_or_error
 {
-    local version=${1}
+    local branch=${1}
     local requested_os=${2}
 
-    local major=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
-    local minor=$(echo "${version}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\2/')
-
-    case ${major} in
-        # Version is calver
-        2024)
-                local SUPPORTED_IMAGE_OS=("debian" "ubi9")
-                if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
-                    echo  "Dockerfile-${requested_os}"
-                    return 0
-                fi
-                ;;
-        5)
+    case ${branch} in
+        calver | 5 | 4.4 )
             local SUPPORTED_IMAGE_OS=("debian" "ubi9")
-            if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
+            if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile-${requested_os}"
                 return 0
             fi
             ;;
-        4)
-            case ${minor} in
-            4)
-                local SUPPORTED_IMAGE_OS=("debian" "ubi9")
-                if contains_element ${requested_os} "${SUPPORTED_IMAGE_OS[@]}"; then
-                    echo  "Dockerfile-${requested_os}"
-                    return 0
-                fi
-                ;;
-            esac
+        *)
+            local SUPPORTED_IMAGE_OS=("debian")
+            if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
+                echo  "Dockerfile"
+                return 0
+            else
+                echo >&2 "${requested_os} is not a supported operating system for ${branch}."
+                return 1
+            fi
+            ;;
     esac
-    if [[ ${requested_os} = "debian" ]]; then
-        echo "Dockerfile"
-        return 0
-    fi
-    echo >&2 "${IMAGE_OS} is not a supported operating system for ${version}."
-    usage
-    DOCKERFILE_NAME
-
 }
 
 function tarball_name

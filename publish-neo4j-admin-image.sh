@@ -55,23 +55,22 @@ if [[ ! "${NEO4JVERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then
     echo "\"${NEO4JVERSION}\" is not a valid version number."
     usage
 fi
-# verify compatible OS
-DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${NEO4JVERSION}" "${IMAGE_OS}")
+# get source files
+BRANCH=$(get_branch_from_version ${NEO4JVERSION})
+DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${BRANCH}" "${IMAGE_OS}")
 
 echo "Building local context for docker build"
 ADMIN_LOCALCXT_DIR=${BUILD_DIR}/${IMAGE_OS}/neo4j-admin/${NEO4JEDITION}
 mkdir -p ${ADMIN_LOCALCXT_DIR}
 
-SERIES=$(get_series_from_version ${NEO4JVERSION})
-
 # copy neo4j-admin sources
 mkdir -p ${ADMIN_LOCALCXT_DIR}/local-package
 cp ${SRC_DIR}/common/* ${ADMIN_LOCALCXT_DIR}/local-package
 cp "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" ${ADMIN_LOCALCXT_DIR}/local-package/
-cp ${SRC_DIR}/${SERIES}/neo4j-admin/*.sh ${ADMIN_LOCALCXT_DIR}/local-package
+cp ${SRC_DIR}/${BRANCH}/neo4j-admin/*.sh ${ADMIN_LOCALCXT_DIR}/local-package
 
 # create neo4j-admin Dockerfile
-cp "${SRC_DIR}/${SERIES}/neo4j-admin/${DOCKERFILE_NAME}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
+cp "${SRC_DIR}/${BRANCH}/neo4j-admin/${DOCKERFILE_NAME}" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 coredb_sha=$(shasum --algorithm=256 "$(cached_tarball "${NEO4JVERSION}" "${NEO4JEDITION}")" | cut -d' ' -f1)
 sed -i -e "s|%%NEO4J_SHA%%|${coredb_sha}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
