@@ -29,6 +29,20 @@ public class Neo4jVersion
         );
     }
 
+    public static String makeVersionString(int major, int minor)
+    {
+        if ( major > 2023 )
+        {
+            return String.format( "%d.%02d", major, minor);
+        }
+        return String.format( "%d.%d", major, minor);
+    }
+
+    public static String makeVersionString(int major, int minor, int patch)
+    {
+        return makeVersionString( major, minor) + String.format(".%d", patch);
+    }
+
     public Neo4jVersion( int major, int minor, int patch )
     {
         this( major, minor, patch, "" );
@@ -42,7 +56,7 @@ public class Neo4jVersion
         this.label = label;
     }
 
-    public boolean isNewerThan( Neo4jVersion that )
+    public boolean isNewerThan(Neo4jVersion that)
     {
         if ( this.major != that.major )
         {
@@ -85,25 +99,15 @@ public class Neo4jVersion
         return (major == that.major) && (minor == that.minor) && (patch == that.patch);
     }
 
-    public String getVersionNoLabel()
-    {
-        if ( isCalVer() )
-        {
-            return String.format( "%d.%02d.%d", major, minor, patch);
-        }
-        return String.format( "%d.%d.%d", major, minor, patch);
-
-    }
-
     @Override
     public String toString()
     {
-        return getVersionNoLabel() + label;
+        return makeVersionString( major, minor, patch ) + label;
     }
 
-    private boolean isCalVer()
+    public String toReleaseString()
     {
-        return major > 5;
+        return makeVersionString( major, minor, patch );
     }
 
     @Override
