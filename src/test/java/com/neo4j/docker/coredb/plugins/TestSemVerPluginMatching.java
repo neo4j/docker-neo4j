@@ -2,6 +2,7 @@ package com.neo4j.docker.coredb.plugins;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HttpServerTestExtension;
+import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -49,42 +50,38 @@ public class TestSemVerPluginMatching
                 .withExposedPorts( 7474, 7687 )
                 .withLogConsumer( new Slf4jLogConsumer( log ) )
                 .waitingFor( WaitStrategies.waitForNeo4jReady(DB_PASSWORD));
-//        SetContainerUser.nonRootUser( container );
         return container;
     }
 
     @Test
     void testSemanticVersioningLogic() throws Exception
     {
-        String major = Integer.toString( NEO4J_VERSION.major );
-        String minor = Integer.toString( NEO4J_VERSION.minor );
-
         // testing common neo4j name variants
         List<String> neo4jVersions = new ArrayList<String>()
         {{
-            add( NEO4J_VERSION.getVersionNoLabel() );
-            add( NEO4J_VERSION.getVersionNoLabel() + "-12345" );
+            add( NEO4J_VERSION.toReleaseString() );
+            add( NEO4J_VERSION.toReleaseString() + "-12345" );
         }};
 
         List<String> matchingCases = new ArrayList<String>()
         {{
-            add( NEO4J_VERSION.getVersionNoLabel() );
-            add( major + '.' + minor + ".x" );
-            add( major + '.' + minor + ".*" );
-            add( major + ".x.x" );
-            add( major + ".*.*" );
+            add( NEO4J_VERSION.toReleaseString() );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor)+".x" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor)+".*" );
+            add( NEO4J_VERSION.major + ".x.x" );
+            add( NEO4J_VERSION.major + ".*.*" );
         }};
 
         List<String> nonMatchingCases = new ArrayList<String>()
         {{
-            add( (NEO4J_VERSION.major + 1) + '.' + minor + ".x" );
-            add( (NEO4J_VERSION.major - 1) + '.' + minor + ".x" );
-            add( major + '.' + (NEO4J_VERSION.minor + 1) + ".x" );
-            add( major + '.' + (NEO4J_VERSION.minor - 1) + ".x" );
-            add( (NEO4J_VERSION.major + 1) + '.' + minor + ".*" );
-            add( (NEO4J_VERSION.major - 1) + '.' + minor + ".*" );
-            add( major + '.' + (NEO4J_VERSION.minor + 1) + ".*" );
-            add( major + '.' + (NEO4J_VERSION.minor - 1) + ".*" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major+1, NEO4J_VERSION.minor)+".x" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major-1, NEO4J_VERSION.minor)+".x" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor+1)+".x" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor-1)+".x" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major+1, NEO4J_VERSION.minor)+".*" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major-1, NEO4J_VERSION.minor)+".*" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor+1)+".*" );
+            add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor-1)+".*" );
         }};
 
         // Asserting every test case means that if there's a failure, all further tests won't run.
@@ -118,7 +115,7 @@ public class TestSemVerPluginMatching
                     }
                 }
             }
-            if ( failedTests.size() > 0 )
+            if ( !failedTests.isEmpty() )
             {
                 Assertions.fail( failedTests.stream().collect( Collectors.joining( "\n" ) ) );
             }
@@ -130,7 +127,7 @@ public class TestSemVerPluginMatching
     {
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
         stubPluginHelper.createStubPluginForVersion(pluginsDir,
-            String.format( "%d.%d.x", NEO4J_VERSION.major, NEO4J_VERSION.minor ));
+            Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor)+".x");
         try ( GenericContainer container = createContainerWithTestPlugin() )
         {
             container.start();
@@ -144,7 +141,7 @@ public class TestSemVerPluginMatching
     {
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
         stubPluginHelper.createStubPluginForVersion(pluginsDir,
-            String.format( "%d.%d.*", NEO4J_VERSION.major, NEO4J_VERSION.minor ));
+            Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor)+".*");
         try ( GenericContainer container = createContainerWithTestPlugin() )
         {
             container.start();
@@ -159,7 +156,7 @@ public class TestSemVerPluginMatching
         verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
             {{
                 put( NEO4J_VERSION.toString(), StubPluginHelper.PLUGIN_FILENAME);
-                put( NEO4J_VERSION.major + "." + NEO4J_VERSION.minor + ".x", "notareal.jar" );
+                put( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor) + ".x", "notareal.jar" );
                 put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
                 put( "x.x.x", "notareal.jar" );
             }} );
@@ -170,7 +167,8 @@ public class TestSemVerPluginMatching
     {
         verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
             {{
-                put( NEO4J_VERSION.major + "." + NEO4J_VERSION.minor + ".x", StubPluginHelper.PLUGIN_FILENAME);
+                put( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor) + ".x",
+                     StubPluginHelper.PLUGIN_FILENAME);
                 put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
                 put( "x.x.x", "notareal.jar" );
             }} );
