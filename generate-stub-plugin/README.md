@@ -1,6 +1,6 @@
 # What is this?
 
-This code is purely for generating the [myPlugin.jar test artifact](../src/test/resources/testplugin/myPlugin.jar).
+This code is purely for generating the [myPlugin.jar test artifact](../src/test/resources/stubplugin/myPlugin.jar).
 It is a test artifact used for verifying that the `NEO4J_PLUGINS` feature works correctly. *It has nothing to do with Neo4j database or even the Neo4j docker image source code.*
 
 # Do I need to run this code at all?
