@@ -1,6 +1,6 @@
 def _semver_obj2obj($req):
   if   . == $req  then true
-  elif .major != $req.major    then false
+  elif .major != $req.major and .major != "x" and .major != "*" then false
   elif .minor != $req.minor and .minor != "x" and .minor != "*" then false
   elif .patch != $req.patch and .patch != "x" and .patch != "*"   then false
   elif $req.minor == null and ( .minor == "x" or .minor == "*" ) then false
@@ -10,7 +10,7 @@ def _semver_obj2obj($req):
 
 def _ver2obj:
   if   type == "object" then .
-  elif type == "string" and test("(?<major>[0-9]+)(\\.(?<minor>[0-9x*]+))?(\\.?(?<patch>[0-9x*]+))?") then capture("(?<major>[0-9]+)(\\.(?<minor>[0-9x*]+))?(\\.?(?<patch>[0-9x*]+))?")
+  elif type == "string" and test("(?<major>[0-9x*]+)(\\.(?<minor>[0-9x*]+))?(\\.?(?<patch>[0-9x*]+))?") then capture("(?<major>[0-9x*]+)(\\.(?<minor>[0-9x*]+))?(\\.?(?<patch>[0-9x*]+))?")
   elif type == "string" and . == "" then {major: null, minor:null, patch:null}
   elif type == "number" then {minor:floor,patch:(.-floor)}
   else {major: .} end;

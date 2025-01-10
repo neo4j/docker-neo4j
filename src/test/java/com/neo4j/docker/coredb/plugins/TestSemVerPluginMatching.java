@@ -70,6 +70,8 @@ public class TestSemVerPluginMatching
             add( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor)+".*" );
             add( NEO4J_VERSION.major + ".x.x" );
             add( NEO4J_VERSION.major + ".*.*" );
+            add( "x.x.x" );
+            add( "*.*.*" );
         }};
 
         List<String> nonMatchingCases = new ArrayList<String>()
@@ -155,10 +157,10 @@ public class TestSemVerPluginMatching
     {
         verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
             {{
-                put( NEO4J_VERSION.toString(), StubPluginHelper.PLUGIN_FILENAME);
-                put( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor) + ".x", "notareal.jar" );
-                put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
                 put( "x.x.x", "notareal.jar" );
+                put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
+                put( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor) + ".x", "notareal.jar" );
+                put( NEO4J_VERSION.toString(), StubPluginHelper.PLUGIN_FILENAME);
             }} );
     }
 
@@ -167,10 +169,10 @@ public class TestSemVerPluginMatching
     {
         verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
             {{
+                put( "x.x.x", "notareal.jar" );
+                put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
                 put( Neo4jVersion.makeVersionString( NEO4J_VERSION.major, NEO4J_VERSION.minor) + ".x",
                      StubPluginHelper.PLUGIN_FILENAME);
-                put( NEO4J_VERSION.major + ".x.x", "notareal.jar" );
-                put( "x.x.x", "notareal.jar" );
             }} );
     }
 
@@ -179,8 +181,8 @@ public class TestSemVerPluginMatching
     {
         verifySemanticVersioningPrefersBetterMatches(new HashMap<String,String>()
             {{
-                put( NEO4J_VERSION.major + ".x.x", StubPluginHelper.PLUGIN_FILENAME);
                 put( "x.x.x", "notareal.jar" );
+                put( NEO4J_VERSION.major + ".x.x", StubPluginHelper.PLUGIN_FILENAME);
             }} );
     }
 
