@@ -7,7 +7,7 @@
   },
   "apoc-core": {
     "location": "/var/lib/neo4j/labs/apoc-*-core.jar",
-    "versions": "https://neo4j-contrib.github.io/neo4j-apoc-procedures/versions.json",
+    "versions": "https://raw.githubusercontent.com/neo4j-contrib/neo4j-apoc-procedures/refs/heads/master/versions.json",
     "properties": {
       "dbms.security.procedures.unrestricted": "apoc.*"
     }
@@ -21,6 +21,7 @@
       "neo4j.bloom.license_file": "/licenses/bloom.license"
     }
   },
+  "streams": {
   "streams": {
     "versions": "https://neo4j-contrib.github.io/neo4j-streams/versions.json",
     "properties": {}
