@@ -8,3 +8,4 @@ services:
       - CERTIFICATE_FILE="CERTIFICATE CONTENTS"
     volumes:
       - ${HOST_ROOT}/neo4j/data:/data
+      - ${HOST_ROOT}/neo4j/logs:/logs
