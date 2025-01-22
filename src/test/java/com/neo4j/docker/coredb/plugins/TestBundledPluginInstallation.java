@@ -16,6 +16,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
@@ -251,7 +252,7 @@ public class TestBundledPluginInstallation
     }
 
     @Test
-    void testBrowserListensOn7474()
+    void testBrowserListensOn7474() throws Exception
     {
         try(GenericContainer container = createContainer())
         {
@@ -261,6 +262,11 @@ public class TestBundledPluginInstallation
                                           .withStartupTimeout(Duration.ofSeconds(60)) );
             container.start();
             Assertions.assertTrue( container.isRunning() );
+            Container.ExecResult r = container.execInContainer( "wget", "-q", "-O", "-", "http://localhost:7474/browser/" );
+            Assertions.assertEquals( 0, r.getExitCode(), "Did not get http response from browser");
+            Assertions.assertFalse( r.getStdout().isEmpty(), "HTTP response from browser was empty." );
+            Assertions.assertTrue( r.getStdout().contains( "Neo4j Browser" ),
+                                   "HTTP response from browser did not contain expected information.\n"+r.getStdout());
         }
     }
 }
