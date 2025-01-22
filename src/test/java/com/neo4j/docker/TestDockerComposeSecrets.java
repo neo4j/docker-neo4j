@@ -1,5 +1,6 @@
 package com.neo4j.docker;
 
+import com.github.dockerjava.api.DockerClient;
 import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
@@ -12,7 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.ComposeContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.output.ToStringConsumer;
 
@@ -43,9 +45,9 @@ public class TestDockerComposeSecrets
                                  "This test is ignored on ARM architecture, because Docker Compose Container doesn't support it." );
     }
 
-    private DockerComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName )
+    private ComposeContainer createContainer( File composeFile, Path containerRootDir, String serviceName )
     {
-        var container = new DockerComposeContainer( composeFile );
+        var container = new ComposeContainer( composeFile );
 
         container.withExposedService( serviceName, DEFAULT_BOLT_PORT )
                  .withExposedService( serviceName, DEFAULT_HTTP_PORT )
@@ -55,6 +57,19 @@ public class TestDockerComposeSecrets
                  .withLogConsumer( serviceName, new Slf4jLogConsumer( log ) );
 
         return container;
+    }
+
+    /* We need to stop the neo4j service before we stop the docker compose container otherwise there is a race condition for
+       files that are written in mounted folders. This should not be needed when https://github.com/testcontainers/testcontainers-java/issues/9870 is fixed
+    */
+    private void stopContainerSafely( ComposeContainer container, String serviceName ) throws IOException
+    {
+        var containerId = container.getContainerByServiceName( serviceName ).get().getContainerId();
+
+        DockerClient dockerClient = DockerClientFactory.lazyClient();
+        dockerClient.stopContainerCmd( containerId ).exec();
+
+        container.stop();
     }
 
     @Test
@@ -71,6 +86,7 @@ public class TestDockerComposeSecrets
             var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
                                        dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
             dbio.verifyConnectivity( "neo4j", "simplecontainerpassword" );
+            stopContainerSafely( dockerComposeContainer, serviceName );
         }
     }
 
@@ -91,6 +107,7 @@ public class TestDockerComposeSecrets
             var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
                                        dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
             dbio.verifyConnectivity( "neo4j", "newSecretPassword" );
+            stopContainerSafely( dockerComposeContainer, serviceName );
         }
     }
 
@@ -119,6 +136,8 @@ public class TestDockerComposeSecrets
                                                                       Configuration.getConfigurationNameMap().get( Setting.MEMORY_PAGECACHE_SIZE ) );
 
             Assertions.assertTrue( secretSetting.contains( "50" ) );
+
+            stopContainerSafely( dockerComposeContainer, serviceName );
         }
     }
 
@@ -163,7 +182,8 @@ public class TestDockerComposeSecrets
     void shouldIgnoreNonNeo4jFileEnvVars() throws Exception
     {
         var tmpDir = temporaryFolderManager.createFolder( "Simple_Container_Compose_With_File_Var" );
-        var composeFile = copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "simple-container-compose-with-external-file-var.yml" ).toFile() );
+        var composeFile =
+                copyDockerComposeResourceFile( tmpDir, TEST_RESOURCES_PATH.resolve( "simple-container-compose-with-external-file-var.yml" ).toFile() );
         var serviceName = "simplecontainer";
 
         try ( var dockerComposeContainer = createContainer( composeFile, tmpDir, serviceName ) )
@@ -173,6 +193,8 @@ public class TestDockerComposeSecrets
             var dbio = new DatabaseIO( dockerComposeContainer.getServiceHost( serviceName, DEFAULT_BOLT_PORT ),
                                        dockerComposeContainer.getServicePort( serviceName, DEFAULT_BOLT_PORT ) );
             dbio.verifyConnectivity( "neo4j", "simplecontainerpassword" );
+
+            stopContainerSafely( dockerComposeContainer, serviceName );
         }
     }
 
