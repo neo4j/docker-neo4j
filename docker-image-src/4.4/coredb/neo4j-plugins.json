@@ -22,7 +22,6 @@
     }
   },
   "streams": {
-  "streams": {
     "versions": "https://neo4j-contrib.github.io/neo4j-streams/versions.json",
     "properties": {}
   },
