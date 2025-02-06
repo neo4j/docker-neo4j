@@ -2,6 +2,7 @@
 set -eu -o pipefail
 
 ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "$ROOT_DIR/build-utils-common-functions.sh"
 
 if [[ $# -eq 2 ]]; then
     NEO4JVERSION=${1}
@@ -26,22 +27,37 @@ echo "Publishing ${REPOSITORY}:${NEO4JVERSION}"
 
 echo "Adding extra tags..."
 
-docker buildx imagetools create "${REPOSITORY}":5-community-debian \
---tag "${REPOSITORY}:5-community" \
---tag "${REPOSITORY}:5" \
---tag "${REPOSITORY}:community-debian" \
---tag "${REPOSITORY}:community" \
---tag "${REPOSITORY}:debian" \
---tag "${REPOSITORY}:latest"
+BRANCH=$(get_branch_from_version "${NEO4JVERSION}")
+major=$(echo "${NEO4JVERSION}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
 
-docker buildx imagetools create "${REPOSITORY}":5-community-ubi9 \
---tag "${REPOSITORY}:community-ubi9" \
---tag "${REPOSITORY}:ubi9" \
+if [[ "$BRANCH" == "5" ]]; then
+    echo "Tagging ${major}..."
+    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-debian" \
+    --tag "${REPOSITORY}:5-community" \
+    --tag "${REPOSITORY}:5"
 
-docker buildx imagetools create "${REPOSITORY}":5-enterprise-debian \
---tag "${REPOSITORY}:5-enterprise" \
---tag "${REPOSITORY}:enterprise-debian" \
---tag "${REPOSITORY}:enterprise"
+    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-debian" \
+    --tag "${REPOSITORY}:5-enterprise"
 
-docker buildx imagetools create "${REPOSITORY}":5-enterprise-ubi9 \
---tag "${REPOSITORY}:enterprise-ubi9"
+elif [[ "$BRANCH" == "calver" ]]; then
+    echo "Tagging calver ${major}..."
+    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-debian" \
+    --tag "${REPOSITORY}:community-debian" \
+    --tag "${REPOSITORY}:community" \
+    --tag "${REPOSITORY}:debian" \
+    --tag "${REPOSITORY}:latest"
+
+    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-ubi9" \
+    --tag "${REPOSITORY}:community-ubi9" \
+    --tag "${REPOSITORY}:ubi9" \
+
+    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-debian" \
+    --tag "${REPOSITORY}:enterprise-debian" \
+    --tag "${REPOSITORY}:enterprise"
+
+    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-ubi9" \
+    --tag "${REPOSITORY}:enterprise-ubi9"
+
+else
+    echo "Unknown branch: $BRANCH"
+fi
