@@ -28,6 +28,11 @@ function get_branch_from_version
     esac
 }
 
+function get_major_from_version
+{
+    echo "$1" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/'
+}
+
 function get_compatible_dockerfile_for_os_or_error
 {
     local branch=${1}

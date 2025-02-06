@@ -77,8 +77,7 @@ sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|"
 sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 
 # build and push neo4j-admin
-#todo fix major, I think it works on my mac but not in TC
-MAJOR=$(echo "${NEO4JVERSION}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
+MAJOR=$(get_major_from_version "${NEO4JVERSION}")
 full_version_admin_image_tag="${REPOSITORY}:${NEO4JVERSION}-${NEO4JEDITION}-${IMAGE_OS}"
 major_minor_admin_image_tag="${REPOSITORY}:${NEO4JVERSION%.*}-${NEO4JEDITION}-${IMAGE_OS}"
 major_admin_image_tag="${REPOSITORY}:${MAJOR}-${NEO4JEDITION}-${IMAGE_OS}"
