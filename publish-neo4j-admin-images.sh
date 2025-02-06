@@ -27,11 +27,10 @@ echo "Publishing ${REPOSITORY}:${NEO4JVERSION}"
 
 echo "Adding extra tags..."
 
-BRANCH=$(get_branch_from_version "${NEO4JVERSION}")
-major=$(echo "${NEO4JVERSION}" | sed -E 's/^([0-9]+)\.([0-9]+)\..*/\1/')
+MAJOR=$(get_major_from_version "${NEO4JVERSION}")
 
-if [[ "$BRANCH" == "5" ]]; then
-    echo "Tagging ${major}..."
+if [[ "$MAJOR" == "5" ]]; then
+    echo "Tagging ${MAJOR}..."
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-debian" \
     --tag "${REPOSITORY}:5-community" \
     --tag "${REPOSITORY}:5"
@@ -39,9 +38,11 @@ if [[ "$BRANCH" == "5" ]]; then
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-debian" \
     --tag "${REPOSITORY}:5-enterprise"
 
-elif [[ "$BRANCH" == "calver" ]]; then
-    echo "Tagging calver ${major}..."
+elif [[ "$MAJOR" -gt 2024 ]]; then
+    echo "Tagging calver ${MAJOR}..."
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-debian" \
+    --tag "${REPOSITORY}:${MAJOR}" \
+    --tag "${REPOSITORY}:${MAJOR}-community" \
     --tag "${REPOSITORY}:community-debian" \
     --tag "${REPOSITORY}:community" \
     --tag "${REPOSITORY}:debian" \
@@ -52,12 +53,10 @@ elif [[ "$BRANCH" == "calver" ]]; then
     --tag "${REPOSITORY}:ubi9" \
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-debian" \
+    --tag "${REPOSITORY}:${MAJOR}-enterprise" \
     --tag "${REPOSITORY}:enterprise-debian" \
     --tag "${REPOSITORY}:enterprise"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-ubi9" \
     --tag "${REPOSITORY}:enterprise-ubi9"
-
-else
-    echo "Unknown branch: $BRANCH"
 fi
