@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import static com.neo4j.docker.utils.Network.getUniqueHostPort;
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class TestBasic
 {
@@ -253,6 +254,10 @@ public class TestBasic
             // This also keeps around the container unlike GenericContainer::stop(), which cleans up everything
             log.info( "Terminating container with SIGKILL signal" );
             container.getDockerClient().killContainerCmd( container.getContainerId() ).withSignal( "SIGKILL" ).exec();
+
+            await().atMost( Duration.ofSeconds( 120 ) ).untilAsserted( () -> {
+                Assertions.assertFalse( container.isRunning());
+            } );
 
             // Restarting the container with DockerClient because the GenericContainer was not terminates and GenericContainer::start()
             // does not work
