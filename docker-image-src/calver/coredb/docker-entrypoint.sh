@@ -561,7 +561,6 @@ fi
 : ${NEO4J_server_default__listen__address:=${NEO4J_dbms_default__listen__address:-}}
 if [ "${NEO4J_EDITION}" == "enterprise" ];
   then
-   : ${NEO4J_server_discovery_advertised__address:=${NEO4J_causal__clustering_discovery__advertised__address:-}}
    : ${NEO4J_server_cluster_advertised__address:=${NEO4J_causal__clustering_transaction__advertised__address:-}}
    : ${NEO4J_server_cluster_raft_advertised__address:=${NEO4J_causal__clustering_raft__advertised__address:-}}
 fi
@@ -579,7 +578,6 @@ add_docker_default_to_conf "server.default_listen_address" "0.0.0.0"
 if [ "${NEO4J_EDITION}" == "enterprise" ];
 then
     debug_msg "Setting docker specific Enterprise Edition overrides"
-    add_docker_default_to_conf "server.discovery.advertised_address" "$(hostname):5000"
     add_docker_default_to_conf "server.cluster.advertised_address" "$(hostname):6000"
     add_docker_default_to_conf "server.cluster.raft.advertised_address" "$(hostname):7000"
     add_docker_default_to_conf "server.routing.advertised_address" "$(hostname):7688"
