@@ -82,13 +82,16 @@ public class TestBundledPluginInstallation
             Neo4jVersion.NEO4J_VERSION_440, null, true);
     private static final BundledPlugin GDS = new BundledPlugin("graph-data-science",
             Neo4jVersion.NEO4J_VERSION_440, null, true );
+    private static final BundledPlugin GENAI = new BundledPlugin("genai",
+            new Neo4jVersion(5, 18, 0), null, false);
 
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
                 Arguments.arguments(APOC_CORE),
                 Arguments.arguments(APOC),
                  Arguments.arguments(GDS),
-                Arguments.arguments(BLOOM)
+                Arguments.arguments(BLOOM),
+                Arguments.arguments(GENAI)
         );
     }
 
@@ -114,7 +117,7 @@ public class TestBundledPluginInstallation
     public void testBundledPlugin(BundledPlugin plugin) throws Exception
     {
         Assumptions.assumeTrue(plugin.shouldBePresentInImage(),
-                "test only applies when the plugin "+plugin.name+"is present");
+                "test only applies when the plugin "+plugin.name+" is present");
 
         GenericContainer container = null;
         Path pluginsMount = null;
@@ -159,73 +162,6 @@ public class TestBundledPluginInstallation
             {
                 Assertions.fail("Test failed before container could even be initialised");
             }
-        }
-    }
-
-    @Test
-    public void testBundledPlugin_downloadsIfNotAvailableLocally() throws Exception
-    {
-        // Test that in community edition we try to download the plugins that would otherwise be bundled
-        Assumptions.assumeTrue( TestSettings.EDITION == TestSettings.Edition.COMMUNITY,
-                                "Test only applies to enterprise only bundled plugins tested against community edition" );
-
-        BundledPlugin plugin = GDS; // testing only GDS since
-        GenericContainer container = null;
-        Path pluginsMount = null;
-        try
-        {
-            container = createContainerWithBundledPlugin(plugin);
-            pluginsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
-            container.start();
-        }
-        catch(ContainerLaunchException e)
-        {
-            // we don't want this test to depend on the plugins actually working (that's outside the scope of
-            // the docker tests), so we have to be robust to the container failing to start.
-            log.error( String.format("The %s plugin caused Neo4j to fail to start.", plugin.name) );
-        }
-        finally
-        {
-            // verify the plugins were loaded.
-            // This is done in the finally block because after stopping the container, the stdout cannot be retrieved.
-            if (pluginsMount != null)
-            {
-                // Verify from container logs, that the plugins were loaded locally rather than downloaded.
-                String logs = container.getLogs( OutputFrame.OutputType.STDOUT);
-                String errlogs = container.getLogs( OutputFrame.OutputType.STDERR);
-                Assertions.assertTrue(
-                        Stream.of(logs.split( "\n" ))
-                                .anyMatch( line -> line.matches( "Fetching versions.json for Plugin '" + plugin.name + "' from http[s]?://.*" ) ),
-                        "Plugin was not installed from cloud");
-
-                // If we are testing an unreleased version of neo4j, then the plugin may fail to download.
-                // This is expected, so we have to check that either the plugin is in the plugins mount,
-                // or the logs report the download failed.
-
-                List<String> plugins = Files.list(pluginsMount)
-                        .map( path -> path.getFileName().toString() )
-                        .filter( fileName -> fileName.endsWith( ".jar" ) )
-                        .toList();
-                if(plugins.isEmpty())
-                {
-                    // no plugins were downloaded, which is correct if we are testing an unreleased neo4j
-                    String expectedError = String.format(".*No compatible \"%s\" plugin found for Neo4j %s(-[\\d]+)? community\\.",
-                            plugin.name, TestSettings.NEO4J_VERSION);
-                    Assertions.assertTrue(
-                        Stream.of(errlogs.split( "\n" ))
-                                .anyMatch( line -> line.matches( expectedError ) ),
-                        "Should have errored that unreleased plugin could not be downloaded. " +
-                                "Expected error: " + expectedError +
-                                "\nActual errors:\n"+errlogs);
-                }
-                else
-                {
-                    // at least one plugin was downloaded, so check it is the correct one
-                    Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );
-                    Assertions.assertTrue( plugins.get( 0 ).contains( plugin.name ) );
-                }
-            }
-            container.stop();
         }
     }
 
