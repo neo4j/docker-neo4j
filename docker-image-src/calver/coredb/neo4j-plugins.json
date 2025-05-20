@@ -28,12 +28,6 @@
       "dbms.security.procedures.unrestricted": "gds.*"
     }
   },
-  "n10s": {
-    "versions": "https://neo4j-labs.github.io/neosemantics/versions.json",
-    "properties": {
-      "dbms.security.procedures.unrestricted":"semantics.*"
-    }
-  },
   "genai": {
     "location": "/var/lib/neo4j/products/neo4j-genai-plugin-*.jar",
     "properties": {
