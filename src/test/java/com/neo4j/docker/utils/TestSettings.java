@@ -23,7 +23,7 @@ public class TestSettings
     }
     public enum BaseOS
     {
-        BULLSEYE,
+        BOOKWORM,
         UBI9,
         UBI8;
     }
@@ -78,7 +78,7 @@ public class TestSettings
         switch ( os.toLowerCase() )
         {
         case "debian":
-            return BaseOS.BULLSEYE;
+            return BaseOS.BOOKWORM;
         case "ubi9":
             return BaseOS.UBI9;
         case "ubi8":

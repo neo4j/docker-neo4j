@@ -16,7 +16,7 @@ Development is tested on Ubuntu and OSX. It will probably work on other Linuxes.
 # Building the Image
 
 There are two supported base operating systems that the docker image can be build upon:
- * debian, based off `debian:bullseye-slim`.
+ * debian, based off `debian:bookworm-slim`.
  * RedHat ubi9, based off `redhat/ubi9-minimal`. Only available for 4.4 onwards.
 
 On top of that there is also the choice Neo4j version, and whether to build `community` or `enterprise` edition Neo4j.
