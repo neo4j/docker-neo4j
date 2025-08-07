@@ -51,6 +51,13 @@
       "dbms.security.procedures.unrestricted":"semantics.*"
     }
   },
+  "fleet-management": {
+    "location": "/var/lib/neo4j/labs/neo4j-fleet-management-*.jar",
+    "properties": {
+      "dbms.security.procedures.unrestricted": "fleetManagement.*",
+      "dbms.security.procedures.allowlist": "fleetManagement.*"
+    }
+  },
   "_testing": {
     "versions": "http://host.testcontainers.internal:3000/versions.json",
     "properties": {
