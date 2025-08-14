@@ -35,7 +35,7 @@
     }
   },
   "fleet-management": {
-    "location": "/var/lib/neo4j/labs/neo4j-fleet-management-*.jar",
+    "location": "/var/lib/neo4j/products/neo4j-fleet-management-*.jar",
     "properties": {
       "dbms.security.procedures.unrestricted": "fleetManagement.*",
       "dbms.security.procedures.allowlist": "fleetManagement.*"
