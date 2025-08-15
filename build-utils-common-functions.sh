@@ -40,14 +40,14 @@ function get_compatible_dockerfile_for_os_or_error
 
     case ${branch} in
         calver | 5 | 4.4 )
-            local SUPPORTED_IMAGE_OS=("debian" "ubi9")
+            local SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
             if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile-${requested_os}"
                 return 0
             fi
             ;;
         *)
-            local SUPPORTED_IMAGE_OS=("debian")
+            local SUPPORTED_IMAGE_OS=("bullseye")
             if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile"
                 return 0

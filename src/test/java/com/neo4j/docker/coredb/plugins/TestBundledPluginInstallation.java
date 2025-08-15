@@ -147,7 +147,7 @@ public class TestBundledPluginInstallation
                 List<String> plugins = Files.list(pluginsMount).map( fname -> fname.getFileName().toString() )
                                             .filter( fname -> fname.endsWith( ".jar" ) )
                                             .collect(Collectors.toList());
-                Assertions.assertTrue(plugins.size() == 1, "more than one plugin was loaded" );
+                Assertions.assertEquals(1, plugins.size(), "expected only one plugin to be loaded" );
                 Assertions.assertTrue( plugins.get( 0 ).contains( plugin.name ) );
                 // Verify from container logs, that the plugins were loaded locally rather than downloaded.
                 String logs = container.getLogs( OutputFrame.OutputType.STDOUT);

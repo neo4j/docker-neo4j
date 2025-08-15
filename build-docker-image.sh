@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 
-# SUPPORTED_IMAGE_OS=("debian" "ubi9")
+SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
 EDITIONS=("community" "enterprise")
 
 DISTRIBUTION_SITE="https://dist.neo4j.org"
@@ -16,11 +16,11 @@ function usage
 {
     echo >&2 "USAGE: $0 <version> <edition> <operating system>
     For example:
-        $0 4.4.10 community debian
+        $0 4.4.10 community bullseye
         $0 5.10.0 enterprise ubi9
     Version and operating system can also be set in the environment.
     For example:
-        NEO4JVERSION=4.4.10 NEO4JEDITION=community IMAGE_OS=debian $0
+        NEO4JVERSION=4.4.10 NEO4JEDITION=community IMAGE_OS=bullseye $0
         NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=ubi9 $0
     "
     exit 1
@@ -46,6 +46,11 @@ fi
 # verify edition
 if ! contains_element "${NEO4JEDITION}" "${EDITIONS[@]}"; then
     echo >&2 "${NEO4JEDITION} is not a supported edition."
+    usage
+fi
+# verify base OS
+if ! contains_element "${IMAGE_OS}" "${SUPPORTED_IMAGE_OS[@]}"; then
+    echo >&2 "${IMAGE_OS} is not a supported base image."
     usage
 fi
 # verify compatible neo4j version
