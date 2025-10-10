@@ -35,18 +35,18 @@ test-%-community: build-%-community
 
 ## building
 
-build: build-debian build-ubi9
+build: build-bullseye build-ubi9
 .PHONY: build
 
-build-debian: build-debian-community build-debian-enterprise
-.PHONY: build-debian
-build-debian-community: build/debian/coredb/community/.sentinel
-.PHONY: build-debian-community
-build-debian-enterprise: build/debian/coredb/enterprise/.sentinel
-.PHONY: build-debian-enterprise
+build-bullseye: build-bullseye-community build-bullseye-enterprise
+.PHONY: build-bullseye
+build-bullseye-community: build/bullseye/coredb/community/.sentinel
+.PHONY: build-bullseye-community
+build-bullseye-enterprise: build/bullseye/coredb/enterprise/.sentinel
+.PHONY: build-bullseye-enterprise
 
-build/debian/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "debian"
+build/bullseye/coredb/%/.sentinel::
+> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "bullseye"
 > touch $@
 
 build-ubi9: build-ubi9-community build-ubi9-enterprise
@@ -60,28 +60,15 @@ build/ubi9/coredb/%/.sentinel::
 > ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi9"
 > touch $@
 
-build-ubi8: build-ubi8-community build-ubi8-enterprise
-.PHONY: build-ubi8
-build-ubi8-community: build/ubi8/coredb/community/.sentinel
-.PHONY: build-ubi8-community
-build-ubi8-enterprise: build/ubi8/coredb/enterprise/.sentinel
-.PHONY: build-ubi8-enterprise
-
-build/ubi8/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi8"
-> touch $@
-
 ## tagging
 
-tag: tag-debian tag-ubi9
+tag: tag-bullseye tag-ubi9
 .PHONY: tag
 
-tag-debian: tag-debian-community tag-debian-enterprise
-.PHONY: tag-debian
+tag-bullseye: tag-bullseye-community tag-bullseye-enterprise
+.PHONY: tag-bullseye
 tag-ubi9: tag-ubi9-community tag-ubi9-enterprise
 .PHONY: tag-ubi9
-tag-ubi8: tag-ubi8-community tag-ubi8-enterprise
-.PHONY: tag-ubi8
 
 tag-%-community: build-%-community
 > docker tag $$(cat ./build/${*}/coredb/.image-id-community) neo4j:$(NEO4JVERSION)-${*}
@@ -96,17 +83,14 @@ tag-%-enterprise: build-%-enterprise
 ## packaging and release
 
 # create release images and loadable images
-package: package-debian package-ubi9
+package: package-bullseye package-ubi9
 .PHONY: package
 
-package-debian: package-debian-community package-debian-enterprise package-debian-release-artifacts
-.PHONY: package-debian
+package-bullseye: package-bullseye-community package-bullseye-enterprise package-bullseye-release-artifacts
+.PHONY: package-bullseye
 
 package-ubi9: package-ubi9-community package-ubi9-enterprise package-ubi9-release-artifacts
 .PHONY: package-ubi9
-
-package-ubi8: package-ubi8-community package-ubi8-enterprise package-ubi8-release-artifacts
-.PHONY: package-ubi8
 
 package-%-community:  tag-%-community
 > mkdir -p out
@@ -124,3 +108,20 @@ package-%-release-artifacts: build-%-community build-%-enterprise
 > find out/${*} -name "neo4j-*.tar.gz" -delete
 > find out/${*} -name ".image-id-*" -delete
 > find out/${*} -name ".sentinel" -delete
+
+
+# keep "debian" targets as an alias for bullseye until we update the build pipelines
+build-debian: build-debian-community build-debian-enterprise
+.PHONY: build-debian
+build-debian-community: build-bullseye-community
+> mkdir -p build/debian/
+> cp --recursive build/bullseye/* build/debian/
+.PHONY: build-debian-community
+build-debian-enterprise: build-bullseye-enterprise
+> mkdir -p build/debian/
+> cp --recursive build/bullseye/* build/debian/
+.PHONY: build-debian-enterprise
+tag-debian: tag-debian-community tag-debian-enterprise
+.PHONY: tag-debian
+package-debian: package-debian-community package-debian-enterprise package-debian-release-artifacts
+.PHONY: package-debian

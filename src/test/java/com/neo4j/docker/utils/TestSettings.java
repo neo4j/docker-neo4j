@@ -77,14 +77,12 @@ public class TestSettings
         String os = getValueFromPropertyOrEnv("baseos", "BASE_OS");
         switch ( os.toLowerCase() )
         {
-        case "debian":
+        case "debian", "bullseye":
             return BaseOS.BULLSEYE;
         case "ubi9":
             return BaseOS.UBI9;
-        case "ubi8":
-            return BaseOS.UBI8;
         default:
-            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"ubi9\" or \"ubi8\"." );
+            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"bullseye\" or \"ubi9\"." );
         }
         return null;
     }
