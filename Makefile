@@ -60,17 +60,6 @@ build/ubi9/coredb/%/.sentinel::
 > ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi9"
 > touch $@
 
-build-ubi8: build-ubi8-community build-ubi8-enterprise
-.PHONY: build-ubi8
-build-ubi8-community: build/ubi8/coredb/community/.sentinel
-.PHONY: build-ubi8-community
-build-ubi8-enterprise: build/ubi8/coredb/enterprise/.sentinel
-.PHONY: build-ubi8-enterprise
-
-build/ubi8/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi8"
-> touch $@
-
 ## tagging
 
 tag: tag-bullseye tag-ubi9
@@ -105,9 +94,6 @@ package-bullseye: package-bullseye-community package-bullseye-enterprise package
 package-ubi9: package-ubi9-community package-ubi9-enterprise package-ubi9-release-artifacts
 .PHONY: package-ubi9
 
-package-ubi8: package-ubi8-community package-ubi8-enterprise package-ubi8-release-artifacts
-.PHONY: package-ubi8
-
 package-%-community:  tag-%-community
 > mkdir -p out
 > docker save neo4j:$(NEO4JVERSION)-${*} > out/neo4j-community-$(NEO4JVERSION)-${*}-docker-loadable.tar
@@ -124,3 +110,18 @@ package-%-release-artifacts: build-%-community build-%-enterprise
 > find out/${*} -name "neo4j-*.tar.gz" -delete
 > find out/${*} -name ".image-id-*" -delete
 > find out/${*} -name ".sentinel" -delete
+
+
+# keep "debian" targets as an alias for bullseye until we update the build pipelines
+build-debian: build-bullseye-community build-bullseye-enterprise
+.PHONY: build-debian
+build-debian-community: build-bullseye-community
+.PHONY: build-debian-community
+build-debian-enterprise: build-bullseye-enterprise
+.PHONY: build-debian-enterprise
+tag-debian: tag-bullseye
+.PHONY: tag-debian
+package-debian: package-bullseye
+.PHONY: package-debian
+package-debian-release-artifacts: package-bullseye-release-artifacts
+.PHONY: package-debian-release-artifacts
