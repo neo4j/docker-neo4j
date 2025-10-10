@@ -69,8 +69,6 @@ tag-bullseye: tag-bullseye-community tag-bullseye-enterprise
 .PHONY: tag-bullseye
 tag-ubi9: tag-ubi9-community tag-ubi9-enterprise
 .PHONY: tag-ubi9
-tag-ubi8: tag-ubi8-community tag-ubi8-enterprise
-.PHONY: tag-ubi8
 
 tag-%-community: build-%-community
 > docker tag $$(cat ./build/${*}/coredb/.image-id-community) neo4j:$(NEO4JVERSION)-${*}
@@ -116,12 +114,14 @@ package-%-release-artifacts: build-%-community build-%-enterprise
 build-debian: build-bullseye-community build-bullseye-enterprise
 .PHONY: build-debian
 build-debian-community: build-bullseye-community
+> mkdir -p build/debian/
+> cp --recursive build/bullseye/* build/debian/
 .PHONY: build-debian-community
 build-debian-enterprise: build-bullseye-enterprise
+> mkdir -p build/debian/
+> cp --recursive build/bullseye/* build/debian/
 .PHONY: build-debian-enterprise
-tag-debian: tag-bullseye
+tag-debian: tag-debian-community tag-debian-enterprise
 .PHONY: tag-debian
-package-debian: package-bullseye
+package-debian: package-debian-community package-debian-enterprise package-debian-release-artifacts
 .PHONY: package-debian
-package-debian-release-artifacts: package-bullseye-release-artifacts
-.PHONY: package-debian-release-artifacts
