@@ -111,7 +111,7 @@ package-%-release-artifacts: build-%-community build-%-enterprise
 
 
 # keep "debian" targets as an alias for bullseye until we update the build pipelines
-build-debian: build-bullseye-community build-bullseye-enterprise
+build-debian: build-debian-community build-debian-enterprise
 .PHONY: build-debian
 build-debian-community: build-bullseye-community
 > mkdir -p build/debian/
