@@ -1,5 +1,9 @@
 # Common functions used by build-docker-image.sh and publish-neo4j-admin-image.sh
 
+SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
+EDITIONS=("community" "enterprise")
+DISTRIBUTION_SITE="https://dist.neo4j.org"
+
 function contains_element
 {
   local e match="$1"
@@ -40,7 +44,6 @@ function get_compatible_dockerfile_for_os_or_error
 
     case ${branch} in
         calver | 5 | 4.4 )
-            local SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
             if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile-${requested_os}"
                 return 0
@@ -51,12 +54,11 @@ function get_compatible_dockerfile_for_os_or_error
             if contains_element "${requested_os}" "${SUPPORTED_IMAGE_OS[@]}"; then
                 echo  "Dockerfile"
                 return 0
-            else
-                echo >&2 "${requested_os} is not a supported operating system for ${branch}."
-                return 1
             fi
             ;;
     esac
+    echo >&2 "${requested_os} is not a supported operating system for ${branch}."
+    return 1
 }
 
 function tarball_name

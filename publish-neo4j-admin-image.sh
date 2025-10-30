@@ -1,8 +1,6 @@
 #!/bin/bash
 set -eu -o pipefail
 
-EDITIONS=("community" "enterprise")
-
 ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$ROOT_DIR/build-utils-common-functions.sh"
 BUILD_DIR=${ROOT_DIR}/build
@@ -14,12 +12,12 @@ function usage
 {
     echo >&2 "USAGE: $0 <version> <edition> <operating system> <repository>
     For example:
-        $0 4.4.10 community debian neo/neo4j-admin
-        $0 5.10.0 enterprise ubi9 neo/neo4j-admin
+        $0 4.4.10 community bullseye neo4j/neo4j-admin
+        $0 5.10.0 enterprise ubi9 neo4j/neo4j-admin
     Version and operating system can also be set in the environment.
     For example:
-        NEO4JVERSION=4.4.10 NEO4JEDITION=community IMAGE_OS=debian REPOSITORY=neo/neo4j-admin $0
-        NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=ubi9 REPOSITORY=neo/neo4j-admin $0
+        NEO4JVERSION=4.4.10 NEO4JEDITION=community IMAGE_OS=bullseye REPOSITORY=neo4j/neo4j-admin $0
+        NEO4JVERSION=5.10.0 NEO4JEDITION=enterprise IMAGE_OS=ubi9 REPOSITORY=neo4j/neo4j-admin $0
     "
     exit 1
 }
@@ -55,11 +53,16 @@ if [[ ! "${NEO4JVERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then
     echo "\"${NEO4JVERSION}\" is not a valid version number."
     usage
 fi
+# verify base OS
+if ! contains_element "${IMAGE_OS}" "${SUPPORTED_IMAGE_OS[@]}"; then
+    echo >&2 "${IMAGE_OS} is not a supported base image."
+    usage
+fi
 # get source files
 BRANCH=$(get_branch_from_version ${NEO4JVERSION})
 DOCKERFILE_NAME=$(get_compatible_dockerfile_for_os_or_error "${BRANCH}" "${IMAGE_OS}")
 
-echo "Building local context for docker build"
+echo "Building local context for docker build ${NEO4JEDITION}-${NEO4JVERSION}-${IMAGE_OS}"
 ADMIN_LOCALCXT_DIR=${BUILD_DIR}/${IMAGE_OS}/neo4j-admin/${NEO4JEDITION}
 mkdir -p ${ADMIN_LOCALCXT_DIR}
 

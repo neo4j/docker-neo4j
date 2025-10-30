@@ -1,10 +1,6 @@
 #!/bin/bash
 set -eu -o pipefail
 
-SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
-EDITIONS=("community" "enterprise")
-
-DISTRIBUTION_SITE="https://dist.neo4j.org"
 ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$ROOT_DIR/build-utils-common-functions.sh"
 BUILD_DIR=${ROOT_DIR}/build
@@ -76,7 +72,7 @@ fetch_tarball "${NEO4JVERSION}" "${NEO4JEDITION}"
 ## construct local build context. These are all the files required to build the
 ## neo4j image locally.
 
-echo "Building local context for docker build"
+echo "Building local context for docker build ${NEO4JEDITION}-${NEO4JVERSION}-${IMAGE_OS}"
 COREDB_LOCALCXT_DIR=${BUILD_DIR}/${IMAGE_OS}/coredb/${NEO4JEDITION}
 ADMIN_LOCALCXT_DIR=${BUILD_DIR}/${IMAGE_OS}/neo4j-admin/${NEO4JEDITION}
 mkdir -p ${COREDB_LOCALCXT_DIR}
