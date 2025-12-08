@@ -157,7 +157,7 @@ These can be passed as an environment variable or a command line parameter when 
 
 ## Using Maven
 The Makefile can run the entire test suite.
-1. Make sure `java --version` is java 17.
+1. Make sure `java --version` is java 21.
 2. `NEO4JVERSION=<VERSION> make test-<BASE OS>` This is a make target that will run these commands:
 ```bash
 mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-enterprise) -Dadminimage=$(cat build/<BASE OS>/neo4j-admin/.image-id-enterprise) -Dedition=enterprise -Dversion=${NEO4JVERSION}
@@ -166,7 +166,7 @@ mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-community) -Dadminimage=
 
 ## In Intellij
 
-1. Make sure the project SDK is java 17.
+1. Make sure the project SDK is java 21.
 3. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
 5. Under Run Configurations edit the Template JUnit configuration:
    1. Select the "EnvFile" tab
@@ -194,10 +194,5 @@ TESTCONTAINERS_RYUK_DISABLED=true;
 TESTCONTAINERS_CHECKS_DISABLE=true 
 ```
 
-# Troubleshooting
-## cannot find symbol `com.sun.security.auth.module.UnixSystem`
 
-This can happen if you switch from java 17 to java 11 (or the other way) and then try to rebuild the tests in Intellij.
-
-Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 17.
 

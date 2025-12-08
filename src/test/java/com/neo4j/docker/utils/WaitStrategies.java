@@ -58,18 +58,26 @@ public class WaitStrategies
     public static GenericContainer waitUntilContainerFinished( GenericContainer container, Duration timeout)
     {
         container.setStartupCheckStrategy( new OneShotStartupCheckStrategy().withTimeout( timeout ) );
-        container.setWaitStrategy( new AbstractWaitStrategy()
-        {
-            @Override
-            protected void waitUntilReady()
-            {
-                Callable<Boolean> isFinished = () -> {
-                    InspectContainerResponse.ContainerState x = waitStrategyTarget.getCurrentContainerInfo().getState();
-                    return DockerStatus.isContainerStopped( x );
-                };
-                Unreliables.retryUntilTrue( (int)timeout.getSeconds(), TimeUnit.SECONDS, isFinished );
-            }
-        });
+        container.waitingFor( new WaitUntilFinished( timeout ));
         return container;
+    }
+
+    private static class WaitUntilFinished extends AbstractWaitStrategy
+    {
+        Duration timeout;
+
+        WaitUntilFinished( Duration timeout )
+        {
+            this.timeout = timeout;
+        }
+        @Override
+        protected void waitUntilReady()
+        {
+            Callable<Boolean> isFinished = () -> {
+                InspectContainerResponse.ContainerState x = waitStrategyTarget.getCurrentContainerInfo().getState();
+                return DockerStatus.isContainerStopped( x );
+            };
+            Unreliables.retryUntilTrue( (int)this.timeout.getSeconds(), TimeUnit.SECONDS, isFinished );
+        }
     }
 }

@@ -1,9 +1,10 @@
 package com.neo4j.docker.utils;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -13,7 +14,6 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
@@ -162,7 +162,7 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
                     if(fileToBeArchived.toFile().isDirectory()) continue;
                     try( InputStream fileStream = Files.newInputStream( fileToBeArchived ))
                     {
-                        ArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, folderRoot.relativize( fileToBeArchived ).toString() );
+                        TarArchiveEntry entry = archiver.createArchiveEntry( fileToBeArchived, folderRoot.relativize( fileToBeArchived ).toString() );
                         archiver.putArchiveEntry( entry );
                         IOUtils.copy( fileStream, archiver );
                         archiver.closeArchiveEntry();

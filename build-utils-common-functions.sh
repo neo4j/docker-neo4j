@@ -1,6 +1,6 @@
 # Common functions used by build-docker-image.sh and publish-neo4j-admin-image.sh
 
-SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
+SUPPORTED_IMAGE_OS=("bullseye" "trixie" "ubi9" "ubi10")
 EDITIONS=("community" "enterprise")
 DISTRIBUTION_SITE="https://dist.neo4j.org"
 

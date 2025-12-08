@@ -106,7 +106,7 @@ sed -i -e "s|%%NEO4J_TARBALL%%|$(tarball_name ${NEO4JVERSION} ${NEO4JEDITION})|"
 sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 
-# add deprecation warning if needed
+# add deprecation warnings if needed
 if [ "${IMAGE_OS}" = "ubi8" ]; then
     dep_msg="echo \>\&2 \"\n=======================================================\n
 Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9.\n

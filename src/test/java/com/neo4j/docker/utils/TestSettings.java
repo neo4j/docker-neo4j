@@ -24,6 +24,8 @@ public class TestSettings
     public enum BaseOS
     {
         BULLSEYE,
+        TRIXIE,
+        UBI10,
         UBI9,
         UBI8;
     }
@@ -77,8 +79,12 @@ public class TestSettings
         String os = getValueFromPropertyOrEnv("baseos", "BASE_OS");
         switch ( os.toLowerCase() )
         {
-        case "debian", "bullseye":
+        case "debian", "trixie":
+            return BaseOS.TRIXIE;
+        case "bullseye":
             return BaseOS.BULLSEYE;
+        case "ubi10":
+            return BaseOS.UBI10;
         case "ubi9":
             return BaseOS.UBI9;
         default:
