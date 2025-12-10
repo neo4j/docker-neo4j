@@ -32,12 +32,23 @@ function get_removed_in_version_calver
     esac
 }
 
-function set_deprecation_early_warning
+function get_update_to_image
+{
+    local image_os=${1}
+    case ${image_os} in
+        ubi9 )
+            echo "ubi10"
+            ;;
+        bullseye )
+            echo "trixie"
+            ;;
+    esac
+}
+
+function deprecation_early_warning_message
 {
     local image_os="${1}"
-    local update_to="${2}"
-    local coredb_entrypoint="${3}"
-    local admin_entrypoint="${4}"
+    local update_to="$(get_update_to_image $image_os)"
 
     case ${image_os} in
       ubi8 | ubi9 )
@@ -50,46 +61,69 @@ To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=supp
 =======================================================\n\"\n
 fi"
         ;;
+      bullseye )
+        echo "if [ \"\${NEO4J_DEPRECATION_WARNING:-yes}\" != \"suppress\" ]; then\n
+\techo \>\&2 \"\n=======================================================\n
+Neo4j Debian ${image_os^^} images are deprecated in favour of Debian ${update_to^^}.\n
+Update your codebase to use Neo4j Docker image tags ending with -${update_to} instead of -${image_os}.\n\n
+Neo4j $(get_removed_in_version_calver $image_os) will be the last version to get a Debian ${image_os^^} docker image release.\n\n
+To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress.\n
+=======================================================\n\"\n
+fi"
+        ;;
     esac
 }
 
-ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source "$ROOT_DIR/build-utils-common-functions.sh"
-get_removed_in_version_calver ubi9
-set_deprecation_early_warning ubi9 ubi10 a b
+function deprecation_final_warning_message
+{
+    local image_os="${1}"
+    local update_to="$(get_update_to_image $image_os)"
 
-#if [ "${IMAGE_OS}" = "ubi8" ]; then
-#    dep_msg="if [ \"\${NEO4J_DEPRECATION_WARNING:-yes}\" != \"suppress\" ]; then\n
-#\techo \>\&2 \"\n=======================================================\n
-#Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9.\n
-#Update your codebase to use Neo4j Docker image tags ending with -ubi9 instead of -ubi8.\n\n
-#Neo4j 5.20.0 will be the last version to get a Red Hat UBI8 docker image release.\n\n
-#To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress.\n
-#=======================================================\n\"\n
-#fi"
-#    sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#    sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#else
-#    sed -i -e '/#%%DEPRECATION_WARNING_PLACEHOLDER%%/d' "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#    sed -i -e '/#%%DEPRECATION_WARNING_PLACEHOLDER%%/d' "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#fi
+    case ${image_os} in
+      ubi8 | ubi9 )
+        echo "echo \>\&2 \"\n=======================================================\n
+Neo4j Red Hat ${image_os^^} images are deprecated in favour of Red Hat ${update_to^^}.\n
+Update your codebase to use Neo4j Docker image tags ending with -${update_to} instead of -${image_os}.\n\n
+This is the last Neo4j image available on Red Hat ${image_os^^}.\n
+By continuing to use ${image_os^^} tagged Neo4j images you will not get further updates, \n
+including new features and security fixes.\n\n
+This message can not be suppressed.\n
+=======================================================\n\"\n"
+      ;;
+      bullseye )
+        echo "echo \>\&2 \"\n=======================================================\n
+Neo4j Debian ${image_os^^} images are deprecated in favour of Debian ${update_to^^}.\n
+Update your codebase to use Neo4j Docker image tags ending with -${update_to} instead of -${image_os}.\n\n
+This is the last Neo4j image available on Debian ${image_os^^}.\n
+By continuing to use ${image_os^^} tagged Neo4j images you will not get further updates, \n
+including new features and security fixes.\n\n
+This message can not be suppressed.\n
+=======================================================\n\"\n"
+      ;;
+    esac
+}
 
+function deprecation_message
+{
+    local image_os="${1}"
+    local neo4j_version="${2}"
+    local branch=$(get_branch_from_version ${neo4j_version})
+    local deprecated_in_version
 
-
-
-
-#if [ "${IMAGE_OS}" = "ubi8" ]; then
-#    dep_msg="echo \>\&2 \"\n=======================================================\n
-#Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9.\n
-#Update your codebase to use Neo4j Docker image tags ending with -ubi9 instead of -ubi8.\n\n
-#This is the last Neo4j image available on Red Hat UBI8.\n
-#By continuing to use UBI8 tagged Neo4j images you will not get further updates, \n
-#including new features and security fixes.\n\n
-#This message can not be suppressed.\n
-#=======================================================\n\"\n"
-#    sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#    sed -i -e "s/#%%DEPRECATION_WARNING_PLACEHOLDER%%/$(echo ${dep_msg} | sed -z 's/\n/\\n/g')/" "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#else
-#    sed -i -e '/#%%DEPRECATION_WARNING_PLACEHOLDER%%/d' "${COREDB_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#    sed -i -e '/#%%DEPRECATION_WARNING_PLACEHOLDER%%/d' "${ADMIN_LOCALCXT_DIR}/local-package/docker-entrypoint.sh"
-#fi
+    # Find which neo4j version the image OS will last appear in
+    if [ "${branch}" == "calver" ]; then
+        deprecated_in_version="$(get_removed_in_version_calver ${image_os})"
+    elif [ "${branch}" == "5" ]; then
+        deprecated_in_version="$(get_removed_in_version_5 ${image_os})"
+    else
+        echo >&2 "Cannot generate deprecation message for ${image_os} and neo4j ${branch}."
+        return 1
+    fi
+    # if the deprecated_in_version is the one currently being built,
+    # then give final warning instead of early warning.
+    if [ "${neo4j_version}" == "${deprecated_in_version}" ]; then
+        deprecation_final_warning_message "${image_os}"
+    else
+        deprecation_early_warning_message "${image_os}"
+    fi
+}
