@@ -2,6 +2,8 @@ package com.neo4j.docker.utils;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class Neo4jVersionTest {
 
@@ -168,5 +170,12 @@ public class Neo4jVersionTest {
         Neo4jVersion version = Neo4jVersion.fromVersionString( "2025.2.0-1234" );
         String outStr = version.toString();
         Assertions.assertEquals( "2025.02.0-1234", outStr );
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2025,11,0,true", "2026,2,4,true", "4,4,20,false", "5,26,0,false", "5,1,0,false"})
+    void testIsCalver(int major, int minor, int patch, boolean isCalver){
+        Neo4jVersion version = new Neo4jVersion(  major, minor, patch );
+        Assertions.assertEquals( isCalver, version.isCalver(), "Did not parse isCalver from " + version );
     }
 }

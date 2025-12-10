@@ -88,7 +88,7 @@ public class TestSettings
         case "ubi9":
             return BaseOS.UBI9;
         default:
-            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"bullseye\" or \"ubi9\"." );
+            Assertions.fail( os + " is not a valid Neo4j base operating system." );
         }
         return null;
     }

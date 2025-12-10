@@ -67,7 +67,10 @@ public class TestUpgrade
 
     private static List<Neo4jVersion> upgradableNeo4jVersionsCalVer()
     {
-		return Arrays.asList( new Neo4jVersion( 5, 26, 0 ));
+        return Arrays.asList(new Neo4jVersion(5, 26, 0),
+                             new Neo4jVersion(2025, 4, 0),
+                             new Neo4jVersion(2025, 8, 0),
+                             new Neo4jVersion(2025, 12, 0));
     }
 
     private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
@@ -118,9 +121,7 @@ public class TestUpgrade
     @MethodSource( "upgradableNeo4jVersions5x" )
 	void canUpgradeNeo4j_fileMounts_5x( Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
-		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_527 ),
+		assumeTrue( TestSettings.NEO4J_VERSION.major == 5,
                     "this test only for upgrades on the 5x branch" + TestSettings.NEO4J_VERSION );
 		testUpgradeFileMounts( upgradeFrom );
 	}
@@ -129,9 +130,7 @@ public class TestUpgrade
 	@MethodSource( "upgradableNeo4jVersions5x" )
 	void canUpgradeNeo4j_namedVolumes_5x(Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ),
-                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
-		assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( Neo4jVersion.NEO4J_VERSION_527 ),
+        assumeTrue( TestSettings.NEO4J_VERSION.major == 5,
                     "this test only for upgrades on the 5x branch" + TestSettings.NEO4J_VERSION );
 		testUpgradeNamedVolumes( upgradeFrom );
 	}
@@ -140,8 +139,8 @@ public class TestUpgrade
     @MethodSource( "upgradableNeo4jVersionsCalVer" )
 	void canUpgradeNeo4j_fileMounts_calver( Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_527 ),
-                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isCalver(),
+                    "this test only for upgrades to calver: " + TestSettings.NEO4J_VERSION );
 		testUpgradeFileMounts( upgradeFrom );
 	}
 
@@ -149,8 +148,8 @@ public class TestUpgrade
 	@MethodSource( "upgradableNeo4jVersionsCalVer" )
 	void canUpgradeNeo4j_namedVolumes_calver(Neo4jVersion upgradeFrom) throws Exception
 	{
-		assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_527 ),
-                    "this test only for upgrades after 5.0: " + TestSettings.NEO4J_VERSION );
+		assumeTrue( TestSettings.NEO4J_VERSION.isCalver(),
+                    "this test only for upgrades to calver: " + TestSettings.NEO4J_VERSION );
 		testUpgradeNamedVolumes( upgradeFrom );
 	}
 

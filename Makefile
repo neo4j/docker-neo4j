@@ -45,7 +45,7 @@ build-bullseye-community: build/bullseye/coredb/community/.sentinel
 build-bullseye-enterprise: build/bullseye/coredb/enterprise/.sentinel
 .PHONY: build-bullseye-enterprise
 build/bullseye/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "bullseye"
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "bullseye"
 > touch $@
 
 build-trixie: build-trixie-community build-trixie-enterprise
@@ -55,7 +55,7 @@ build-trixie-community: build/trixie/coredb/community/.sentinel
 build-trixie-enterprise: build/trixie/coredb/enterprise/.sentinel
 .PHONY: build-trixie-enterprise
 build/trixie/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "trixie"
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "trixie"
 > touch $@
 
 build-ubi9: build-ubi9-community build-ubi9-enterprise
@@ -65,7 +65,7 @@ build-ubi9-community: build/ubi9/coredb/community/.sentinel
 build-ubi9-enterprise: build/ubi9/coredb/enterprise/.sentinel
 .PHONY: build-ubi9-enterprise
 build/ubi9/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi9"
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi9"
 > touch $@
 
 build-ubi10: build-ubi10-community build-ubi10-enterprise
@@ -75,7 +75,7 @@ build-ubi10-community: build/ubi10/coredb/community/.sentinel
 build-ubi10-enterprise: build/ubi10/coredb/enterprise/.sentinel
 .PHONY: build-ubi10-enterprise
 build/ubi10/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi10"
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi10"
 > touch $@
 
 ## tagging

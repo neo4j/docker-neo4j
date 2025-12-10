@@ -3,10 +3,10 @@ set -eu -o pipefail
 
 ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$ROOT_DIR/build-utils-common-functions.sh"
-BUILD_DIR=${ROOT_DIR}/build
-SRC_DIR=${ROOT_DIR}/docker-image-src
+BUILD_DIR=${ROOT_DIR}/../build
+SRC_DIR=${ROOT_DIR}/../docker-image-src
 # shellcheck disable=SC2034  # Used in docker-common-functions.sh
-TAR_CACHE=${ROOT_DIR}/in
+TAR_CACHE=${ROOT_DIR}/../in
 
 function usage
 {
@@ -107,7 +107,7 @@ sed -i -e "s|%%NEO4J_EDITION%%|${NEO4JEDITION}|" "${ADMIN_LOCALCXT_DIR}/Dockerfi
 sed -i -e "s|%%NEO4J_DIST_SITE%%|${DISTRIBUTION_SITE}|" "${ADMIN_LOCALCXT_DIR}/Dockerfile"
 
 # add deprecation warnings if needed
-if [ "${IMAGE_OS}" = "ubi8" ]; then
+if [ "${IMAGE_OS}" = "ubi9" ]; then
     dep_msg="echo \>\&2 \"\n=======================================================\n
 Neo4j Red Hat UBI8 images are deprecated in favour of Red Hat UBI9.\n
 Update your codebase to use Neo4j Docker image tags ending with -ubi9 instead of -ubi8.\n\n
