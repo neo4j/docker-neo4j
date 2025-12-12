@@ -65,6 +65,8 @@ public class TestBasic
     @Test
     void testNoUnexpectedErrors()
     {
+        Assumptions.assumeFalse( TestSettings.BASE_OS.hasDeprecationWarningIn( TestSettings.NEO4J_VERSION ),
+                                 TestSettings.BASE_OS+" should have a warning in neo4j ");
         try ( GenericContainer container = createBasicContainer() )
         {
             container.waitingFor( waitForNeo4jReady( "neo4j" ) );

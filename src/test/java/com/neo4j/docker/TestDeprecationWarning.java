@@ -15,8 +15,6 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 /**Tests to make sure that deprecated base OS images give suitable warnings.
@@ -30,24 +28,24 @@ import java.util.regex.Pattern;
  * */
 public class TestDeprecationWarning {
     private final Logger log = LoggerFactory.getLogger( TestDeprecationWarning.class );
-    /**Map of OS to final 5x version we will release with it.
-     * Defined in build-scripts/deprecation-warnings.sh
-     * */
-    private static final Map<TestSettings.BaseOS, Neo4jVersion> DEPRECATED_OS_526 = new HashMap<>() {
-        {
-            put(TestSettings.BaseOS.UBI8, new Neo4jVersion(5, 20, 0));
-            put(TestSettings.BaseOS.UBI9, new Neo4jVersion(5, 26, 21));
-            put(TestSettings.BaseOS.BULLSEYE, new Neo4jVersion(5, 26, 21));
-        }
-    };
-    /**Map of OS to final calver version we will release with it.
-     * Defined in build-scripts/deprecation-warnings.sh
-     * */
-    private static final Map<TestSettings.BaseOS,Neo4jVersion> DEPRECATED_OS_CALVER = new HashMap<>() {{
-        put( TestSettings.BaseOS.UBI8, new Neo4jVersion( 2024, 1, 0 ) );    // calver was never released with ubi8
-        put( TestSettings.BaseOS.UBI9, new Neo4jVersion( 2026, 3, 0 ) );
-        put( TestSettings.BaseOS.BULLSEYE, new Neo4jVersion( 2026, 3, 0 ) );
-    }};
+//    /**Map of OS to final 5x version we will release with it.
+//     * Defined in build-scripts/deprecation-warnings.sh
+//     * */
+//    private static final Map<BaseOS, Neo4jVersion> DEPRECATED_OS_526 = new HashMap<>() {
+//        {
+//            put( BaseOS.UBI8, new Neo4jVersion( 5, 20, 0));
+//            put( BaseOS.UBI9, new Neo4jVersion( 5, 26, 21));
+//            put( BaseOS.BULLSEYE, new Neo4jVersion( 5, 26, 21));
+//        }
+//    };
+//    /**Map of OS to final calver version we will release with it.
+//     * Defined in build-scripts/deprecation-warnings.sh
+//     * */
+//    private static final Map<BaseOS,Neo4jVersion> DEPRECATED_OS_CALVER = new HashMap<>() {{
+//        put( BaseOS.UBI8, new Neo4jVersion( 2024, 1, 0 ) );    // calver was never released with ubi8
+//        put( BaseOS.UBI9, new Neo4jVersion( 2026, 3, 0 ) );
+//        put( BaseOS.BULLSEYE, new Neo4jVersion( 2026, 3, 0 ) );
+//    }};
 
     private static final String DEPRECATION_WARN_SUPPRESS_FLAG = "NEO4J_DEPRECATION_WARNING";
     private final Pattern earlyWarningRegex = Pattern.compile( "Neo4j (Red Hat|Debian) %s images are deprecated in favour of "
@@ -59,19 +57,17 @@ public class TestDeprecationWarning {
     @BeforeAll
     static void assume5xOrLater() {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
+        Assumptions.assumeTrue( TestSettings.BASE_OS.isDeprecated(),
+                                "Tests only valid for deprecated base images");
     }
 
     @BeforeEach
-    void findDeprecatedVersion() {
+    void findDeprecatedInVersion() {
         if (TestSettings.NEO4J_VERSION.isCalver()) {
-            Assumptions.assumeTrue(DEPRECATED_OS_CALVER.containsKey(TestSettings.BASE_OS),
-                                   "Base OS " + TestSettings.BASE_OS + " is not deprecated so doesn't need checking.");
-            deprecatedIn =  DEPRECATED_OS_CALVER.get( TestSettings.BASE_OS );
+            deprecatedIn = TestSettings.BASE_OS.lastAppearsInCalver;
         }
         else {
-            Assumptions.assumeTrue(DEPRECATED_OS_526.containsKey(TestSettings.BASE_OS),
-                                   "Base OS " + TestSettings.BASE_OS + " is not deprecated so doesn't need checking.");
-            deprecatedIn = DEPRECATED_OS_526.get( TestSettings.BASE_OS );
+            deprecatedIn = TestSettings.BASE_OS.lastAppearsIn5x;
         }
     }
 
