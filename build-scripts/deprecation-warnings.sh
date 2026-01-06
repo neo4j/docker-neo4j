@@ -10,10 +10,10 @@ function get_removed_in_version_5
             echo "5.20.0"
             ;;
         "ubi9" )
-            echo "5.26.21"
+            echo "5.26.23"
             ;;
         "bullseye" )
-            echo "5.26.21"
+            echo "5.26.23"
             ;;
     esac
 }
@@ -24,10 +24,10 @@ function get_removed_in_version_calver
 
     case ${image_os} in
         ubi9 )
-            echo "2026.03.0"
+            echo "2026.04.0"
             ;;
         bullseye )
-            echo "2026.03.0"
+            echo "2026.04.0"
             ;;
     esac
 }
