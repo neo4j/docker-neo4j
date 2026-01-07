@@ -94,6 +94,11 @@ public class Neo4jVersion
         }
     }
 
+    public boolean isCalver()
+    {
+        return ( this.major > 2023 );
+    }
+
     public boolean isEqual( Neo4jVersion that )
     {
         return (major == that.major) && (minor == that.minor) && (patch == that.patch);

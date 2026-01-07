@@ -35,7 +35,7 @@ test-%-community: build-%-community
 
 ## building
 
-build: build-bullseye build-ubi9
+build: build-ubi9 build-ubi10 build-bullseye build-trixie
 .PHONY: build
 
 build-bullseye: build-bullseye-community build-bullseye-enterprise
@@ -44,9 +44,18 @@ build-bullseye-community: build/bullseye/coredb/community/.sentinel
 .PHONY: build-bullseye-community
 build-bullseye-enterprise: build/bullseye/coredb/enterprise/.sentinel
 .PHONY: build-bullseye-enterprise
-
 build/bullseye/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "bullseye"
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "bullseye"
+> touch $@
+
+build-trixie: build-trixie-community build-trixie-enterprise
+.PHONY: build-trixie
+build-trixie-community: build/trixie/coredb/community/.sentinel
+.PHONY: build-trixie-community
+build-trixie-enterprise: build/trixie/coredb/enterprise/.sentinel
+.PHONY: build-trixie-enterprise
+build/trixie/coredb/%/.sentinel::
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "trixie"
 > touch $@
 
 build-ubi9: build-ubi9-community build-ubi9-enterprise
@@ -55,20 +64,33 @@ build-ubi9-community: build/ubi9/coredb/community/.sentinel
 .PHONY: build-ubi9-community
 build-ubi9-enterprise: build/ubi9/coredb/enterprise/.sentinel
 .PHONY: build-ubi9-enterprise
-
 build/ubi9/coredb/%/.sentinel::
-> ./build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi9"
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi9"
+> touch $@
+
+build-ubi10: build-ubi10-community build-ubi10-enterprise
+.PHONY: build-ubi10
+build-ubi10-community: build/ubi10/coredb/community/.sentinel
+.PHONY: build-ubi10-community
+build-ubi10-enterprise: build/ubi10/coredb/enterprise/.sentinel
+.PHONY: build-ubi10-enterprise
+build/ubi10/coredb/%/.sentinel::
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi10"
 > touch $@
 
 ## tagging
 
-tag: tag-bullseye tag-ubi9
+tag: tag-ubi9 tag-ubi10 tag-bullseye tag-trixie
 .PHONY: tag
 
 tag-bullseye: tag-bullseye-community tag-bullseye-enterprise
 .PHONY: tag-bullseye
+tag-trixie: tag-trixie-community tag-trixie-enterprise
+.PHONY: tag-trixie
 tag-ubi9: tag-ubi9-community tag-ubi9-enterprise
 .PHONY: tag-ubi9
+tag-ubi10: tag-ubi10-community tag-ubi10-enterprise
+.PHONY: tag-ubi10
 
 tag-%-community: build-%-community
 > docker tag $$(cat ./build/${*}/coredb/.image-id-community) neo4j:$(NEO4JVERSION)-${*}
@@ -83,14 +105,20 @@ tag-%-enterprise: build-%-enterprise
 ## packaging and release
 
 # create release images and loadable images
-package: package-bullseye package-ubi9
+package: package-ubi9 package-ubi10 package-bullseye package-trixie
 .PHONY: package
 
 package-bullseye: package-bullseye-community package-bullseye-enterprise package-bullseye-release-artifacts
 .PHONY: package-bullseye
 
+package-trixie: package-trixie-community package-trixie-enterprise package-trixie-release-artifacts
+.PHONY: package-trixie
+
 package-ubi9: package-ubi9-community package-ubi9-enterprise package-ubi9-release-artifacts
 .PHONY: package-ubi9
+
+package-ubi10: package-ubi10-community package-ubi10-enterprise package-ubi10-release-artifacts
+.PHONY: package-ubi10
 
 package-%-community:  tag-%-community
 > mkdir -p out
@@ -110,16 +138,16 @@ package-%-release-artifacts: build-%-community build-%-enterprise
 > find out/${*} -name ".sentinel" -delete
 
 
-# keep "debian" targets as an alias for bullseye until we update the build pipelines
+# keep "debian" targets as an alias for latest debian
 build-debian: build-debian-community build-debian-enterprise
 .PHONY: build-debian
-build-debian-community: build-bullseye-community
+build-debian-community: build-trixie-community
 > mkdir -p build/debian/
-> cp --recursive build/bullseye/* build/debian/
+> cp --recursive build/trixie/* build/debian/
 .PHONY: build-debian-community
-build-debian-enterprise: build-bullseye-enterprise
+build-debian-enterprise: build-trixie-enterprise
 > mkdir -p build/debian/
-> cp --recursive build/bullseye/* build/debian/
+> cp --recursive build/trixie/* build/debian/
 .PHONY: build-debian-enterprise
 tag-debian: tag-debian-community tag-debian-enterprise
 .PHONY: tag-debian

@@ -21,12 +21,6 @@ public class TestSettings
         COMMUNITY,
         ENTERPRISE;
     }
-    public enum BaseOS
-    {
-        BULLSEYE,
-        UBI9,
-        UBI8;
-    }
 
     private static String getValueFromPropertyOrEnv(String propertyName, String envName)
     {
@@ -75,16 +69,7 @@ public class TestSettings
     private static BaseOS getBaseOS()
     {
         String os = getValueFromPropertyOrEnv("baseos", "BASE_OS");
-        switch ( os.toLowerCase() )
-        {
-        case "debian", "bullseye":
-            return BaseOS.BULLSEYE;
-        case "ubi9":
-            return BaseOS.UBI9;
-        default:
-            Assertions.fail( os + " is not a valid Neo4j base operating system. Options are \"debian\", \"bullseye\" or \"ubi9\"." );
-        }
-        return null;
+        return BaseOS.fromString( os );
     }
 
     private static boolean getSkipTarballingFromEnv()

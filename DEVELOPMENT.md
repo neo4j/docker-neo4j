@@ -46,7 +46,7 @@ NEO4JVERSION=4.4.0 make tag-ubi9-enterprise
 
 ## The build script
 
-The build script [build-docker-image.sh](./build-docker-image.sh) will take these options and produce a Neo4j image and a neo4j-admin image, for the combination you request.
+The build script [build-docker-image.sh](./build-scripts/build-docker-image.sh) will take these options and produce a Neo4j image and a neo4j-admin image, for the combination you request.
 For example:
 ```bash
 #  debian based 4.4.22 community edition:
@@ -63,7 +63,7 @@ The resulting images will have a randomly generated tag, which is written into t
 
 ## Using the Convenience Makefile
 
-The [Makefile](./Makefile) is a wrapper around the [build-docker-image.sh](./build-docker-image.sh).
+The [Makefile](./Makefile) is a wrapper around [build-docker-image.sh](./build-scripts/build-docker-image.sh).
 It mostly just adds extra functionality to help you build lots of images at once, or does extra steps like tagging, testing and generating release files.
 
 The four actions it can do are:
@@ -75,12 +75,12 @@ The four actions it can do are:
 For each action, it can be broken down by base image and community/enterprise type.
 For example `build`, has the following make targets:
 * `build`. Builds *every* variant.
-* `build-debian`. Builds debian community and enterprise.
-* `build-ubi9`. Builds redhat-ubi9 community and enterprise.
-* `build-debian-community`
-* `build-debian-enterprise`
-* `build-ubi9-community`
-* `build-ubi9-enterprise`
+* `build-trixie`. Builds debian community and enterprise.
+* `build-ubi10`. Builds redhat-ubi9 community and enterprise.
+* `build-trixie-community`
+* `build-trixie-enterprise`
+* `build-ubi10-community`
+* `build-ubi10-enterprise`
 
 The other actions have the same targets.
 
@@ -140,7 +140,7 @@ $ NEO4JVERSION=5.5.0-SNAPSHOT make clean build
 
 # Running the Tests
 
-The tests are written in java, and require Maven plus JDK 17 (any JDK distributions should work, we use OpenJDK).
+The tests are written in java, and require Maven plus JDK 21 (any JDK distributions should work, we use OpenJDK).
 
 The tests require some information about the image before they can test it. 
 These can be passed as an environment variable or a command line parameter when invoking maven:
@@ -157,7 +157,7 @@ These can be passed as an environment variable or a command line parameter when 
 
 ## Using Maven
 The Makefile can run the entire test suite.
-1. Make sure `java --version` is java 17.
+1. Make sure `java --version` is java 21.
 2. `NEO4JVERSION=<VERSION> make test-<BASE OS>` This is a make target that will run these commands:
 ```bash
 mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-enterprise) -Dadminimage=$(cat build/<BASE OS>/neo4j-admin/.image-id-enterprise) -Dedition=enterprise -Dversion=${NEO4JVERSION}
@@ -166,7 +166,7 @@ mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-community) -Dadminimage=
 
 ## In Intellij
 
-1. Make sure the project SDK is java 17.
+1. Make sure the project SDK is java 21.
 3. Install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) Intellij plugin.
 5. Under Run Configurations edit the Template JUnit configuration:
    1. Select the "EnvFile" tab
@@ -194,10 +194,5 @@ TESTCONTAINERS_RYUK_DISABLED=true;
 TESTCONTAINERS_CHECKS_DISABLE=true 
 ```
 
-# Troubleshooting
-## cannot find symbol `com.sun.security.auth.module.UnixSystem`
 
-This can happen if you switch from java 17 to java 11 (or the other way) and then try to rebuild the tests in Intellij.
-
-Check that the `java.version` property in the [pom.xml file](../master/pom.xml) is set to 17.
 

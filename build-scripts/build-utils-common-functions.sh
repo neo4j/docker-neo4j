@@ -1,6 +1,5 @@
 # Common functions used by build-docker-image.sh and publish-neo4j-admin-image.sh
 
-SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
 EDITIONS=("community" "enterprise")
 DISTRIBUTION_SITE="https://dist.neo4j.org"
 
@@ -86,3 +85,24 @@ function fetch_tarball
         wget ${DISTRIBUTION_SITE}/${tar_name} -O "$(cached_tarball ${version} ${edition})"
     fi
 }
+
+echo "Calculating supported base images"
+if [[ -z ${NEO4JVERSION:-""} ]]; then
+    echo >&2 "NEO4JVERSION is unset. Either set it in the environment or pass as argument to this script."
+    exit 0
+fi
+
+case "$(get_branch_from_version ${NEO4JVERSION})" in
+  calver | 5 )
+    SUPPORTED_IMAGE_OS=("bullseye" "trixie" "ubi9" "ubi10")
+    DEPRECATED_IMAGE_OS=("bullseye" "ubi8" "ubi9")
+    ;;
+  4.4 )
+    SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
+    DEPRECATED_IMAGE_OS=("ubi8")
+    ;;
+  *)
+    SUPPORTED_IMAGE_OS=("bullseye")
+    DEPRECATED_IMAGE_OS=()
+    ;;
+esac

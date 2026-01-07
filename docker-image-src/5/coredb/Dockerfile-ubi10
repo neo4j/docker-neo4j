@@ -1,5 +1,4 @@
-FROM redhat/ubi9-minimal:latest
-ENV JAVA_HOME=/usr
+FROM redhat/ubi10-minimal:latest
 
 # gather pre-requisite packages
 RUN set -eux; \
@@ -15,14 +14,14 @@ RUN set -eux; \
             ;; \
         *) echo >&2 "Neo4j does not currently have a docker image for architecture $arch"; exit 1 ;; \
     esac; \
-    microdnf install -y dnf; \
-    dnf install -y \
+    microdnf install -y --nodocs \
         findutils \
         gcc \
         git \
+        gnupg \
         gzip \
         hostname \
-        java-11-openjdk-headless \
+        java-21-openjdk-headless \
         jq \
         make \
         procps \
@@ -48,13 +47,11 @@ RUN set -eux; \
     make; \
     mv /su-exec/su-exec /usr/bin/su-exec; \
     gpgconf --kill all; \
-    rm -rf "$GNUPGHOME" tini.asc /su-exec; \
-    dnf remove -y gcc git make; \
-    dnf autoremove; \
-    dnf clean all
+    rm -rf "$GNUPGHOME" /tini.asc /su-exec; \
+    microdnf remove -y git* perl* make gcc glibc-headers glibc-devel libxcrypt-devel; \
+    microdnf clean all
 
-ENV PATH="${JAVA_HOME}/bin:${PATH}" \
-    NEO4J_SHA256=%%NEO4J_SHA%% \
+ENV NEO4J_SHA256=%%NEO4J_SHA%% \
     NEO4J_TARBALL=%%NEO4J_TARBALL%% \
     NEO4J_EDITION=%%NEO4J_EDITION%% \
     NEO4J_HOME="/var/lib/neo4j" \
@@ -70,6 +67,7 @@ RUN set -eux; \
     tar --extract --file ${NEO4J_TARBALL} --directory /var/lib; \
     mv /var/lib/neo4j-* "${NEO4J_HOME}"; \
     rm ${NEO4J_TARBALL}; \
+    sed -i 's/Package Type:.*/Package Type: docker ubi10/' $NEO4J_HOME/packaging_info; \
     mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report; \
     mv "${NEO4J_HOME}"/data /data; \
     mv "${NEO4J_HOME}"/logs /logs; \
@@ -81,8 +79,7 @@ RUN set -eux; \
     chmod -R 777 "${NEO4J_HOME}"; \
     chmod -R 755 "${NEO4J_HOME}/bin"; \
     ln -s /data "${NEO4J_HOME}"/data; \
-    ln -s /logs "${NEO4J_HOME}"/logs; \
-    ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh
+    ln -s /logs "${NEO4J_HOME}"/logs
 
 ENV PATH="${NEO4J_HOME}"/bin:$PATH
 

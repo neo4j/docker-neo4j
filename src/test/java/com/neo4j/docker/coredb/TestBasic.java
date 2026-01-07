@@ -35,13 +35,13 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class TestBasic
 {
-    private static Logger log = LoggerFactory.getLogger( TestBasic.class );
+    private Logger log = LoggerFactory.getLogger( TestBasic.class );
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     private GenericContainer createBasicContainer()
     {
-        GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID );
+        GenericContainer<?> container = new GenericContainer<>( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
                  .withLogConsumer( new Slf4jLogConsumer( log ) );
@@ -65,6 +65,8 @@ public class TestBasic
     @Test
     void testNoUnexpectedErrors()
     {
+        Assumptions.assumeFalse( TestSettings.BASE_OS.hasDeprecationWarningIn( TestSettings.NEO4J_VERSION ),
+                                 TestSettings.BASE_OS+" should have a warning in neo4j ");
         try ( GenericContainer container = createBasicContainer() )
         {
             container.waitingFor( waitForNeo4jReady( "neo4j" ) );
@@ -87,7 +89,7 @@ public class TestBasic
                                 "No license checks for community edition" );
 
         String logsOut;
-        try ( GenericContainer container = new GenericContainer( TestSettings.IMAGE_ID )
+        try ( GenericContainer<?> container = new GenericContainer<>( TestSettings.IMAGE_ID )
                 .withLogConsumer( new Slf4jLogConsumer( log ) ) )
         {
             WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
