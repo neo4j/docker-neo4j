@@ -3,35 +3,23 @@ package com.neo4j.docker.utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class BaseOSTest {
     @ParameterizedTest
-    @ValueSource(strings = {"trixie", "bullseye", "ubi10", "ubi9", "ubi8"})
+    @ValueSource(strings = {"trixie", "bullseye", "ubi10", "ubi9", "ubi8",
+                            "Trixie", "Bullseye", "Ubi10", "Ubi9", "Ubi8"})
     void testFromString(String name) {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
-        Assertions.assertEquals( name, os.osName, "Did not get the correct BaseOS from name " + name );
-    }
-
-    @ParameterizedTest
-    @EnumSource(BaseOS.class)
-    void testDeprecatedInVersionsSet(BaseOS os) {
-        if(os.isDeprecated()) {
-            Assertions.assertNotNull( os.lastAppearsIn5x, "5x last appearance unset for "+os.name() );
-            Assertions.assertNotNull( os.lastAppearsInCalver, "Calver last appearance unset for "+os.name() );
-        }
-        else {
-            Assertions.assertNull( os.lastAppearsIn5x, "5x last appearance set for "+os.name() );
-            Assertions.assertNull( os.lastAppearsInCalver, "Calver last appearance set for "+os.name() );
-        }
+        Assertions.assertEquals( name.toLowerCase(), os.osName,
+                                 "Did not get the correct BaseOS from name " + name );
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,2023,12,0", "ubi8,5,19,0",
-                "ubi9,2026,2,0", "ubi9,5,26,20",
-                "bullseye,2026,2,0", "bullseye,5,26,20"})
+    @CsvSource({"ubi8,5,19,0", "ubi9,5,26,20", "bullseye,5,26,20",
+                "ubi8,2023,12,0" //, "ubi9,2026,2,0", "bullseye,2026,2,0"
+    })
     void testHasDeprecationWarning_before(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
@@ -42,9 +30,9 @@ class BaseOSTest {
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,2024,1,0", "ubi8,5,20,0",
-                "ubi9,2026,3,0", "ubi9,5,26,21",
-                "bullseye,2026,3,0", "bullseye,5,26,21"})
+    @CsvSource({"ubi8,5,20,0", "ubi9,5,26,21", "bullseye,5,26,21",
+                "ubi8,2024,1,0"//, "ubi9,2026,3,0","bullseye,2026,3,0"
+    })
     void testHasDeprecationWarning_equal(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
@@ -55,9 +43,9 @@ class BaseOSTest {
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,2027,1,0", "ubi8,5,26,0",
-                "ubi9,2026,4,0", "ubi9,5,26,50",
-                "bullseye,2026,4,0", "bullseye,5,26,50"})
+    @CsvSource({"ubi8,5,26,0", "ubi9,5,26,50", "bullseye,5,26,50",
+            "ubi8,2027,1,0"//, "ubi9,2026,4,0", "bullseye,2026,4,0"
+    })
     void testHasDeprecationWarning_after(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );

@@ -28,24 +28,6 @@ import java.util.regex.Pattern;
  * */
 public class TestDeprecationWarning {
     private final Logger log = LoggerFactory.getLogger( TestDeprecationWarning.class );
-//    /**Map of OS to final 5x version we will release with it.
-//     * Defined in build-scripts/deprecation-warnings.sh
-//     * */
-//    private static final Map<BaseOS, Neo4jVersion> DEPRECATED_OS_526 = new HashMap<>() {
-//        {
-//            put( BaseOS.UBI8, new Neo4jVersion( 5, 20, 0));
-//            put( BaseOS.UBI9, new Neo4jVersion( 5, 26, 21));
-//            put( BaseOS.BULLSEYE, new Neo4jVersion( 5, 26, 21));
-//        }
-//    };
-//    /**Map of OS to final calver version we will release with it.
-//     * Defined in build-scripts/deprecation-warnings.sh
-//     * */
-//    private static final Map<BaseOS,Neo4jVersion> DEPRECATED_OS_CALVER = new HashMap<>() {{
-//        put( BaseOS.UBI8, new Neo4jVersion( 2024, 1, 0 ) );    // calver was never released with ubi8
-//        put( BaseOS.UBI9, new Neo4jVersion( 2026, 3, 0 ) );
-//        put( BaseOS.BULLSEYE, new Neo4jVersion( 2026, 3, 0 ) );
-//    }};
 
     private static final String DEPRECATION_WARN_SUPPRESS_FLAG = "NEO4J_DEPRECATION_WARNING";
     private final Pattern earlyWarningRegex = Pattern.compile( "Neo4j (Red Hat|Debian) %s images are deprecated in favour of "
@@ -57,7 +39,7 @@ public class TestDeprecationWarning {
     @BeforeAll
     static void assume5xOrLater() {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
-        Assumptions.assumeTrue( TestSettings.BASE_OS.isDeprecated(),
+        Assumptions.assumeTrue( TestSettings.BASE_OS.hasDeprecationWarningIn( TestSettings.NEO4J_VERSION ),
                                 "Tests only valid for deprecated base images");
     }
 
