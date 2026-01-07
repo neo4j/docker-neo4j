@@ -93,7 +93,11 @@ if [[ -z ${NEO4JVERSION:-""} ]]; then
 fi
 
 case "$(get_branch_from_version ${NEO4JVERSION})" in
-  calver | 5 )
+  calver )
+    SUPPORTED_IMAGE_OS=("bullseye" "trixie" "ubi9" "ubi10")
+    DEPRECATED_IMAGE_OS=("ubi8")
+    ;;
+  5 )
     SUPPORTED_IMAGE_OS=("bullseye" "trixie" "ubi9" "ubi10")
     DEPRECATED_IMAGE_OS=("bullseye" "ubi8" "ubi9")
     ;;
