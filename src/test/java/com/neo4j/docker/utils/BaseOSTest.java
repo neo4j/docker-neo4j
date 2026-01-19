@@ -18,7 +18,7 @@ class BaseOSTest {
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
     @CsvSource({"ubi8,5,19,0", "ubi9,5,26,20", "bullseye,5,26,20",
-                "ubi8,2023,12,0" //, "ubi9,2026,2,0", "bullseye,2026,2,0"
+                "ubi8,2023,12,0", "ubi9,2026,2,0", "bullseye,2026,2,0"
     })
     void testHasDeprecationWarning_before(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
@@ -31,7 +31,7 @@ class BaseOSTest {
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
     @CsvSource({"ubi8,5,20,0", "ubi9,5,26,21", "bullseye,5,26,21",
-                "ubi8,2024,1,0"//, "ubi9,2026,3,0","bullseye,2026,3,0"
+                "ubi8,2024,1,0", "ubi9,2026,3,0","bullseye,2026,3,0"
     })
     void testHasDeprecationWarning_equal(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
@@ -44,7 +44,7 @@ class BaseOSTest {
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
     @CsvSource({"ubi8,5,26,0", "ubi9,5,26,50", "bullseye,5,26,50",
-            "ubi8,2027,1,0"//, "ubi9,2026,4,0", "bullseye,2026,4,0"
+            "ubi8,2027,1,0", "ubi9,2026,4,0", "bullseye,2026,4,0"
     })
     void testHasDeprecationWarning_after(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
