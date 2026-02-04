@@ -2,7 +2,7 @@ FROM redhat/ubi10-minimal:latest
 ENV JAVA_HOME=/usr
 
 # gather pre-requisite packages
-RUN microdnf install -y --nodocs gzip java-25 procps shadow-utils tar util-linux && \
+RUN microdnf install -y --nodocs gzip java-21 procps shadow-utils tar util-linux && \
     microdnf clean all
 
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
