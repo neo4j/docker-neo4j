@@ -115,7 +115,7 @@ public class TestDeprecationWarning {
                                "Actual error logs:\n"+logs);
     }
     @Test
-    void testFinalWarningSuppressed_coreDB() {
+    void testFinalWarningSuppressionIgnored_coreDB() {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.equals( deprecatedIn ),
                                 "%s does not need final deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
         String logs = runCoreDBGetErrorLogs( true );
@@ -127,7 +127,7 @@ public class TestDeprecationWarning {
                                "Actual error logs:\n"+logs);
     }
     @Test
-    void testFinalWarningSuppressed_neo4jAdmin() {
+    void testFinalWarningSuppressionIgnored_neo4jAdmin() {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.equals( deprecatedIn ),
                                 "%s does not need final deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
         String logs = runNeo4jAdminGetErrorLogs( true );

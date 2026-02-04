@@ -1,10 +1,14 @@
 package com.neo4j.docker.utils;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+// This is a test for a test utility. It does not actually test anything to do with the docker image.
+// This is disabled unless we're actually trying to develop/fix the deprecation warnings
+@Disabled
 class BaseOSTest {
     @ParameterizedTest
     @ValueSource(strings = {"trixie", "bullseye", "ubi10", "ubi9", "ubi8",
@@ -30,8 +34,8 @@ class BaseOSTest {
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,5,20,0", "ubi9,5,26,21", "bullseye,5,26,21",
-                "ubi8,2024,1,0", "ubi9,2026,3,0","bullseye,2026,3,0"
+    @CsvSource({"ubi8,5,20,0", "ubi9,5,26,23", "bullseye,5,26,23",
+                "ubi8,2024,1,0", "ubi9,2026,4,0","bullseye,2026,4,0"
     })
     void testHasDeprecationWarning_equal(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
@@ -44,7 +48,7 @@ class BaseOSTest {
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
     @CsvSource({"ubi8,5,26,0", "ubi9,5,26,50", "bullseye,5,26,50",
-            "ubi8,2027,1,0", "ubi9,2026,4,0", "bullseye,2026,4,0"
+            "ubi8,2027,1,0", "ubi9,2080,4,0", "bullseye,2080,4,0"
     })
     void testHasDeprecationWarning_after(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);

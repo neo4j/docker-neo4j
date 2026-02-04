@@ -21,7 +21,7 @@ RUN set -eux; \
         gnupg \
         gzip \
         hostname \
-        java-21-openjdk-headless \
+        java-25-openjdk-headless \
         jq \
         make \
         procps \
