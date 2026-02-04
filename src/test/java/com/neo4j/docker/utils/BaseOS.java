@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Assertions;
 public enum BaseOS {
     // debian
     TRIXIE("trixie", null, null),
-    BULLSEYE("bullseye", new Neo4jVersion(2026, 3, 0), new Neo4jVersion(5, 26, 21)),
+    BULLSEYE("bullseye", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 23)),
     // redhat
     UBI10("ubi10", null, null),
-    UBI9("ubi9", new Neo4jVersion(2026, 3, 0), new Neo4jVersion(5, 26, 21)),
+    UBI9("ubi9", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 23)),
     UBI8("ubi8", new Neo4jVersion(2024, 1, 0), new Neo4jVersion(5, 20, 0)),
     ;
 
