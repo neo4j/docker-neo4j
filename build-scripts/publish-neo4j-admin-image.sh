@@ -1,13 +1,6 @@
 #!/bin/bash
 set -eu -o pipefail
 
-ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source "$ROOT_DIR/build-utils-common-functions.sh"
-BUILD_DIR=${ROOT_DIR}/build
-SRC_DIR=${ROOT_DIR}/docker-image-src
-# shellcheck disable=SC2034  # Used in docker-common-functions.sh
-TAR_CACHE=${ROOT_DIR}/in
-
 function usage
 {
     echo >&2 "USAGE: $0 <version> <edition> <operating system> <repository>
@@ -43,6 +36,15 @@ elif [[ -z ${REPOSITORY:-""} ]]; then
     echo >&2 "REPOSITORY is unset. Either set it in the environment or pass as argument to this script."
     usage
 fi
+
+# set common environment variables
+ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source "$ROOT_DIR/build-utils-common-functions.sh"
+BUILD_DIR=${ROOT_DIR}/../build
+SRC_DIR=${ROOT_DIR}/../docker-image-src
+# shellcheck disable=SC2034  # Used in docker-common-functions.sh
+TAR_CACHE=${ROOT_DIR}/../in
+
 # verify edition
 if ! contains_element "${NEO4JEDITION}" "${EDITIONS[@]}"; then
     echo >&2 "${NEO4JEDITION} is not a supported edition."
