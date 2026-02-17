@@ -20,6 +20,7 @@ RUN set -eux; \
     esac; \
     microdnf install -y --nodocs \
         findutils \
+        gnupg \
         gzip \
         hostname \
         java-25-openjdk-headless \
