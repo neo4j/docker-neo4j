@@ -64,7 +64,7 @@ if [[ "$MAJOR" == "5" ]]; then
     --tag "${REPOSITORY}:${MAJOR}-enterprise"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-bullseye" \
-    --tag "${REPOSITORY}:${MAJOR}-community-bullseye"
+    --tag "${REPOSITORY}:${MAJOR}-community-bullseye" \
     --tag "${REPOSITORY}:${MAJOR}-bullseye"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-bullseye" \
