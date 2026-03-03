@@ -132,7 +132,7 @@ package-%-enterprise:  tag-%-enterprise
 
 package-%-release-artifacts: build-%-community build-%-enterprise
 > mkdir -p out
-> cp --recursive --force build/${*} out/
+> cp -r --force build/${*} out/
 > find out/${*} -name "neo4j-*.tar.gz" -delete
 > find out/${*} -name ".image-id-*" -delete
 > find out/${*} -name ".sentinel" -delete
@@ -143,11 +143,11 @@ build-debian: build-debian-community build-debian-enterprise
 .PHONY: build-debian
 build-debian-community: build-trixie-community
 > mkdir -p build/debian/
-> cp --recursive build/trixie/* build/debian/
+> cp -r build/trixie/* build/debian/
 .PHONY: build-debian-community
 build-debian-enterprise: build-trixie-enterprise
 > mkdir -p build/debian/
-> cp --recursive build/trixie/* build/debian/
+> cp -r build/trixie/* build/debian/
 .PHONY: build-debian-enterprise
 tag-debian: tag-debian-community tag-debian-enterprise
 .PHONY: tag-debian
