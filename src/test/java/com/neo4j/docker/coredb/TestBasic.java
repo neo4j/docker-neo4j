@@ -9,7 +9,6 @@ import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,7 +62,6 @@ public class TestBasic
         }
     }
 
-    @Disabled
     @Test
     void testNoUnexpectedErrors()
     {
