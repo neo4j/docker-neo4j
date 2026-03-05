@@ -7,13 +7,12 @@ import static java.lang.String.format;
 
 public class Network
 {
-    public static int getUniqueHostPort() throws IOException
+    public static ServerSocket getServerSocket() throws IOException
     {
         try ( ServerSocket socket = new ServerSocket( 0 ) )
         {
             socket.setReuseAddress( true );
-            socket.close();
-            return socket.getLocalPort();
+            return socket;
         }
         catch ( IOException e )
         {
