@@ -44,7 +44,8 @@ public class TestBasic
         GenericContainer<?> container = new GenericContainer<>( TestSettings.IMAGE_ID );
         container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474, 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) )
+                 .withStartupAttempts(3);
         return container;
     }
 
