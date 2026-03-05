@@ -3,10 +3,7 @@ package com.neo4j.docker.coredb;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
-import com.neo4j.docker.utils.DatabaseIO;
-import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.TemporaryFolderManager;
-import com.neo4j.docker.utils.TestSettings;
+import com.neo4j.docker.utils.*;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +29,7 @@ public class TestUpgrade
 	private final Logger log = LoggerFactory.getLogger( TestUpgrade.class );
 	private final String user = "neo4j";
 	private final String password = "verylongpassword";
+
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
@@ -42,7 +40,10 @@ public class TestUpgrade
                  .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
                  .withExposedPorts( 7474 )
                  .withExposedPorts( 7687 )
-                 .withLogConsumer( new Slf4jLogConsumer( log ) );
+                 .withLogConsumer( new Slf4jLogConsumer( log ) )
+				 .waitingFor(WaitStrategies.waitForBoltReady())
+				 .withStartupAttempts(3);
+
         return container;
 	}
 
@@ -70,7 +71,7 @@ public class TestUpgrade
         return Arrays.asList(new Neo4jVersion(5, 26, 0),
                              new Neo4jVersion(2025, 4, 0),
                              new Neo4jVersion(2025, 8, 0),
-                             new Neo4jVersion(2025, 12, 0));
+                             new Neo4jVersion(2026, 1, 4));
     }
 
     private static void assumeUpgradeSupported( Neo4jVersion upgradeFrom )
