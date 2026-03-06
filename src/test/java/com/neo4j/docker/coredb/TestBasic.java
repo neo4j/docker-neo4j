@@ -22,13 +22,14 @@ import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static com.neo4j.docker.utils.Network.getUniqueHostPort;
+import static com.neo4j.docker.utils.Network.getServerSocket;
 import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
 import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
@@ -241,15 +242,17 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            int boltHostPort = getUniqueHostPort();
-            int browserHostPort = getUniqueHostPort();
+            try(ServerSocket boltReservation = getServerSocket();
+                ServerSocket browserReservation = getServerSocket()){
+                int boltHostPort = boltReservation.getLocalPort();
+                int browserHostPort = browserReservation.getLocalPort();
 
-            container.waitingFor( waitForBoltReady() );
-            container.withEnv( "NEO4J_AUTH", "none" );
+                container.waitingFor(waitForBoltReady());
+                container.withEnv("NEO4J_AUTH", "none");
 
-            // Ensuring host ports are constant with container restarts
-            container.setPortBindings( List.of( browserHostPort + ":7474", boltHostPort + ":7687" ) );
-
+                // Ensuring host ports are constant with container restarts
+                container.setPortBindings(List.of(browserHostPort + ":7474", boltHostPort + ":7687"));
+            }
             container.start();
 
             // Terminating container with a SIGKILL signal to emulate docker engine (docker desktop) being terminated by user.
