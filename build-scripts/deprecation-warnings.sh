@@ -121,7 +121,7 @@ function deprecation_message
     fi
     # if the deprecated_in_version is the one currently being built,
     # then give final warning instead of early warning.
-    if [ "${neo4j_version}" == "${deprecated_in_version}" ]; then
+    if [ "${neo4j_version%-*}" == "${deprecated_in_version}" ]; then
         deprecation_final_warning_message "${image_os}"
     else
         deprecation_early_warning_message "${image_os}"
