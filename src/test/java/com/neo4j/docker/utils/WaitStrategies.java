@@ -46,6 +46,11 @@ public class WaitStrategies
                    .forStatusCode(200)
                    .withStartupTimeout(STARTUP_TIMEOUT_SECONDS);
     }
+    
+    public static WaitStrategy waitForNeo4jStartedLogMessage( int startedCount ){
+        return Wait.forLogMessage( ".*Started.*", startedCount )
+                   .withStartupTimeout( STARTUP_TIMEOUT_SECONDS );
+    }
 
     /**For containers that will just run a command and exit automatically.
      * With this wait strategy, starting a container will block until the container has closed itself.
