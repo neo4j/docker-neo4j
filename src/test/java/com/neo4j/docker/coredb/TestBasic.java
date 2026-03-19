@@ -20,6 +20,7 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,6 +37,7 @@ public class TestBasic
     private Logger log = LoggerFactory.getLogger( TestBasic.class );
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
+    private Duration STARTUP_TIMEOUT_DURATION = Duration.ofSeconds(180);
 
     private GenericContainer createBasicContainer()
     {
@@ -239,7 +241,7 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            container.waitingFor(waitForNeo4jStartedLogMessage( 1 ) );
+            Wait.forLogMessage( ".*Started.*", 1).withStartupTimeout( STARTUP_TIMEOUT_DURATION );
             container.withEnv("NEO4J_AUTH", "none");
 
             // Ensuring host ports are constant with container restarts
@@ -260,7 +262,7 @@ public class TestBasic
             container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
 
             // Applying the Waiting strategy to ensure container is correctly running, because DockerClient does not check
-            waitForNeo4jStartedLogMessage(2).waitUntilReady( container );
+            Wait.forLogMessage( ".*Started.*", 2).withStartupTimeout( STARTUP_TIMEOUT_DURATION );
         }
     }
 
