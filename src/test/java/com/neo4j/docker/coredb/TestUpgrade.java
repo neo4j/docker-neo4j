@@ -1,8 +1,6 @@
 package com.neo4j.docker.coredb;
 
-import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
-import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.*;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -10,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.RemoteDockerImage;
@@ -20,7 +19,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -186,24 +184,28 @@ public class TestUpgrade
 		}
 	}
 
-	private void testUpgradeNamedVolumes( Neo4jVersion upgradeFrom )
-	{
+	private void testUpgradeNamedVolumes( Neo4jVersion upgradeFrom ) throws IOException {
 		assumeUpgradeSupported(upgradeFrom);
 
 		String id = String.format( "%04d", new Random().nextInt( 10000 ));
 		log.info( "creating volumes with id: "+id );
 
+		Path conf;
+		Path data;
+		Path imports;
+		Path logs;
+		Path metrics;
+		Path plugins;
+
 		try(GenericContainer container = makeContainer(getUpgradeFromImage( upgradeFrom )))
 		{
-			container.withCreateContainerCmdModifier(
-					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
-							Bind.parse("upgrade-conf-"+id+":/conf"),
-							Bind.parse("upgrade-data-"+id+":/data"),
-							Bind.parse("upgrade-import-"+id+":/import"),
-							Bind.parse("upgrade-logs-"+id+":/logs"),
-							Bind.parse("upgrade-metrics-"+id+":/metrics"),
-							Bind.parse("upgrade-plugins-"+id+":/plugins")
-					));
+			conf = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
+			data = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
+			imports = temporaryFolderManager.createFolderAndMountAsVolume(container, "/import");
+			logs = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
+			metrics = temporaryFolderManager.createFolderAndMountAsVolume(container, "/metrics");
+			plugins = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
+
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
 			db.putInitialDataIntoContainer( user, password );
@@ -212,15 +214,13 @@ public class TestUpgrade
 
 		try(GenericContainer container = makeContainer( TestSettings.IMAGE_ID ))
 		{
-			container.withCreateContainerCmdModifier(
-					(Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig().withBinds(
-							Bind.parse("upgrade-conf-"+id+":/conf"),
-							Bind.parse("upgrade-data-"+id+":/data"),
-							Bind.parse("upgrade-import-"+id+":/import"),
-							Bind.parse("upgrade-logs-"+id+":/logs"),
-							Bind.parse("upgrade-metrics-"+id+":/metrics"),
-							Bind.parse("upgrade-plugins-"+id+":/plugins")
-					));
+			container.withFileSystemBind(conf.toString(), "/conf", BindMode.READ_WRITE);
+			container.withFileSystemBind(data.toString(), "/data", BindMode.READ_WRITE);
+			container.withFileSystemBind(imports.toString(), "/import", BindMode.READ_WRITE);
+			container.withFileSystemBind(logs.toString(), "/logs", BindMode.READ_WRITE);
+			container.withFileSystemBind(metrics.toString(), "/metrics", BindMode.READ_WRITE);
+			container.withFileSystemBind(plugins.toString(), "/plugins", BindMode.READ_WRITE);
+
 			container.withEnv( "NEO4J_dbms_allow__upgrade", "true" );
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
