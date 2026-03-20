@@ -227,9 +227,9 @@ public class TestUpgrade
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
 			db.verifyInitialDataInContainer( user, password );
-		}
-
-		cleanupVolumes(id);
+		} finally {
+            cleanupVolumes(id);
+        }
 	}
 
 	private static DockerImageName getUpgradeFromImage( Neo4jVersion ver)
