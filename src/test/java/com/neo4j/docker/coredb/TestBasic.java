@@ -20,18 +20,16 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static com.neo4j.docker.utils.Network.getServerSocket;
-import static com.neo4j.docker.utils.WaitStrategies.waitForBoltReady;
-import static com.neo4j.docker.utils.WaitStrategies.waitForNeo4jReady;
+import static com.neo4j.docker.utils.WaitStrategies.*;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 public class TestBasic
@@ -39,6 +37,7 @@ public class TestBasic
     private Logger log = LoggerFactory.getLogger( TestBasic.class );
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
+    private Duration STARTUP_TIMEOUT_DURATION = Duration.ofSeconds(180);
 
     private GenericContainer createBasicContainer()
     {
@@ -242,17 +241,10 @@ public class TestBasic
     {
         try ( GenericContainer container = createBasicContainer() )
         {
-            try(ServerSocket boltReservation = getServerSocket();
-                ServerSocket browserReservation = getServerSocket()){
-                int boltHostPort = boltReservation.getLocalPort();
-                int browserHostPort = browserReservation.getLocalPort();
+            Wait.forLogMessage( ".*Started.*", 1).withStartupTimeout( STARTUP_TIMEOUT_DURATION );
+            container.withEnv("NEO4J_AUTH", "none");
 
-                container.waitingFor(waitForBoltReady());
-                container.withEnv("NEO4J_AUTH", "none");
-
-                // Ensuring host ports are constant with container restarts
-                container.setPortBindings(List.of(browserHostPort + ":7474", boltHostPort + ":7687"));
-            }
+            // Ensuring host ports are constant with container restarts
             container.start();
 
             // Terminating container with a SIGKILL signal to emulate docker engine (docker desktop) being terminated by user.
@@ -270,7 +262,7 @@ public class TestBasic
             container.getDockerClient().startContainerCmd( container.getContainerId() ).exec();
 
             // Applying the Waiting strategy to ensure container is correctly running, because DockerClient does not check
-            waitForBoltReady().waitUntilReady( container );
+            Wait.forLogMessage( ".*Started.*", 2).withStartupTimeout( STARTUP_TIMEOUT_DURATION );
         }
     }
 
