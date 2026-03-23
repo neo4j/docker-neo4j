@@ -1,5 +1,6 @@
 package com.neo4j.docker.coredb;
 
+import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
@@ -299,6 +301,8 @@ public class TestMounting
             // do some database writes so that we try writing to writable folders.
             databaseIO.putInitialDataIntoContainer( "neo4j", "none" );
             databaseIO.verifyInitialDataInContainer( "neo4j", "none" );
+        } finally {
+            cleanupVolumes(id);
         }
     }
 
@@ -323,5 +327,14 @@ public class TestMounting
             container.start();
             // if debug.log doesn't get re-owned, neo4j will not start and this test will fail here
         }
+    }
+
+    private static void cleanupVolumes(String id){
+        DockerClient client = DockerClientFactory.instance().client();
+        client.removeVolumeCmd( "conf-"+id ).exec();
+        client.removeVolumeCmd( "data-"+id ).exec();
+        client.removeVolumeCmd( "import-"+id ).exec();
+        client.removeVolumeCmd( "logs-"+id ).exec();
+        client.removeVolumeCmd( "plugins-"+id ).exec();
     }
 }

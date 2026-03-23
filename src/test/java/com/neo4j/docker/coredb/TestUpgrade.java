@@ -1,5 +1,6 @@
 package com.neo4j.docker.coredb;
 
+import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
@@ -10,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.RemoteDockerImage;
@@ -225,7 +227,9 @@ public class TestUpgrade
 			container.start();
 			DatabaseIO db = new DatabaseIO( container );
 			db.verifyInitialDataInContainer( user, password );
-		}
+		} finally {
+            cleanupVolumes(id);
+        }
 	}
 
 	private static DockerImageName getUpgradeFromImage( Neo4jVersion ver)
@@ -238,5 +242,15 @@ public class TestUpgrade
 		{
 			return DockerImageName.parse("neo4j:" + ver.toString());
 		}
+	}
+
+	private static void cleanupVolumes(String id){
+		DockerClient client = DockerClientFactory.instance().client();
+		client.removeVolumeCmd( "upgrade-conf-"+id ).exec();
+		client.removeVolumeCmd( "upgrade-data-"+id ).exec();
+		client.removeVolumeCmd( "upgrade-import-"+id ).exec();
+		client.removeVolumeCmd( "upgrade-logs-"+id ).exec();
+		client.removeVolumeCmd( "upgrade-metrics-"+id ).exec();
+		client.removeVolumeCmd( "upgrade-plugins-"+id ).exec();
 	}
 }
