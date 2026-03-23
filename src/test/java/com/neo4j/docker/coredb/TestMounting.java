@@ -301,9 +301,9 @@ public class TestMounting
             // do some database writes so that we try writing to writable folders.
             databaseIO.putInitialDataIntoContainer( "neo4j", "none" );
             databaseIO.verifyInitialDataInContainer( "neo4j", "none" );
+        } finally {
+            cleanupVolumes(id);
         }
-
-        cleanupVolumes(id);
     }
 
     @Test
