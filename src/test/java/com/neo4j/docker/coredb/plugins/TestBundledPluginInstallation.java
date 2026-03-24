@@ -85,7 +85,7 @@ public class TestBundledPluginInstallation
     private static final BundledPlugin GENAI = new BundledPlugin("genai",
             new Neo4jVersion(5, 18, 0), null, false);
     private static final BundledPlugin FLEET_MANAGEMENT = new BundledPlugin("fleet-management",
-            new Neo4jVersion(4,4,45), null, false);
+            new Neo4jVersion(4,4,45), new Neo4jVersion(2026, 2, 3), false);
 
     static Stream<Arguments> bundledPluginsArgs() {
         return Stream.of(
