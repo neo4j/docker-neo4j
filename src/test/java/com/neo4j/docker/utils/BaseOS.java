@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Assertions;
 public enum BaseOS {
     // debian
     TRIXIE("trixie", null, null),
-    BULLSEYE("bullseye", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 23)),
+    BULLSEYE("bullseye", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 24)),
     // redhat
     UBI10("ubi10", null, null),
-    UBI9("ubi9", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 23)),
+    UBI9("ubi9", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 24)),
     UBI8("ubi8", new Neo4jVersion(2024, 1, 0), new Neo4jVersion(5, 20, 0)),
     ;
 
@@ -23,7 +23,14 @@ public enum BaseOS {
         this.lastAppearsIn5x = lastAppearsIn5x;
     }
 
-    public boolean hasDeprecationWarningIn(Neo4jVersion other) {
+    public boolean isDeprecatedOs() {
+        return switch(this) {
+        case UBI8, UBI9, BULLSEYE -> true;
+        default -> false;
+        };
+    }
+
+    public boolean hasDeprecationWarningUntil( Neo4jVersion other) {
         Neo4jVersion deprecatedIn;
         switch(other.major) {
             case 4,3,2,1 -> deprecatedIn = null;

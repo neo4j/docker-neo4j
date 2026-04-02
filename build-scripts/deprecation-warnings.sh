@@ -10,10 +10,10 @@ function get_removed_in_version_5
             echo "5.20.0"
             ;;
         "ubi9" )
-            echo "5.26.23"
+            echo "5.26.24"
             ;;
         "bullseye" )
-            echo "5.26.23"
+            echo "5.26.24"
             ;;
     esac
 }
@@ -48,6 +48,7 @@ function get_update_to_image
 function deprecation_early_warning_message
 {
     local image_os="${1}"
+    local deprecated_in_version="${2}"
     local update_to="$(get_update_to_image $image_os)"
 
     case ${image_os} in
@@ -56,7 +57,7 @@ function deprecation_early_warning_message
 \techo \>\&2 \"\n=======================================================\n
 Neo4j Red Hat ${image_os^^} images are deprecated in favour of Red Hat ${update_to^^}.\n
 Update your codebase to use Neo4j Docker image tags ending with -${update_to} instead of -${image_os}.\n\n
-Neo4j $(get_removed_in_version_calver $image_os) will be the last version to get a Red Hat ${image_os^^} docker image release.\n\n
+Neo4j ${deprecated_in_version} will be the last version to get a Red Hat ${image_os^^} docker image release.\n\n
 To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress.\n
 =======================================================\n\"\n
 fi"
@@ -66,7 +67,7 @@ fi"
 \techo \>\&2 \"\n=======================================================\n
 Neo4j Debian ${image_os^^} images are deprecated in favour of Debian ${update_to^^}.\n
 Update your codebase to use Neo4j Docker image tags ending with -${update_to} instead of -${image_os}.\n\n
-Neo4j $(get_removed_in_version_calver $image_os) will be the last version to get a Debian ${image_os^^} docker image release.\n\n
+Neo4j ${deprecated_in_version} will be the last version to get a Debian ${image_os^^} docker image release.\n\n
 To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress.\n
 =======================================================\n\"\n
 fi"
@@ -124,6 +125,6 @@ function deprecation_message
     if [ "${neo4j_version%-*}" == "${deprecated_in_version}" ]; then
         deprecation_final_warning_message "${image_os}"
     else
-        deprecation_early_warning_message "${image_os}"
+        deprecation_early_warning_message "${image_os}" "${deprecated_in_version}"
     fi
 }
