@@ -28,7 +28,7 @@ class BaseOSTest {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertTrue( os.hasDeprecationWarningIn( compareVersion ),
+        Assertions.assertTrue( os.hasDeprecationWarningUntil( compareVersion ),
                                "Should have flagged version %s as having a deprecation warning for  %s"
                                        .formatted( compareVersion, name ));
     }
@@ -41,7 +41,7 @@ class BaseOSTest {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertTrue( os.hasDeprecationWarningIn( compareVersion ),
+        Assertions.assertTrue( os.hasDeprecationWarningUntil( compareVersion ),
                                "Should have flagged version %s as having a deprecation warning for %s"
                                        .formatted( compareVersion, name ));
     }
@@ -54,7 +54,7 @@ class BaseOSTest {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertFalse( os.hasDeprecationWarningIn( compareVersion ),
+        Assertions.assertFalse( os.hasDeprecationWarningUntil( compareVersion ),
                                "Should not have flagged version %s as having a deprecation warning for %s"
                                        .formatted( compareVersion, name ));
     }
@@ -66,7 +66,7 @@ class BaseOSTest {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertFalse( os.hasDeprecationWarningIn( compareVersion ),
+        Assertions.assertFalse( os.hasDeprecationWarningUntil( compareVersion ),
                                "Should not have flagged version %s as having a deprecation warning for %s"
                                        .formatted( compareVersion, name ));
     }
@@ -79,7 +79,7 @@ class BaseOSTest {
         BaseOS os = BaseOS.fromString(name);
         Assertions.assertNotNull( os );
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertFalse( os.hasDeprecationWarningIn( compareVersion ),
+        Assertions.assertFalse( os.hasDeprecationWarningUntil( compareVersion ),
                                "Should not have flagged version %s as having a deprecation warning for %s"
                                        .formatted( compareVersion, name ));
     }

@@ -39,7 +39,7 @@ public class TestDeprecationWarning {
     @BeforeAll
     static void assume5xOrLater() {
         Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
-        Assumptions.assumeTrue( TestSettings.BASE_OS.hasDeprecationWarningIn( TestSettings.NEO4J_VERSION ),
+        Assumptions.assumeTrue( TestSettings.BASE_OS.isDeprecatedOs(),
                                 "Tests only valid for deprecated base images");
     }
 
@@ -61,6 +61,8 @@ public class TestDeprecationWarning {
         Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
                                "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
                                "Actual error logs:\n"+logs);
+        Assertions.assertTrue( logs.contains( deprecatedIn.toString() ),
+                               "Error did not mention which version OS is deprecated in" );
     }
     @Test
     void testEarlyDeprecationWarning_neo4jAdmin() {
@@ -70,6 +72,8 @@ public class TestDeprecationWarning {
         Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
                                "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
                                "Actual error logs:\n"+logs);
+        Assertions.assertTrue( logs.contains( deprecatedIn.toString() ),
+                               "Error did not mention which version OS is deprecated in" );
     }
     @Test
     void testEarlyDeprecationWarningSuppressed_coreDB() {
