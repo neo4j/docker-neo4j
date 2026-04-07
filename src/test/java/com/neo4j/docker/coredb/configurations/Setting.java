@@ -1,7 +1,6 @@
 package com.neo4j.docker.coredb.configurations;
 
-public enum Setting
-{
+public enum Setting {
     APOC_EXPORT_FILE_ENABLED,
     BACKUP_ENABLED,
     BACKUP_LISTEN_ADDRESS,

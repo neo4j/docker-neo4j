@@ -11,76 +11,88 @@ import org.junit.jupiter.params.provider.ValueSource;
 @Disabled
 class BaseOSTest {
     @ParameterizedTest
-    @ValueSource(strings = {"trixie", "bullseye", "ubi10", "ubi9", "ubi8",
-                            "Trixie", "Bullseye", "Ubi10", "Ubi9", "Ubi8"})
+    @ValueSource(
+            strings = {
+                "trixie", "bullseye", "ubi10", "ubi9", "ubi8",
+                "Trixie", "Bullseye", "Ubi10", "Ubi9", "Ubi8"
+            })
     void testFromString(String name) {
         BaseOS os = BaseOS.fromString(name);
-        Assertions.assertNotNull( os );
-        Assertions.assertEquals( name.toLowerCase(), os.osName,
-                                 "Did not get the correct BaseOS from name " + name );
+        Assertions.assertNotNull(os);
+        Assertions.assertEquals(name.toLowerCase(), os.osName, "Did not get the correct BaseOS from name " + name);
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,5,19,0", "ubi9,5,26,20", "bullseye,5,26,20",
-                "ubi8,2023,12,0", "ubi9,2026,2,0", "bullseye,2026,2,0"
+    @CsvSource({
+        "ubi8,5,19,0", "ubi9,5,26,20", "bullseye,5,26,20",
+        "ubi8,2023,12,0", "ubi9,2026,2,0", "bullseye,2026,2,0"
     })
     void testHasDeprecationWarning_before(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
-        Assertions.assertNotNull( os );
+        Assertions.assertNotNull(os);
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertTrue( os.hasDeprecationWarningUntil( compareVersion ),
-                               "Should have flagged version %s as having a deprecation warning for  %s"
-                                       .formatted( compareVersion, name ));
+        Assertions.assertTrue(
+                os.hasDeprecationWarningUntil(compareVersion),
+                "Should have flagged version %s as having a deprecation warning for  %s"
+                        .formatted(compareVersion, name));
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,5,20,0", "ubi9,5,26,23", "bullseye,5,26,23",
-                "ubi8,2024,1,0", "ubi9,2026,4,0","bullseye,2026,4,0"
+    @CsvSource({
+        "ubi8,5,20,0", "ubi9,5,26,23", "bullseye,5,26,23",
+        "ubi8,2024,1,0", "ubi9,2026,4,0", "bullseye,2026,4,0"
     })
     void testHasDeprecationWarning_equal(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
-        Assertions.assertNotNull( os );
+        Assertions.assertNotNull(os);
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertTrue( os.hasDeprecationWarningUntil( compareVersion ),
-                               "Should have flagged version %s as having a deprecation warning for %s"
-                                       .formatted( compareVersion, name ));
+        Assertions.assertTrue(
+                os.hasDeprecationWarningUntil(compareVersion),
+                "Should have flagged version %s as having a deprecation warning for %s"
+                        .formatted(compareVersion, name));
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,5,26,0", "ubi9,5,26,50", "bullseye,5,26,50",
-            "ubi8,2027,1,0", "ubi9,2080,4,0", "bullseye,2080,4,0"
+    @CsvSource({"ubi8,5,26,0", "ubi9,5,26,50", "bullseye,5,26,50", "ubi8,2027,1,0", "ubi9,2080,4,0", "bullseye,2080,4,0"
     })
     void testHasDeprecationWarning_after(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
-        Assertions.assertNotNull( os );
+        Assertions.assertNotNull(os);
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertFalse( os.hasDeprecationWarningUntil( compareVersion ),
-                               "Should not have flagged version %s as having a deprecation warning for %s"
-                                       .formatted( compareVersion, name ));
+        Assertions.assertFalse(
+                os.hasDeprecationWarningUntil(compareVersion),
+                "Should not have flagged version %s as having a deprecation warning for %s"
+                        .formatted(compareVersion, name));
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi10,2027,1,0", "ubi10,5,26,0",
-                "trixie,2024,4,0", "trixie,5,26,50"})
+    @CsvSource({
+        "ubi10,2027,1,0", "ubi10,5,26,0",
+        "trixie,2024,4,0", "trixie,5,26,50"
+    })
     void testHasDeprecationWarning_undeprecated(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
-        Assertions.assertNotNull( os );
+        Assertions.assertNotNull(os);
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertFalse( os.hasDeprecationWarningUntil( compareVersion ),
-                               "Should not have flagged version %s as having a deprecation warning for %s"
-                                       .formatted( compareVersion, name ));
+        Assertions.assertFalse(
+                os.hasDeprecationWarningUntil(compareVersion),
+                "Should not have flagged version %s as having a deprecation warning for %s"
+                        .formatted(compareVersion, name));
     }
 
     @ParameterizedTest(name = "{0}, {1}.{2}.{3}")
-    @CsvSource({"ubi8,4,1,0", "ubi8,3,2,0", "ubi8,1,10,0", "ubi8,4,4,50",
-                "ubi9,4,1,0", "ubi9,3,2,0", "ubi9,1,10,0", "ubi9,4,4,50",
-                "ubi10,4,1,0", "ubi10,3,2,0", "ubi10,1,10,0", "ubi10,4,4,50"})
+    @CsvSource({
+        "ubi8,4,1,0", "ubi8,3,2,0", "ubi8,1,10,0", "ubi8,4,4,50",
+        "ubi9,4,1,0", "ubi9,3,2,0", "ubi9,1,10,0", "ubi9,4,4,50",
+        "ubi10,4,1,0", "ubi10,3,2,0", "ubi10,1,10,0", "ubi10,4,4,50"
+    })
     void testHasDeprecationWarning_oldVersionsNoWarning(String name, int major, int minor, int patch) {
         BaseOS os = BaseOS.fromString(name);
-        Assertions.assertNotNull( os );
+        Assertions.assertNotNull(os);
         Neo4jVersion compareVersion = new Neo4jVersion(major, minor, patch);
-        Assertions.assertFalse( os.hasDeprecationWarningUntil( compareVersion ),
-                               "Should not have flagged version %s as having a deprecation warning for %s"
-                                       .formatted( compareVersion, name ));
+        Assertions.assertFalse(
+                os.hasDeprecationWarningUntil(compareVersion),
+                "Should not have flagged version %s as having a deprecation warning for %s"
+                        .formatted(compareVersion, name));
     }
 }

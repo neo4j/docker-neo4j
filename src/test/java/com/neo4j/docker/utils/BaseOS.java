@@ -24,21 +24,21 @@ public enum BaseOS {
     }
 
     public boolean isDeprecatedOs() {
-        return switch(this) {
-        case UBI8, UBI9, BULLSEYE -> true;
-        default -> false;
+        return switch (this) {
+            case UBI8, UBI9, BULLSEYE -> true;
+            default -> false;
         };
     }
 
-    public boolean hasDeprecationWarningUntil( Neo4jVersion other) {
+    public boolean hasDeprecationWarningUntil(Neo4jVersion other) {
         Neo4jVersion deprecatedIn;
-        switch(other.major) {
-            case 4,3,2,1 -> deprecatedIn = null;
+        switch (other.major) {
+            case 4, 3, 2, 1 -> deprecatedIn = null;
             case 5 -> deprecatedIn = this.lastAppearsIn5x;
             default -> deprecatedIn = this.lastAppearsInCalver;
         }
-        if(deprecatedIn == null) return false;
-        return !other.isNewerThan( deprecatedIn );
+        if (deprecatedIn == null) return false;
+        return !other.isNewerThan(deprecatedIn);
     }
 
     public static BaseOS fromString(String name) {
