@@ -53,41 +53,36 @@ MAJOR=$(get_major_from_version "${NEO4JVERSION}")
 if [[ "$MAJOR" == "5" ]]; then
     echo "Tagging ${MAJOR}..."
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-trixie" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-community-debian" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-community" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}" \
     --tag "${REPOSITORY}:${MAJOR}-community-trixie" \
     --tag "${REPOSITORY}:${MAJOR}-community-debian" \
     --tag "${REPOSITORY}:${MAJOR}-community" \
     --tag "${REPOSITORY}:${MAJOR}"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-trixie" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-enterprise-debian" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-enterprise" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-trixie" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-debian" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise"
 
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-bullseye" \
-    --tag "${REPOSITORY}:${MAJOR}-community-bullseye" \
-    --tag "${REPOSITORY}:${MAJOR}-bullseye"
-
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-bullseye" \
-    --tag "${REPOSITORY}:${MAJOR}-enterprise-bullseye"
-
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-ubi10" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-ubi10" \
     --tag "${REPOSITORY}:${MAJOR}-community-ubi10" \
     --tag "${REPOSITORY}:${MAJOR}-ubi10"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-ubi10" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-ubi10"
 
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-ubi9" \
-    --tag "${REPOSITORY}:${MAJOR}-community-ubi9" \
-    --tag "${REPOSITORY}:${MAJOR}-ubi9"
-
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-ubi9" \
-    --tag "${REPOSITORY}:${MAJOR}-enterprise-ubi9"
-
 
 elif [[ "$MAJOR" -gt 2024 ]]; then
     echo "Tagging calver ${MAJOR}..."
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-trixie" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-community-debian" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-community" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}" \
     --tag "${REPOSITORY}:${MAJOR}-community-trixie" \
     --tag "${REPOSITORY}:${MAJOR}-community-debian" \
     --tag "${REPOSITORY}:${MAJOR}-community" \
@@ -100,6 +95,8 @@ elif [[ "$MAJOR" -gt 2024 ]]; then
     --tag "${REPOSITORY}:latest"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-trixie" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-enterprise-debian" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-enterprise" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-trixie" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-debian" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise" \
@@ -117,6 +114,7 @@ elif [[ "$MAJOR" -gt 2024 ]]; then
     --tag "${REPOSITORY}:enterprise-bullseye"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-ubi10" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-community-redhat" \
     --tag "${REPOSITORY}:${MAJOR}-community-ubi10" \
     --tag "${REPOSITORY}:${MAJOR}-community-redhat" \
     --tag "${REPOSITORY}:community-ubi10" \
@@ -125,6 +123,7 @@ elif [[ "$MAJOR" -gt 2024 ]]; then
     --tag "${REPOSITORY}:redhat"
 
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-ubi10" \
+    --tag "${REPOSITORY}:${NEO4JVERSION}-enterprise-redhat" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-ubi10" \
     --tag "${REPOSITORY}:${MAJOR}-enterprise-redhat" \
     --tag "${REPOSITORY}:enterprise-ubi10" \
