@@ -3,6 +3,8 @@ package com.neo4j.docker;
 import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
+import java.time.Duration;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -14,9 +16,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
-import java.time.Duration;
-import java.util.regex.Pattern;
-
 /**Tests to make sure that deprecated base OS images give suitable warnings.
  * The opposite test to make sure there are no deprecation warnings in un-deprecated images
  * already exists at {@code TestBasic.testNoUnexpectedErrors()}
@@ -27,128 +26,155 @@ import java.util.regex.Pattern;
  * - Any image created after the final deprecated version using the deprecated OS should be a failure.
  * */
 public class TestDeprecationWarning {
-    private final Logger log = LoggerFactory.getLogger( TestDeprecationWarning.class );
+    private final Logger log = LoggerFactory.getLogger(TestDeprecationWarning.class);
 
     private static final String DEPRECATION_WARN_SUPPRESS_FLAG = "NEO4J_DEPRECATION_WARNING";
-    private final Pattern earlyWarningRegex = Pattern.compile( "Neo4j (Red Hat|Debian) %s images are deprecated in favour of "
-                                                                       .formatted( TestSettings.BASE_OS.toString().toUpperCase()) );
-    private final Pattern finalWarningRegex = Pattern.compile( "This is the last Neo4j image available on (Red Hat|Debian) %s"
-                                                                       .formatted( TestSettings.BASE_OS.toString().toUpperCase() ));
+    private final Pattern earlyWarningRegex =
+            Pattern.compile("Neo4j (Red Hat|Debian) %s images are deprecated in favour of "
+                    .formatted(TestSettings.BASE_OS.toString().toUpperCase()));
+    private final Pattern finalWarningRegex =
+            Pattern.compile("This is the last Neo4j image available on (Red Hat|Debian) %s"
+                    .formatted(TestSettings.BASE_OS.toString().toUpperCase()));
     private Neo4jVersion deprecatedIn;
 
     @BeforeAll
     static void assume5xOrLater() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isAtLeastVersion( Neo4jVersion.NEO4J_VERSION_500 ) );
-        Assumptions.assumeTrue( TestSettings.BASE_OS.isDeprecatedOs(),
-                                "Tests only valid for deprecated base images");
+        Assumptions.assumeTrue(TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500));
+        Assumptions.assumeTrue(TestSettings.BASE_OS.isDeprecatedOs(), "Tests only valid for deprecated base images");
     }
 
     @BeforeEach
     void findDeprecatedInVersion() {
         if (TestSettings.NEO4J_VERSION.isCalver()) {
             deprecatedIn = TestSettings.BASE_OS.lastAppearsInCalver;
-        }
-        else {
+        } else {
             deprecatedIn = TestSettings.BASE_OS.lastAppearsIn5x;
         }
     }
 
     @Test
     void testEarlyDeprecationWarning_coreDB() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( deprecatedIn ),
-                                "%s does not have early deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
-        String logs = runCoreDBGetErrorLogs( false );
-        Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
-        Assertions.assertTrue( logs.contains( deprecatedIn.toString() ),
-                               "Error did not mention which version OS is deprecated in" );
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isOlderThan(deprecatedIn),
+                "%s does not have early deprecation warning".formatted(TestSettings.NEO4J_VERSION));
+        String logs = runCoreDBGetErrorLogs(false);
+        Assertions.assertTrue(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
+        Assertions.assertTrue(
+                logs.contains(deprecatedIn.toString()), "Error did not mention which version OS is deprecated in");
     }
+
     @Test
     void testEarlyDeprecationWarning_neo4jAdmin() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( deprecatedIn ),
-                                "%s does not have early deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
-        String logs = runNeo4jAdminGetErrorLogs( false );
-        Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
-        Assertions.assertTrue( logs.contains( deprecatedIn.toString() ),
-                               "Error did not mention which version OS is deprecated in" );
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isOlderThan(deprecatedIn),
+                "%s does not have early deprecation warning".formatted(TestSettings.NEO4J_VERSION));
+        String logs = runNeo4jAdminGetErrorLogs(false);
+        Assertions.assertTrue(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
+        Assertions.assertTrue(
+                logs.contains(deprecatedIn.toString()), "Error did not mention which version OS is deprecated in");
     }
+
     @Test
     void testEarlyDeprecationWarningSuppressed_coreDB() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( deprecatedIn ),
-                                "%s does not have early deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isOlderThan(deprecatedIn),
+                "%s does not have early deprecation warning".formatted(TestSettings.NEO4J_VERSION));
         String logs = runCoreDBGetErrorLogs(true);
-        Assertions.assertFalse( earlyWarningRegex.matcher( logs ).find(),
-                                "Container incorrectly warned about "+TestSettings.BASE_OS+" deprecation. " +
-                                "Actual error logs:\n"+logs);
+        Assertions.assertFalse(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container incorrectly warned about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
     }
+
     @Test
     void testEarlyDeprecationWarningSuppressed_neo4jAdmin() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.isOlderThan( deprecatedIn ),
-                                "%s does not have early deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isOlderThan(deprecatedIn),
+                "%s does not have early deprecation warning".formatted(TestSettings.NEO4J_VERSION));
         String logs = runNeo4jAdminGetErrorLogs(true);
-        Assertions.assertFalse( earlyWarningRegex.matcher( logs ).find(),
-                                "Container incorrectly warned about "+TestSettings.BASE_OS+" deprecation. " +
-                                "Actual error logs:\n"+logs);
+        Assertions.assertFalse(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container incorrectly warned about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
     }
 
     @Test
     void testFinalWarning_coreDB() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.equals( deprecatedIn ),
-                                "%s does not need final deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
-        String logs = runCoreDBGetErrorLogs( false );
-        Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
-        Assertions.assertTrue( finalWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.equals(deprecatedIn),
+                "%s does not need final deprecation warning".formatted(TestSettings.NEO4J_VERSION));
+        String logs = runCoreDBGetErrorLogs(false);
+        Assertions.assertTrue(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
+        Assertions.assertTrue(
+                finalWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
     }
+
     @Test
     void testFinalWarning_neo4jAdmin() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.equals( deprecatedIn ),
-                                "%s does not need final deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
-        String logs = runNeo4jAdminGetErrorLogs( false );
-        Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
-        Assertions.assertTrue( finalWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.equals(deprecatedIn),
+                "%s does not need final deprecation warning".formatted(TestSettings.NEO4J_VERSION));
+        String logs = runNeo4jAdminGetErrorLogs(false);
+        Assertions.assertTrue(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
+        Assertions.assertTrue(
+                finalWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
     }
+
     @Test
     void testFinalWarningSuppressionIgnored_coreDB() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.equals( deprecatedIn ),
-                                "%s does not need final deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
-        String logs = runCoreDBGetErrorLogs( true );
-        Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
-        Assertions.assertTrue( finalWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.equals(deprecatedIn),
+                "%s does not need final deprecation warning".formatted(TestSettings.NEO4J_VERSION));
+        String logs = runCoreDBGetErrorLogs(true);
+        Assertions.assertTrue(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
+        Assertions.assertTrue(
+                finalWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
     }
+
     @Test
     void testFinalWarningSuppressionIgnored_neo4jAdmin() {
-        Assumptions.assumeTrue( TestSettings.NEO4J_VERSION.equals( deprecatedIn ),
-                                "%s does not need final deprecation warning".formatted( TestSettings.NEO4J_VERSION ) );
-        String logs = runNeo4jAdminGetErrorLogs( true );
-        Assertions.assertTrue( earlyWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
-        Assertions.assertTrue( finalWarningRegex.matcher( logs ).find(),
-                               "Container did not warn about "+TestSettings.BASE_OS+" deprecation. " +
-                               "Actual error logs:\n"+logs);
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.equals(deprecatedIn),
+                "%s does not need final deprecation warning".formatted(TestSettings.NEO4J_VERSION));
+        String logs = runNeo4jAdminGetErrorLogs(true);
+        Assertions.assertTrue(
+                earlyWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
+        Assertions.assertTrue(
+                finalWarningRegex.matcher(logs).find(),
+                "Container did not warn about " + TestSettings.BASE_OS + " deprecation. " + "Actual error logs:\n"
+                        + logs);
     }
 
     @Test
     void shouldNotCreateImageAfterDeprecation() {
         // To get here we must be testing an image flagged for deprecation.
         // This test makes sure we don't make a deprecated image newer than we expect.
-        Assertions.assertFalse( TestSettings.NEO4J_VERSION.isNewerThan( deprecatedIn ),
-                                "Should not be releasing %s newer than %s".formatted( TestSettings.BASE_OS, deprecatedIn ) );
+        Assertions.assertFalse(
+                TestSettings.NEO4J_VERSION.isNewerThan(deprecatedIn),
+                "Should not be releasing %s newer than %s".formatted(TestSettings.BASE_OS, deprecatedIn));
     }
 
     String runCoreDBGetErrorLogs(boolean suppressWarning) {
@@ -184,21 +210,22 @@ public class TestDeprecationWarning {
 
     // this is a requirement for docker official images, so doesn't need testing for neo4j-admin
     @Test
-    void shouldOnlyWarnWhenRunningNeo4jCommands() throws Exception
-    {
-        try(GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID))
-        {
-            container.withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
-                     .withExposedPorts( 7474, 7687 )
-                     .withLogConsumer( new Slf4jLogConsumer( log ))
-                     .withCommand( "cat", "/etc/os-release" );
-            WaitStrategies.waitUntilContainerFinished( container, Duration.ofSeconds( 30 ) );
+    void shouldOnlyWarnWhenRunningNeo4jCommands() throws Exception {
+        try (GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID)) {
+            container
+                    .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
+                    .withExposedPorts(7474, 7687)
+                    .withLogConsumer(new Slf4jLogConsumer(log))
+                    .withCommand("cat", "/etc/os-release");
+            WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(30));
             container.start();
-            String logs = container.getLogs( OutputFrame.OutputType.STDERR );
-            Assertions.assertFalse(earlyWarningRegex.matcher( logs ).find(),
-                                   "Container should not have warned about deprecation. Actual error logs:\n"+logs);
-            Assertions.assertFalse(finalWarningRegex.matcher( logs ).find(),
-                                   "Container should not have warned about deprecation. Actual error logs:\n"+logs);
+            String logs = container.getLogs(OutputFrame.OutputType.STDERR);
+            Assertions.assertFalse(
+                    earlyWarningRegex.matcher(logs).find(),
+                    "Container should not have warned about deprecation. Actual error logs:\n" + logs);
+            Assertions.assertFalse(
+                    finalWarningRegex.matcher(logs).find(),
+                    "Container should not have warned about deprecation. Actual error logs:\n" + logs);
         }
     }
 }

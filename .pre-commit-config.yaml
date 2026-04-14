@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: spotless-check
+        name: maven spotless check
+        entry: mvn --batch-mode --no-transfer-progress spotless:apply
+        language: system
+        pass_filenames: false
+        always_run: true
