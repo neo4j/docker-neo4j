@@ -31,7 +31,7 @@
   "genai": {
     "location": "/var/lib/neo4j/products/neo4j-genai-plugin-*.jar",
     "properties": {
-      "dbms.security.procedures.unrestricted": "genai.*"
+      "dbms.security.procedures.unrestricted": "genai.*,ai.*"
     }
   },
   "fleet-management": {
