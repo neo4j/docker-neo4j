@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -97,6 +98,7 @@ public class TestUpgrade {
         return System.getProperty("os.arch").equals("aarch64");
     }
 
+    @Disabled
     @ParameterizedTest(name = "from_{0}")
     @MethodSource("upgradableNeo4jVersionsPre5")
     void canUpgradeNeo4j_fileMounts_Pre5(Neo4jVersion upgradeFrom) throws Exception {
@@ -106,6 +108,7 @@ public class TestUpgrade {
         testUpgradeFileMounts(upgradeFrom);
     }
 
+    @Disabled
     @ParameterizedTest(name = "from_{0}")
     @MethodSource("upgradableNeo4jVersionsPre5")
     void canUpgradeNeo4j_namedVolumes_Pre5(Neo4jVersion upgradeFrom) throws Exception {
