@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -24,8 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 /**JUnit extension to create temporary folders and compress them after each test class runs.
  * <p>
@@ -194,24 +191,6 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         return tempFolder;
     }
 
-    //    public Path createNamedFolderAndMountAsVolume( GenericContainer container, String hostFolderName,
-    //                                                   Path parentFolder, String containerMountPoint ) throws
-    // IOException
-    //    {
-    //        Path tempFolder = createFolder( hostFolderName, parentFolder );
-    //        mountHostFolderAsVolume( container, tempFolder, containerMountPoint );
-    //        return tempFolder;
-    //    }
-
-    //    public Path createFolderAndMountAsVolume( GenericContainer container, String containerMountPoint, Path
-    // parentFolder ) throws IOException
-    //    {
-    //        return null;
-    //        Path hostFolder = createTempFolder( hostFolderNamePrefix, parentFolder );
-    //        mountHostFolderAsVolume( container, hostFolder, containerMountPoint );
-    //        return hostFolder;
-    //    }
-
     public void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint) {
         container.withFileSystemBind(hostFolder.toAbsolutePath().toString(), containerMountPoint, BindMode.READ_WRITE);
     }
@@ -244,7 +223,7 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
     }
 
     public void setFolderOwnerToNeo4j(Path file) throws Exception {
-        setFolderOwnerTo("7474:7474", file);
+        setFolderOwnerTo(SetContainerUser.getNeo4jUserString(), file);
     }
 
     protected String getFolderNameFromMountPoint(String containerMountPoint) {
@@ -255,8 +234,7 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         // uses docker privileges to set file owner, since probably the current user is not a sudoer.
 
         // Using nginx because it's easy to verify that the image started.
-        try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"))) {
-            container.withExposedPorts(80).waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
+        try (GenericContainer container = HelperContainers.nginx()) {
             for (Path p : files) {
                 mountHostFolderAsVolume(container, p, p.toAbsolutePath().toString());
             }
