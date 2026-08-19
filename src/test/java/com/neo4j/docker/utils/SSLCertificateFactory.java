@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 
@@ -27,7 +26,6 @@ public class SSLCertificateFactory {
     private boolean isPassphraseEncrypted = false;
     private String owner = null;
 
-    @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     public SSLCertificateFactory(Path outputFolder) {
@@ -76,7 +74,7 @@ public class SSLCertificateFactory {
         }
         try (GenericContainer container = HelperContainers.nginx()) {
             String mountpoint = "/certgen";
-            TemporaryFolderManager.mountHostFolderAsVolume(container, this.outputFolder, mountpoint);
+            temporaryFolderManager.mountHostFolderAsVolume(container, this.outputFolder, mountpoint);
 
             // copy ssl certificate generating script to mounted folder
             Path scriptPath = this.outputFolder.resolve("gen-scripts");

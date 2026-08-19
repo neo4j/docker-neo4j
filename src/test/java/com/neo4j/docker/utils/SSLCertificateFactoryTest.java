@@ -21,7 +21,7 @@ public class SSLCertificateFactoryTest {
             Integer.parseInt(SetContainerUser.getNonRootUserString().split(":")[0]);
 
     @RegisterExtension
-    static TemporaryFolderManager folderManager = new TemporaryFolderManager();
+    TemporaryFolderManager folderManager = new TemporaryFolderManager();
 
     @Test
     void generatesUnencryptedCertificateAndKey() throws Exception {
@@ -72,7 +72,7 @@ public class SSLCertificateFactoryTest {
 
         // verify the decrypt command works
         try (GenericContainer container = HelperContainers.nginx()) {
-            TemporaryFolderManager.mountHostFolderAsVolume(container, outdir, "/certificates");
+            folderManager.mountHostFolderAsVolume(container, outdir, "/certificates");
             String decryptCommand = SSLCertificateFactory.getPassphraseDecryptCommand("/certificates");
             container.start();
             Container.ExecResult decryptResult = container.execInContainer("sh", "-c", decryptCommand);
@@ -172,7 +172,7 @@ public class SSLCertificateFactoryTest {
     private void verifyCertificatesAndKey(Path certificateDir, String expectedHostName, @Nullable String keyPassphrase)
             throws Exception {
         try (GenericContainer container = HelperContainers.nginx()) {
-            TemporaryFolderManager.mountHostFolderAsVolume(container, certificateDir, "/certificates");
+            folderManager.mountHostFolderAsVolume(container, certificateDir, "/certificates");
             container.start();
             // verify certificates and key are pem format and match
             // the `-inform pem` means that the commands will fail if certs/keys are not in PEM format.
