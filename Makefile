@@ -35,7 +35,7 @@ test-%-community: build-%-community
 
 ## building
 
-build: build-ubi9 build-ubi10 build-bullseye build-trixie
+build: build-bullseye build-trixie build-ubi9 build-ubi10 build-ubi10-rootless
 .PHONY: build
 
 build-bullseye: build-bullseye-community build-bullseye-enterprise
@@ -78,9 +78,19 @@ build/ubi10/coredb/%/.sentinel::
 > ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi10"
 > touch $@
 
+build-ubi10-rootless: build-ubi10-rootless-community build-ubi10-rootless-enterprise
+.PHONY: build-ubi10-rootless
+build-ubi10-rootless-community: build/ubi10-rootless/coredb/community/.sentinel
+.PHONY: build-ubi10-rootless-community
+build-ubi10-rootless-enterprise: build/ubi10-rootless/coredb/enterprise/.sentinel
+.PHONY: build-ubi10-rootless-enterprise
+build/ubi10-rootless/coredb/%/.sentinel::
+> ./build-scripts/build-docker-image.sh $(NEO4JVERSION) "${*}" "ubi10-rootless"
+> touch $@
+
 ## tagging
 
-tag: tag-ubi9 tag-ubi10 tag-bullseye tag-trixie
+tag: tag-bullseye tag-trixie tag-ubi9 tag-ubi10 tag-ubi10-rootless
 .PHONY: tag
 
 tag-bullseye: tag-bullseye-community tag-bullseye-enterprise
@@ -91,6 +101,8 @@ tag-ubi9: tag-ubi9-community tag-ubi9-enterprise
 .PHONY: tag-ubi9
 tag-ubi10: tag-ubi10-community tag-ubi10-enterprise
 .PHONY: tag-ubi10
+tag-ubi10-rootless: tag-ubi10-rootless-community tag-ubi10-rootless-enterprise
+.PHONY: tag-ubi10-rootless
 
 tag-%-community: build-%-community
 > docker tag $$(cat ./build/${*}/coredb/.image-id-community) neo4j:$(NEO4JVERSION)-${*}
@@ -105,20 +117,18 @@ tag-%-enterprise: build-%-enterprise
 ## packaging and release
 
 # create release images and loadable images
-package: package-ubi9 package-ubi10 package-bullseye package-trixie
+package: package-ubi9 package-ubi10 package-ubi10-rootless package-bullseye package-trixie
 .PHONY: package
-
 package-bullseye: package-bullseye-community package-bullseye-enterprise package-bullseye-release-artifacts
 .PHONY: package-bullseye
-
 package-trixie: package-trixie-community package-trixie-enterprise package-trixie-release-artifacts
 .PHONY: package-trixie
-
 package-ubi9: package-ubi9-community package-ubi9-enterprise package-ubi9-release-artifacts
 .PHONY: package-ubi9
-
 package-ubi10: package-ubi10-community package-ubi10-enterprise package-ubi10-release-artifacts
 .PHONY: package-ubi10
+package-ubi10-rootless: package-ubi10-rootless-community package-ubi10-rootless-enterprise package-ubi10-rootless-release-artifacts
+.PHONY: package-ubi10-rootless
 
 package-%-community:  tag-%-community
 > mkdir -p out

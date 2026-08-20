@@ -16,8 +16,8 @@ Development is tested on Ubuntu and OSX. It will probably work on other Linuxes.
 # Building the Image
 
 There are two supported base operating systems that the docker image can be build upon:
- * debian, based off `debian:bullseye-slim`.
- * RedHat ubi9, based off `redhat/ubi9-minimal`. Only available for 4.4 onwards.
+ * debian, based off `debian:trixie-slim`.
+ * RedHat, based off `redhat/ubi10-minimal`. Only available for 4.4 onwards.
 
 On top of that there is also the choice Neo4j version, and whether to build `community` or `enterprise` edition Neo4j.
 
@@ -49,8 +49,8 @@ NEO4JVERSION=4.4.0 make tag-ubi9-enterprise
 The build script [build-docker-image.sh](./build-scripts/build-docker-image.sh) will take these options and produce a Neo4j image and a neo4j-admin image, for the combination you request.
 For example:
 ```bash
-#  debian based 4.4.22 community edition:
-./build-docker-image.sh 4.4.22 community debian
+#  debian trixie based 2025.04.0 community edition:
+./build-docker-image.sh 2025.04.0 community trixie
 #  redhat-ubi9 based 5.9.0 enterprise edition:
 ./build-docker-image.sh 5.9.0 enterprise ubi9
 ```
@@ -86,13 +86,13 @@ The other actions have the same targets.
 
 This is an example of calling one of the build targets:
 ```bash
-NEO4JVERSION=4.4.4 make clean build-debian
+NEO4JVERSION=5.4.0 make clean build-trixie
 ```
-This will build community and enterprise, coredb and neo4j-admin, all based on debian.
+This will build community and enterprise, coredb and neo4j-admin, all based on debian trixie.
 
 To build and then tag all debian neo4j images, use `tag`. For example:
 ```bash
-NEO4JVERSION=4.4.4 make clean tag-debian
+NEO4JVERSION=5.20.0 make clean tag-trixie
 ```
 
 ## Building ARM64 based images
@@ -128,7 +128,9 @@ $ NEO4JVERSION=4.0.0-alpha05 make clean build
 
 ### If building an image from your local Neo4j repository
 
-This isn't recommended since you will need to package your Neo4j tar with the browser so that neo4j will be responsive on 7474 and 7687.
+> [!WARNING]
+> Doing this means the browser won't be included in your image, and the container will not be responsive on port 7474. 
+> The bolt port 7687 should still work. 
 
 1. Clone the Neo4j github repository and checkout the branch you want.
 3. Run `mvn install` plus whatever maven build flags you like. This should install the latest neo4j jars into the maven cache.
