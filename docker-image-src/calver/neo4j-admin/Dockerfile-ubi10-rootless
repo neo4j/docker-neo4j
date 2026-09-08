@@ -26,19 +26,17 @@ RUN set -eux; \
     rm ${NEO4J_HOME}/bin/neo4j; \
     mv "${NEO4J_HOME}"/data /data; \
     chown -R neo4j:neo4j /data; \
-    chmod -R 777 /data; \
     mkdir -p /backups; \
     chown -R neo4j:neo4j /backups; \
-    chmod -R 777 /backups; \
     chown -R neo4j:neo4j "${NEO4J_HOME}"; \
-    chmod -R 777 "${NEO4J_HOME}"; \
-    chmod -R 755 "${NEO4J_HOME}/bin"; \
+    chmod -R 755 "${NEO4J_HOME}"; \
     ln -s /data "${NEO4J_HOME}"/data; \
     ln -s /startup/docker-entrypoint.sh /docker-entrypoint.sh
 
 ENV PATH="${NEO4J_HOME}"/bin:$PATH
 VOLUME /data /backups
 WORKDIR "${NEO4J_HOME}"
+USER neo4j
 
 ENTRYPOINT ["/startup/docker-entrypoint.sh"]
 CMD ["neo4j-admin"]

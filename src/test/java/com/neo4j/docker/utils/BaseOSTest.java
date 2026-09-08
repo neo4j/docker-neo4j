@@ -13,8 +13,8 @@ class BaseOSTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                "trixie", "bullseye", "ubi10", "ubi9", "ubi8",
-                "Trixie", "Bullseye", "Ubi10", "Ubi9", "Ubi8"
+                "trixie", "bullseye", "ubi10", "ubi9", "ubi8", "ubi10-rootless",
+                "Trixie", "Bullseye", "Ubi10", "Ubi9", "Ubi8", "Ubi10-rootless"
             })
     void testFromString(String name) {
         BaseOS os = BaseOS.fromString(name);

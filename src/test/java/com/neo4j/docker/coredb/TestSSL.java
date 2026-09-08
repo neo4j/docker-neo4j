@@ -3,7 +3,6 @@ package com.neo4j.docker.coredb;
 import com.neo4j.docker.utils.BaseOS;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HelperContainers;
-import com.neo4j.docker.utils.Neo4jVersion;
 import com.neo4j.docker.utils.SSLCertificateFactory;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
@@ -18,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -37,17 +37,16 @@ public class TestSSL {
     public static final String FIPS_FLAG = "NEO4J_OPENSSL_FIPS_ENABLE";
     public static final String PASSWORD = "MYsuperSECRETpassword123";
     public static final String SSL_KEY_PASSPHRASE = "abcdef1234567890";
-    public static final String OPENSSL_VERSION = "3.0.9";
-    public static final String NETTY_TCNATIVE_VERSION = "2.0.65.Final";
-    public static final String OPENSSL_INSTALL_DIR = "/usr/local/openssl";
+    //    public static final String OPENSSL_VERSION = "3.0.9";
+    //    public static final String NETTY_TCNATIVE_VERSION = "2.0.65.Final";
+    //    public static final String OPENSSL_INSTALL_DIR = "/usr/local/openssl";
     private static final Logger log = LoggerFactory.getLogger(TestSSL.class);
-    private static Path tcnativeBoringSSLJar = null;
+    //    private static Path tcnativeBoringSSLJar = null;
 
-    private void assumeFIPSCompatible() {
+    @BeforeAll
+    public static void assumeFIPSCompatible() {
         Assumptions.assumeTrue(
-                TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5, 21, 0)),
-                "FIPS compliance was introduced after 5.21.0.");
-        Assumptions.assumeTrue(TestSettings.BASE_OS == BaseOS.UBI10, "Test only applies to UBI9 based image.");
+                TestSettings.BASE_OS == BaseOS.UBI10_ROOTLESS, "Tests only applies to UBI10 Rootless base image.");
     }
 
     private GenericContainer createContainer() {
@@ -110,11 +109,11 @@ public class TestSSL {
             container.withEnv(FIPS_FLAG, "true");
             container.start();
             whichOpenSSL = container.execInContainer("which", "openssl");
-            log.info("OpenSSL location is \"" + whichOpenSSL.getStdout() + "\"");
+            log.info("OpenSSL location is \"{}\"", whichOpenSSL.getStdout());
             versionOut = container.execInContainer("openssl", "version", "-a");
-            log.info("openssl version -a:\n" + versionOut.getStdout());
+            log.info("openssl version -a:\n{}", versionOut.getStdout());
             providersOut = container.execInContainer("openssl", "list", "-providers");
-            log.info("openssl providers:\n" + providersOut.getStdout());
+            log.info("openssl providers:\n{}", providersOut.getStdout());
         }
 
         // verify openssl version
@@ -276,18 +275,15 @@ public class TestSSL {
         dbio.putInitialDataIntoContainer("neo4j", PASSWORD);
         dbio.verifyInitialDataInContainer("neo4j", PASSWORD);
 
-        // NMap doesn't work in bullseye because the old openssl installed from apt confuses it
-        if (TestSettings.BASE_OS != BaseOS.BULLSEYE) {
-            container.execInContainer("microdnf", "install", "-y", "nmap");
-            String nmapOut = container
-                    .execInContainer("nmap", "--script", "ssl-enum-ciphers", "-p", "7687", "localhost")
-                    .getStdout();
-            log.info("nmap scan returned:\n" + nmapOut);
+        container.execInContainer("microdnf", "install", "-y", "nmap");
+        String nmapOut = container
+                .execInContainer("nmap", "--script", "ssl-enum-ciphers", "-p", "7687", "localhost")
+                .getStdout();
+        log.info("nmap scan returned:\n" + nmapOut);
 
-            List<String> nmap = Arrays.stream(nmapOut.split("\n"))
-                    .filter(line -> line.contains("least strength: A"))
-                    .toList();
-            Assertions.assertEquals(1, nmap.size(), "NMap scan shows port 7687 is not secure:\n" + nmapOut);
-        }
+        List<String> nmap = Arrays.stream(nmapOut.split("\n"))
+                .filter(line -> line.contains("least strength: A"))
+                .toList();
+        Assertions.assertEquals(1, nmap.size(), "NMap scan shows port 7687 is not secure:\n" + nmapOut);
     }
 }

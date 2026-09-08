@@ -9,6 +9,7 @@ public enum BaseOS {
     BULLSEYE("bullseye", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 24)),
     // redhat
     UBI10("ubi10", null, null),
+    UBI10_ROOTLESS("ubi10-rootless", null, null),
     UBI9("ubi9", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 24)),
     UBI8("ubi8", new Neo4jVersion(2024, 1, 0), new Neo4jVersion(5, 20, 0)),
     ;
@@ -49,6 +50,8 @@ public enum BaseOS {
                 return BaseOS.BULLSEYE;
             case "ubi10":
                 return BaseOS.UBI10;
+            case "ubi10-rootless":
+                return BaseOS.UBI10_ROOTLESS;
             case "ubi9":
                 return BaseOS.UBI9;
             case "ubi8":
