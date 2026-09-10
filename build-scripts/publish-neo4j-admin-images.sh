@@ -104,15 +104,6 @@ elif [[ "$MAJOR" -gt 2024 ]]; then
     --tag "${REPOSITORY}:enterprise-debian" \
     --tag "${REPOSITORY}:enterprise"
 
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-bullseye" \
-    --tag "${REPOSITORY}:${MAJOR}-community-bullseye" \
-    --tag "${REPOSITORY}:community-bullseye" \
-    --tag "${REPOSITORY}:bullseye"
-
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-bullseye" \
-    --tag "${REPOSITORY}:${MAJOR}-enterprise-bullseye" \
-    --tag "${REPOSITORY}:enterprise-bullseye"
-
     docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-ubi10" \
     --tag "${REPOSITORY}:${NEO4JVERSION}-community-redhat" \
     --tag "${REPOSITORY}:${MAJOR}-community-ubi10" \
@@ -128,13 +119,4 @@ elif [[ "$MAJOR" -gt 2024 ]]; then
     --tag "${REPOSITORY}:${MAJOR}-enterprise-redhat" \
     --tag "${REPOSITORY}:enterprise-ubi10" \
     --tag "${REPOSITORY}:enterprise-redhat"
-
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-community-ubi9" \
-    --tag "${REPOSITORY}:${MAJOR}-community-ubi9" \
-    --tag "${REPOSITORY}:community-ubi9" \
-    --tag "${REPOSITORY}:ubi9"
-
-    docker buildx imagetools create "${REPOSITORY}:${NEO4JVERSION}-enterprise-ubi9" \
-    --tag "${REPOSITORY}:${MAJOR}-enterprise-ubi9" \
-    --tag "${REPOSITORY}:enterprise-ubi9"
 fi
