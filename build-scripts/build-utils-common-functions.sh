@@ -102,8 +102,8 @@ case "$(get_branch_from_version ${NEO4JVERSION})" in
     DEPRECATED_IMAGE_OS=("bullseye" "ubi8" "ubi9")
     ;;
   4.4 )
-    SUPPORTED_IMAGE_OS=("bullseye" "ubi9")
-    DEPRECATED_IMAGE_OS=("ubi8")
+    SUPPORTED_IMAGE_OS=("trixie" "ubi9")
+    DEPRECATED_IMAGE_OS=("bullseye" "ubi8")
     ;;
   *)
     SUPPORTED_IMAGE_OS=("bullseye")
