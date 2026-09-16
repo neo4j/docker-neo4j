@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +42,11 @@ public class TestMounting {
 
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
+
+    @BeforeAll
+    static void skipRootlessImages() {
+        Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless(), "Skipping mount tests on rootless images");
+    }
 
     @AfterEach
     void archiveTestArtifacts() throws Exception {

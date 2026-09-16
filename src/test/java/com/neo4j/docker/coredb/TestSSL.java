@@ -37,11 +37,11 @@ public class TestSSL {
     public static final String FIPS_FLAG = "NEO4J_OPENSSL_FIPS_ENABLE";
     public static final String PASSWORD = "MYsuperSECRETpassword123";
     public static final String SSL_KEY_PASSPHRASE = "abcdef1234567890";
-    //    public static final String OPENSSL_VERSION = "3.0.9";
-    //    public static final String NETTY_TCNATIVE_VERSION = "2.0.65.Final";
-    //    public static final String OPENSSL_INSTALL_DIR = "/usr/local/openssl";
+    public static final String OPENSSL_VERSION = "3.0.9";
+    public static final String NETTY_TCNATIVE_VERSION = "2.0.65.Final";
+    public static final String OPENSSL_INSTALL_DIR = "/usr/local/openssl";
     private static final Logger log = LoggerFactory.getLogger(TestSSL.class);
-    //    private static Path tcnativeBoringSSLJar = null;
+    private static Path tcnativeBoringSSLJar = null;
 
     @BeforeAll
     public static void assumeFIPSCompatible() {

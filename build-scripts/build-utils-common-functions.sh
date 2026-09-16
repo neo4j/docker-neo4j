@@ -94,7 +94,7 @@ fi
 
 case "$(get_branch_from_version ${NEO4JVERSION})" in
   calver )
-    SUPPORTED_IMAGE_OS=("bullseye" "trixie" "ubi9" "ubi10" "ubi10-rootless")
+    SUPPORTED_IMAGE_OS=("bullseye" "trixie" "trixie-rootless" "ubi9" "ubi10" "ubi10-rootless")
     DEPRECATED_IMAGE_OS=("bullseye" "ubi8" "ubi9")
     ;;
   5 )

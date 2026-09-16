@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,6 +46,11 @@ public class TestPluginInstallation {
     public HttpServerTestExtension httpServer = new HttpServerTestExtension();
 
     StubPluginHelper stubPluginHelper = new StubPluginHelper(httpServer);
+
+    @BeforeAll
+    static void skipRootlessImages() {
+        Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless(), "Skipping plugin tests on rootless images");
+    }
 
     private GenericContainer createContainerWithTestingPlugin(boolean asCurrentUser) {
         Testcontainers.exposeHostPorts(httpServer.PORT);
