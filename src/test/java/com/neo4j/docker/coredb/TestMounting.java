@@ -54,19 +54,19 @@ public class TestMounting {
     }
 
     static Stream<Arguments> defaultUserFlagSecurePermissionsFlag() {
-        // "asUser={0}, secureFlag={1}"
+        // "asDefaultUser={0}, secureFlag={1}"
         // expected behaviour is that if you set --user flag, your data should be read/writable
         // if you don't set --user flag then read/writability should be controlled by the secure file permissions flag
-        // the asCurrentUser=false, secureflag=true combination is tested separately because the container should fail
+        // the asDefaultUser=true, secureflag=true combination is tested separately because the container should fail
         // to start.
         return Stream.of(
-                Arguments.arguments(false, false), Arguments.arguments(true, false), Arguments.arguments(true, true));
+                Arguments.arguments(false, false), Arguments.arguments(true, false), Arguments.arguments(false, true));
     }
 
-    private GenericContainer setupBasicContainer(boolean asCurrentUser, boolean isSecurityFlagSet) {
+    private GenericContainer setupBasicContainer(boolean asDefaultUser, boolean isSecurityFlagSet) {
         log.info(
                 "Running as user {}, {}",
-                asCurrentUser ? "non-root" : "root",
+                asDefaultUser ? "root" : "non-root",
                 isSecurityFlagSet ? "with secure file permissions" : "with unsecured file permissions");
 
         GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID);
@@ -76,7 +76,7 @@ public class TestMounting {
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withEnv("NEO4J_AUTH", "none")
                 .waitingFor(WaitStrategies.waitForNeo4jReady("none"));
-        if (asCurrentUser) {
+        if (!asDefaultUser) {
             SetContainerUser.nonRootUser(container);
         }
         if (isSecurityFlagSet) {
@@ -100,10 +100,7 @@ public class TestMounting {
 
     private void verifyDataFolderContentsArePresentOnHost(Path dataMount, boolean shouldBeWritable) {
         verifySingleFolder(dataMount.resolve("databases"), shouldBeWritable);
-
-        if (TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_400)) {
-            verifySingleFolder(dataMount.resolve("transactions"), shouldBeWritable);
-        }
+        verifySingleFolder(dataMount.resolve("transactions"), shouldBeWritable);
     }
 
     private void verifyLogsFolderContentsArePresentOnHost(Path logsMount, boolean shouldBeWritable) {
@@ -117,15 +114,15 @@ public class TestMounting {
                 String.format("The debug.log file should %sbe writable", shouldBeWritable ? "" : "not "));
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest(name = "as_default_user_{0}")
     @ValueSource(booleans = {true, false})
-    void canDumpConfig(boolean asCurrentUser) throws Exception {
+    void canDumpConfig(boolean asDefaultUser) throws Exception {
         File confFile;
         Path confMount;
         String assertMsg = "Conf file was not successfully dumped when running container as "
-                + (asCurrentUser ? "current user" : "root");
+                + (asDefaultUser ? "root" : "current user");
 
-        try (GenericContainer container = setupBasicContainer(asCurrentUser, false)) {
+        try (GenericContainer container = setupBasicContainer(asDefaultUser, false)) {
             // Mount /conf
             confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             confFile = confMount.resolve("neo4j.conf").toFile();
@@ -141,7 +138,7 @@ public class TestMounting {
         // verify conf file was written
         Assertions.assertTrue(confFile.exists(), assertMsg);
         // verify conf folder does not have new owner if not running as root
-        if (asCurrentUser) {
+        if (!asDefaultUser) {
             int fileUID = (Integer) Files.getAttribute(confFile.toPath(), "unix:uid");
             int expectedUID =
                     Integer.parseInt(SetContainerUser.getNonRootUserString().split(":")[0]);
@@ -167,52 +164,52 @@ public class TestMounting {
         }
     }
 
-    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
+    @ParameterizedTest(name = "asDefaultUser={0}, secureFlag={1}")
     @MethodSource("defaultUserFlagSecurePermissionsFlag")
-    void testCanMountJustDataFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException {
+    void testCanMountJustDataFolder(boolean asDefaultUser, boolean isSecurityFlagSet) throws IOException {
         Assumptions.assumeTrue(
                 TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 1, 0)),
                 "User checks not valid before 3.1");
 
-        try (GenericContainer container = setupBasicContainer(asCurrentUser, isSecurityFlagSet)) {
+        try (GenericContainer container = setupBasicContainer(asDefaultUser, isSecurityFlagSet)) {
             Path dataMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
             container.start();
 
             // neo4j should now have started, so there'll be stuff in the data folder
             // we need to check that stuff is readable and owned by the correct user
-            verifyDataFolderContentsArePresentOnHost(dataMount, asCurrentUser);
+            verifyDataFolderContentsArePresentOnHost(dataMount, !asDefaultUser);
         }
     }
 
-    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
+    @ParameterizedTest(name = "asDefaultUser={0}, secureFlag={1}")
     @MethodSource("defaultUserFlagSecurePermissionsFlag")
-    void testCanMountJustLogsFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException {
+    void testCanMountJustLogsFolder(boolean asDefaultUser, boolean isSecurityFlagSet) throws IOException {
         Assumptions.assumeTrue(
                 TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 1, 0)),
                 "User checks not valid before 3.1");
 
-        try (GenericContainer container = setupBasicContainer(asCurrentUser, isSecurityFlagSet)) {
+        try (GenericContainer container = setupBasicContainer(asDefaultUser, isSecurityFlagSet)) {
             Path logsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             container.start();
 
-            verifyLogsFolderContentsArePresentOnHost(logsMount, asCurrentUser);
+            verifyLogsFolderContentsArePresentOnHost(logsMount, !asDefaultUser);
         }
     }
 
-    @ParameterizedTest(name = "asUser={0}, secureFlag={1}")
+    @ParameterizedTest(name = "asDefaultUser={0}, secureFlag={1}")
     @MethodSource("defaultUserFlagSecurePermissionsFlag")
-    void testCanMountDataAndLogsFolder(boolean asCurrentUser, boolean isSecurityFlagSet) throws IOException {
+    void testCanMountDataAndLogsFolder(boolean asDefaultUser, boolean isSecurityFlagSet) throws IOException {
         Assumptions.assumeTrue(
                 TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(3, 1, 0)),
                 "User checks not valid before 3.1");
 
-        try (GenericContainer container = setupBasicContainer(asCurrentUser, isSecurityFlagSet)) {
+        try (GenericContainer container = setupBasicContainer(asDefaultUser, isSecurityFlagSet)) {
             Path dataMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
             Path logsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             container.start();
 
-            verifyDataFolderContentsArePresentOnHost(dataMount, asCurrentUser);
-            verifyLogsFolderContentsArePresentOnHost(logsMount, asCurrentUser);
+            verifyDataFolderContentsArePresentOnHost(dataMount, !asDefaultUser);
+            verifyLogsFolderContentsArePresentOnHost(logsMount, !asDefaultUser);
         }
     }
 
@@ -254,10 +251,10 @@ public class TestMounting {
         }
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest(name = "as_default_user_{0}")
     @ValueSource(booleans = {true, false})
-    void canMountAllTheThings_fileMounts(boolean asCurrentUser) throws Exception {
-        try (GenericContainer container = setupBasicContainer(asCurrentUser, false)) {
+    void canMountAllTheThings_fileMounts(boolean asDefaultUser) throws Exception {
+        try (GenericContainer container = setupBasicContainer(asDefaultUser, false)) {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/import");
@@ -272,11 +269,11 @@ public class TestMounting {
         }
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest(name = "as_default_user_{0}")
     @ValueSource(booleans = {true, false})
-    void canMountAllTheThings_namedVolumes(boolean asCurrentUser) throws Exception {
+    void canMountAllTheThings_namedVolumes(boolean asDefaultUser) throws Exception {
         String id = String.format("%04d", new Random().nextInt(10000));
-        try (GenericContainer container = setupBasicContainer(asCurrentUser, false)) {
+        try (GenericContainer container = setupBasicContainer(asDefaultUser, false)) {
             container.withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd -> cmd.getHostConfig()
                     .withBinds(
                             Bind.parse("conf-" + id + ":/conf"),
@@ -298,10 +295,6 @@ public class TestMounting {
 
     @Test
     void shouldReownSubfilesToNeo4j() throws Exception {
-        Assumptions.assumeTrue(
-                TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(4, 0, 0)),
-                "User checks not valid before 4.0");
-
         Path logMount = temporaryFolderManager.createFolder("subfileownership");
         Path debugLog = logMount.resolve("debug.log");
         // put file in logMount
@@ -310,7 +303,7 @@ public class TestMounting {
         temporaryFolderManager.setFolderOwnerToNeo4j(logMount);
         temporaryFolderManager.setFolderOwnerToCurrentUser(debugLog);
 
-        try (GenericContainer container = setupBasicContainer(false, false)) {
+        try (GenericContainer container = setupBasicContainer(true, false)) {
             temporaryFolderManager.mountHostFolderAsVolume(container, logMount, "/logs");
             container.start();
             // if debug.log doesn't get re-owned, neo4j will not start and this test will fail here

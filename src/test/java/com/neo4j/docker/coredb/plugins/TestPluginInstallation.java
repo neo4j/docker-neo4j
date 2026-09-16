@@ -52,7 +52,7 @@ public class TestPluginInstallation {
         Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless(), "Skipping plugin tests on rootless images");
     }
 
-    private GenericContainer createContainerWithTestingPlugin(boolean asCurrentUser) {
+    private GenericContainer createContainerWithTestingPlugin(boolean asDefaultUser) {
         Testcontainers.exposeHostPorts(httpServer.PORT);
         GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID);
 
@@ -64,16 +64,16 @@ public class TestPluginInstallation {
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(DB_PASSWORD));
-        if (asCurrentUser) SetContainerUser.nonRootUser(container);
+        if (!asDefaultUser) SetContainerUser.nonRootUser(container);
         return container;
     }
 
     @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource(booleans = {true, false})
-    public void testPluginLoads(boolean asCurrentUser) throws Exception {
+    public void testPluginLoads(boolean asDefaultUser) throws Exception {
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
         stubPluginHelper.createStubPluginForVersion(pluginsDir, NEO4J_VERSION);
-        try (GenericContainer container = createContainerWithTestingPlugin(asCurrentUser)) {
+        try (GenericContainer container = createContainerWithTestingPlugin(asDefaultUser)) {
             container.start();
             DatabaseIO db = new DatabaseIO(container);
             stubPluginHelper.verifyStubPluginLoaded(db, DB_USER, DB_PASSWORD);
@@ -108,7 +108,7 @@ public class TestPluginInstallation {
 
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
         stubPluginHelper.createStubPluginForVersion(pluginsDir, NEO4J_VERSION);
-        try (GenericContainer container = createContainerWithTestingPlugin(false)) {
+        try (GenericContainer container = createContainerWithTestingPlugin(true)) {
             container.withEnv(Neo4jPluginEnv.PLUGIN_ENV_5X, "[\"_testing\"]");
             container.withEnv(Neo4jPluginEnv.PLUGIN_ENV_4X, "");
             container.start();
@@ -234,7 +234,7 @@ public class TestPluginInstallation {
 
     @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource(booleans = {true, false})
-    public void testPlugin_originalEntrypointLocation(boolean asCurrentUser) throws Exception {
+    public void testPlugin_originalEntrypointLocation(boolean asDefaultUser) throws Exception {
         // Older versions of Neo4j had docker-entrypoint.sh in / rather than /startup and sometimes
         // users use the old entrypoint location. This apparently caused problems loading plugins.
         Assumptions.assumeTrue(
@@ -242,7 +242,7 @@ public class TestPluginInstallation {
                 "/docker-entrypoint.sh is permanently moved from 5.0 onwards");
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
         stubPluginHelper.createStubPluginForVersion(pluginsDir, NEO4J_VERSION);
-        try (GenericContainer container = createContainerWithTestingPlugin(asCurrentUser)) {
+        try (GenericContainer container = createContainerWithTestingPlugin(asDefaultUser)) {
             container.withCreateContainerCmdModifier(
                     (Consumer<CreateContainerCmd>) cmd -> cmd.withEntrypoint("/docker-entrypoint.sh", "neo4j"));
             container.start();
@@ -253,8 +253,8 @@ public class TestPluginInstallation {
 
     @ParameterizedTest(name = "as_current_user_{0}")
     @ValueSource(booleans = {true, false})
-    void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly(boolean asCurrentUser) throws Exception {
-        try (GenericContainer container = createContainerWithTestingPlugin(asCurrentUser)) {
+    void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly(boolean asDefaultUser) throws Exception {
+        try (GenericContainer container = createContainerWithTestingPlugin(asDefaultUser)) {
             Path pluginsFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
             stubPluginHelper.createStubPluginForVersion(pluginsFolder, NEO4J_VERSION);
             container.start();

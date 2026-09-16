@@ -44,23 +44,23 @@ public class TestAdminReport {
         }
     }
 
-    private GenericContainer createNeo4jContainer(boolean asCurrentUser) {
+    private GenericContainer createNeo4jContainer(boolean asDefaultUser) {
         GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID)
                 .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")
                 .withEnv("NEO4J_AUTH", "neo4j/" + PASSWORD)
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD));
-        if (asCurrentUser) {
+        if (!asDefaultUser) {
             SetContainerUser.nonRootUser(container);
         }
         return container;
     }
 
-    @ParameterizedTest(name = "ascurrentuser_{0}")
+    @ParameterizedTest(name = "asDefaultUser_{0}")
     @ValueSource(booleans = {true, false})
-    void testMountToTmpReports(boolean asCurrentUser) throws Exception {
-        try (GenericContainer container = createNeo4jContainer(asCurrentUser)) {
+    void testMountToTmpReports(boolean asDefaultUser) throws Exception {
+        try (GenericContainer container = createNeo4jContainer(asDefaultUser)) {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             Path reportFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/tmp/reports");
             container.start();
@@ -72,29 +72,29 @@ public class TestAdminReport {
         }
     }
 
-    @ParameterizedTest(name = "ascurrentuser_{0}")
+    @ParameterizedTest(name = "asDefaultUser_{0}")
     @ValueSource(booleans = {true, false})
-    void testCanWriteReportToAnyMountedLocation_toPathWithEquals(boolean asCurrentUser) throws Exception {
+    void testCanWriteReportToAnyMountedLocation_toPathWithEquals(boolean asDefaultUser) throws Exception {
         String reportFolderName =
-                "reportAnywhere-" + (asCurrentUser ? "currentuser-" : "defaultuser-") + "withEqualsArg-";
-        verifyCanWriteToMountedLocation(asCurrentUser, reportFolderName, new String[] {
+                "reportAnywhere-" + (asDefaultUser ? "defaultuser-" : "currentuser-") + "withEqualsArg-";
+        verifyCanWriteToMountedLocation(asDefaultUser, reportFolderName, new String[] {
             "neo4j-admin-report", "--verbose", reportDestinationFlag + "=/reports"
         });
     }
 
-    @ParameterizedTest(name = "ascurrentuser_{0}")
+    @ParameterizedTest(name = "asDefaultUser_{0}")
     @ValueSource(booleans = {true, false})
-    void testCanWriteReportToAnyMountedLocation_toPathWithSpace(boolean asCurrentUser) throws Exception {
+    void testCanWriteReportToAnyMountedLocation_toPathWithSpace(boolean asDefaultUser) throws Exception {
         String reportFolderName =
-                "reportAnywhere-" + (asCurrentUser ? "currentuser-" : "defaultuser-") + "withSpaceArg-";
-        verifyCanWriteToMountedLocation(asCurrentUser, reportFolderName, new String[] {
+                "reportAnywhere-" + (asDefaultUser ? "defaultuser-" : "currentuser-") + "withSpaceArg-";
+        verifyCanWriteToMountedLocation(asDefaultUser, reportFolderName, new String[] {
             "neo4j-admin-report", "--verbose", reportDestinationFlag, "/reports"
         });
     }
 
-    private void verifyCanWriteToMountedLocation(boolean asCurrentUser, String testFolderPrefix, String[] execArgs)
+    private void verifyCanWriteToMountedLocation(boolean asDefaultUser, String testFolderPrefix, String[] execArgs)
             throws Exception {
-        try (GenericContainer container = createNeo4jContainer(asCurrentUser)) {
+        try (GenericContainer container = createNeo4jContainer(asDefaultUser)) {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             Path reportFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/reports");
             container.start();
@@ -127,7 +127,7 @@ public class TestAdminReport {
 
     @Test
     void shouldShowNeo4jAdminHelpText_whenEXEC() throws Exception {
-        try (GenericContainer container = createNeo4jContainer(false)) {
+        try (GenericContainer container = createNeo4jContainer(true)) {
             temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             container.start();
             Container.ExecResult execResult = container.execInContainer("neo4j-admin-report", "--help");
