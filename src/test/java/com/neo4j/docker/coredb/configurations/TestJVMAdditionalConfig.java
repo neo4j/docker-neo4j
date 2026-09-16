@@ -2,7 +2,7 @@ package com.neo4j.docker.coredb.configurations;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -66,7 +66,7 @@ public class TestJVMAdditionalConfig {
         try (GenericContainer container = createContainer()) {
             // Mount /conf
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             container.withEnv(JVM_ADDITIONAL_CONFIG.envName, jvmAdditionalEnv);
             // Create JvmAdditionalNotOverridden.conf file
             Path confFile = confFolder.resolve("JvmAdditionalNotOverridden.conf");
@@ -128,7 +128,7 @@ public class TestJVMAdditionalConfig {
     }
 
     void verifyJvmAdditional(GenericContainer container, String... expectedValues) {
-        SetContainerUser.nonRootUser(container);
+        SetUserHelper.containerAsNonRootUser(container);
         // Start the container
         container.start();
         // verify setting correctly loaded into neo4j

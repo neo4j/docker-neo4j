@@ -5,7 +5,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Bind;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -77,7 +77,7 @@ public class TestMounting {
                 .withEnv("NEO4J_AUTH", "none")
                 .waitingFor(WaitStrategies.waitForNeo4jReady("none"));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         if (isSecurityFlagSet) {
             container.withEnv("SECURE_FILE_PERMISSIONS", "yes");
@@ -141,7 +141,7 @@ public class TestMounting {
         if (!asDefaultUser) {
             int fileUID = (Integer) Files.getAttribute(confFile.toPath(), "unix:uid");
             int expectedUID =
-                    Integer.parseInt(SetContainerUser.getNonRootUserString().split(":")[0]);
+                    Integer.parseInt(SetUserHelper.getNonRootUserString().split(":")[0]);
             Assertions.assertEquals(
                     expectedUID, fileUID, "Owner of dumped conf file is not the currently running user");
         }
@@ -300,8 +300,8 @@ public class TestMounting {
         // put file in logMount
         Files.write(debugLog, "some log words".getBytes());
         // make neo4j own the conf folder but NOT the neo4j.conf
-        temporaryFolderManager.setFolderOwnerToNeo4j(logMount);
-        temporaryFolderManager.setFolderOwnerToCurrentUser(debugLog);
+        SetUserHelper.setFolderOwnerToNeo4j(logMount);
+        SetUserHelper.setFolderOwnerToCurrentUser(debugLog);
 
         try (GenericContainer container = setupBasicContainer(true, false)) {
             temporaryFolderManager.mountHostFolderAsVolume(container, logMount, "/logs");

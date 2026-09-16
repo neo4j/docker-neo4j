@@ -4,6 +4,7 @@ import com.neo4j.docker.utils.BaseOS;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HelperContainers;
 import com.neo4j.docker.utils.SSLCertificateFactory;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -97,7 +98,7 @@ public class TestSSL {
                 add(PosixFilePermission.GROUP_READ);
             }
         });
-        temporaryFolderManager.setFolderOwnerToNeo4j(conf.resolve("neo4j.conf"));
+        SetUserHelper.setFolderOwnerToNeo4j(conf.resolve("neo4j.conf"));
         return certificates;
     }
 

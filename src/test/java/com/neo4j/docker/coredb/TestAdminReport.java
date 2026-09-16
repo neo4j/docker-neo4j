@@ -3,7 +3,7 @@ package com.neo4j.docker.coredb;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jAssertions;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -52,7 +52,7 @@ public class TestAdminReport {
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }

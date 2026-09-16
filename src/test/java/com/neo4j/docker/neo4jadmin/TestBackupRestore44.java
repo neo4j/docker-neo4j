@@ -4,7 +4,7 @@ import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -59,7 +59,7 @@ public class TestBackupRestore44 {
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(password));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }
@@ -69,7 +69,7 @@ public class TestBackupRestore44 {
         container.withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes").withLogConsumer(new Slf4jLogConsumer(log));
         WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(180));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }

@@ -8,7 +8,7 @@ import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.HttpServerTestExtension;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -64,7 +64,7 @@ public class TestPluginInstallation {
                 .withExposedPorts(7474, 7687)
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(DB_PASSWORD));
-        if (!asDefaultUser) SetContainerUser.nonRootUser(container);
+        if (!asDefaultUser) SetUserHelper.containerAsNonRootUser(container);
         return container;
     }
 

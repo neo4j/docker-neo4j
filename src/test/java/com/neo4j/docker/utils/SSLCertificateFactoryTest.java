@@ -16,9 +16,9 @@ import org.testcontainers.containers.GenericContainer;
 @Disabled
 public class SSLCertificateFactoryTest {
     private static final int NEO4J_USER_ID =
-            Integer.parseInt(SetContainerUser.getNeo4jUserString().split(":")[0]);
+            Integer.parseInt(SetUserHelper.getNeo4jUserString().split(":")[0]);
     private static final int CURRENT_USER_ID =
-            Integer.parseInt(SetContainerUser.getNonRootUserString().split(":")[0]);
+            Integer.parseInt(SetUserHelper.getNonRootUserString().split(":")[0]);
 
     @RegisterExtension
     TemporaryFolderManager folderManager = new TemporaryFolderManager();

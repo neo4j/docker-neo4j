@@ -1,7 +1,7 @@
 package com.neo4j.docker.coredb.configurations;
 
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -95,7 +95,7 @@ public class TestExtendedConf {
         Path confFile = testConfsFolder.resolve("ExtendedConf.conf");
         Files.copy(confFile, confFolder.resolve("neo4j.conf"));
         chmodConfFilePermissions(confFolder.resolve("neo4j.conf"));
-        temporaryFolderManager.setFolderOwnerToNeo4j(confFolder.resolve("neo4j.conf"));
+        SetUserHelper.setFolderOwnerToNeo4j(confFolder.resolve("neo4j.conf"));
 
         // start  container
         try (GenericContainer container = createContainer(password)) {
@@ -114,7 +114,7 @@ public class TestExtendedConf {
         chmodConfFilePermissions(confFolder.resolve("neo4j.conf"));
 
         try (GenericContainer container = createContainer(password)) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             container.withFileSystemBind("/etc/passwd", "/etc/passwd", BindMode.READ_ONLY);
             container.withFileSystemBind("/etc/group", "/etc/group", BindMode.READ_ONLY);
             temporaryFolderManager.mountHostFolderAsVolume(container, confFolder, "/conf");
@@ -159,7 +159,7 @@ public class TestExtendedConf {
         chmodConfFilePermissions(confFolder.resolve("neo4j.conf"));
 
         try (GenericContainer container = createContainer(password)) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             container.withFileSystemBind("/etc/passwd", "/etc/passwd", BindMode.READ_ONLY);
             container.withFileSystemBind("/etc/group", "/etc/group", BindMode.READ_ONLY);
             runContainerAndVerify(container, confFolder, logsFolder, password);

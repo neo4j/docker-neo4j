@@ -45,12 +45,12 @@ public class SSLCertificateFactory {
     }
 
     public SSLCertificateFactory withOwnerNeo4j() {
-        this.owner = SetContainerUser.getNeo4jUserString();
+        this.owner = SetUserHelper.getNeo4jUserString();
         return this;
     }
 
     public SSLCertificateFactory withOwnerNonRootUser() {
-        this.owner = SetContainerUser.getNonRootUserString();
+        this.owner = SetUserHelper.getNonRootUserString();
         return this;
     }
 
@@ -109,7 +109,7 @@ public class SSLCertificateFactory {
             container.execInContainer(
                     "cp", mountpoint + "/" + CERTIFICATE_FILENAME, mountpoint + "/" + CLIENT_CERTIFICATE_FILENAME);
             container.execInContainer(
-                    "chown", SetContainerUser.getNonRootUserString(), mountpoint + "/" + CLIENT_CERTIFICATE_FILENAME);
+                    "chown", SetUserHelper.getNonRootUserString(), mountpoint + "/" + CLIENT_CERTIFICATE_FILENAME);
             container.execInContainer(
                     "sh", "-c", String.format("cd %s; rm -rf %s/%s", mountpoint, mountpoint, scriptPath.getFileName()));
         }
