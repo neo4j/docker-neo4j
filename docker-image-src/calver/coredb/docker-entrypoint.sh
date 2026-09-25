@@ -474,10 +474,6 @@ The old name will still work, but is likely to be deprecated in future releases.
 fi
 
 # ==== CHECK FILE PERMISSIONS ON MOUNTED FOLDERS ====
-echo "Contents of neo4j home are:"
-ls -la ${NEO4J_HOME}
-echo "Contents of neo4j home/conf are:"
-ls -la ${NEO4J_HOME}/conf
 
 if [ -d /conf ]; then
     check_mounted_folder_readable "/conf"
