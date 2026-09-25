@@ -103,6 +103,9 @@ public class TestBackupRestore {
         // start a database and populate data
         try (GenericContainer neo4j = createDBContainer(asDefaultUser, password)) {
             Path dataDir = temporaryFolderManager.createFolderAndMountAsVolume(neo4j, "/data");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(dataDir);
+            }
             neo4j.start();
             DatabaseIO dbio = new DatabaseIO(neo4j);
             dbio.putInitialDataIntoContainer(dbUser, password);
@@ -124,6 +127,9 @@ public class TestBackupRestore {
                                 "neo4j");
 
                 backupDir = temporaryFolderManager.createFolderAndMountAsVolume(adminBackup, "/backups");
+                if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                    SetUserHelper.setFolderOwnerToNeo4j(backupDir);
+                }
                 adminBackup.start();
 
                 Assertions.assertTrue(neo4j.isRunning(), "neo4j container should still be running");
@@ -157,8 +163,8 @@ public class TestBackupRestore {
                                 "--overwrite-destination=true",
                                 "--from-path=/backups/" + backupFile.getName(),
                                 "neo4j");
-                temporaryFolderManager.mountHostFolderAsVolume(adminRestore, backupDir, "/backups");
-                temporaryFolderManager.mountHostFolderAsVolume(adminRestore, dataDir, "/data");
+                TemporaryFolderManager.mountHostFolderAsVolume(adminRestore, backupDir, "/backups");
+                TemporaryFolderManager.mountHostFolderAsVolume(adminRestore, dataDir, "/data");
                 adminRestore.start();
                 dbio.runCypherQuery(dbUser, password, "START DATABASE neo4j", "system");
 

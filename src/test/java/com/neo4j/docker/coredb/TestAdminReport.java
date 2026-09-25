@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,6 +35,11 @@ public class TestAdminReport {
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     private static String reportDestinationFlag;
+
+    @BeforeAll
+    static void skipRootless() {
+        Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless());
+    }
 
     @BeforeAll
     static void setCorrectPathFlagForVersion() {

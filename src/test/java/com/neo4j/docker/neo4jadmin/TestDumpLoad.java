@@ -95,6 +95,9 @@ public class TestDumpLoad {
         // start a database and populate it
         try (GenericContainer container = createDBContainer(asDefaultUser, password)) {
             firstDataDir = temporaryFolderManager.createNamedFolderAndMountAsVolume(container, "data1", "/data");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(firstDataDir);
+            }
             container.start();
             DatabaseIO dbio = new DatabaseIO(container);
             dbio.putInitialDataIntoContainer("neo4j", password);
@@ -109,6 +112,9 @@ public class TestDumpLoad {
         try (GenericContainer admin = createAdminContainer(asDefaultUser)) {
             temporaryFolderManager.mountHostFolderAsVolume(admin, firstDataDir, "/data");
             backupDir = temporaryFolderManager.createFolderAndMountAsVolume(admin, "/backups");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(backupDir);
+            }
             admin.withCommand("neo4j-admin", "database", "dump", "neo4j", "--to-path=/backups");
             admin.start();
         }
@@ -118,6 +124,9 @@ public class TestDumpLoad {
         // use admin container to create dump
         try (GenericContainer admin = createAdminContainer(asDefaultUser)) {
             secondDataDir = temporaryFolderManager.createNamedFolderAndMountAsVolume(admin, "data2", "/data");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(secondDataDir);
+            }
             temporaryFolderManager.mountHostFolderAsVolume(admin, backupDir, "/backups");
             admin.withCommand("neo4j-admin", "database", "load", "neo4j", "--from-path=/backups");
             admin.start();

@@ -2,6 +2,7 @@ package com.neo4j.docker.coredb.plugins;
 
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -114,6 +115,9 @@ public class TestBundledPluginInstallation {
         try {
             container = createContainerWithBundledPlugin(plugin);
             pluginsMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
+            if (TestSettings.BASE_OS.isRootless()) {
+                SetUserHelper.setFolderOwnerToNeo4j(pluginsMount);
+            }
             container.start();
             DatabaseIO dbio = new DatabaseIO(container);
             dbio.putInitialDataIntoContainer("neo4j", "none");
@@ -158,8 +162,6 @@ public class TestBundledPluginInstallation {
             container
                     .withEnv("NEO4J_AUTH", "neo4j/" + PASSWORD)
                     .withEnv("NEO4J_dbms_bloom_license__file", "/licenses/bloom.license");
-            // mounting logs because it's useful for debugging
-            temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             Path licenseFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/licenses");
             Files.writeString(licenseFolder.resolve("bloom.license"), "notareallicense");
             // make sure the container successfully starts and we can write to it without getting authentication errors

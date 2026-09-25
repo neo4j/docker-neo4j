@@ -1,4 +1,4 @@
-package com.neo4j.docker.coredb;
+package com.neo4j.docker.rootless;
 
 import com.neo4j.docker.utils.BaseOS;
 import com.neo4j.docker.utils.DatabaseIO;

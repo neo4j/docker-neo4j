@@ -40,6 +40,11 @@ public class TestExtendedConf {
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
 
     @BeforeAll
+    static void skipRootless() {
+        Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless());
+    }
+
+    @BeforeAll
     static void ensureFeaturePresent() {
         Assumptions.assumeTrue(
                 TestSettings.NEO4J_VERSION.isNewerThan(new Neo4jVersion(4, 2, 0)),

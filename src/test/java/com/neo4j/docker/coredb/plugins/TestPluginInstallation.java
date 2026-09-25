@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,11 +46,6 @@ public class TestPluginInstallation {
 
     StubPluginHelper stubPluginHelper = new StubPluginHelper(httpServer);
 
-    @BeforeAll
-    static void skipRootlessImages() {
-        Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless(), "Skipping plugin tests on rootless images");
-    }
-
     private GenericContainer createContainerWithTestingPlugin(boolean asDefaultUser) {
         Testcontainers.exposeHostPorts(httpServer.PORT);
         GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID);
@@ -68,7 +62,7 @@ public class TestPluginInstallation {
         return container;
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest(name = "as_default_user_{0}")
     @ValueSource(booleans = {true, false})
     public void testPluginLoads(boolean asDefaultUser) throws Exception {
         Path pluginsDir = temporaryFolderManager.createFolder("plugins");
@@ -232,7 +226,7 @@ public class TestPluginInstallation {
         }
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest(name = "as_default_user_{0}")
     @ValueSource(booleans = {true, false})
     public void testPlugin_originalEntrypointLocation(boolean asDefaultUser) throws Exception {
         // Older versions of Neo4j had docker-entrypoint.sh in / rather than /startup and sometimes
@@ -251,11 +245,14 @@ public class TestPluginInstallation {
         }
     }
 
-    @ParameterizedTest(name = "as_current_user_{0}")
+    @ParameterizedTest(name = "as_default_user_{0}")
     @ValueSource(booleans = {true, false})
     void testPluginIsMovedToMountedFolderAndIsLoadedCorrectly(boolean asDefaultUser) throws Exception {
         try (GenericContainer container = createContainerWithTestingPlugin(asDefaultUser)) {
             Path pluginsFolder = temporaryFolderManager.createFolderAndMountAsVolume(container, "/plugins");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(pluginsFolder);
+            }
             stubPluginHelper.createStubPluginForVersion(pluginsFolder, NEO4J_VERSION);
             container.start();
             Assertions.assertTrue(

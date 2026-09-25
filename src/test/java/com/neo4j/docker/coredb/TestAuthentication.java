@@ -55,13 +55,16 @@ public class TestAuthentication {
     }
 
     @Test
-    void testNoPassword() throws IOException {
+    void testNoPassword() throws Exception {
         // we test that setting NEO4J_AUTH to "none" lets the database start in TestBasic.java,
         // but that does not test that we can read/write the database
         try (GenericContainer container = createContainer(true)) {
             container.withEnv("NEO4J_AUTH", "none");
-            temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
-            temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
+            Path data = temporaryFolderManager.createFolderAndMountAsVolume(container, "/data");
+            Path logs = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
+            if (TestSettings.BASE_OS.isRootless()) {
+                SetUserHelper.setFolderOwnerToNeo4j(data, logs);
+            }
 
             container.start();
             DatabaseIO db = new DatabaseIO(container);
@@ -126,6 +129,9 @@ public class TestAuthentication {
                     .withEnv("NEO4J_AUTH", "neo4j/" + password)
                     .waitingFor(WaitStrategies.waitForNeo4jReady(password));
             dataMount = temporaryFolderManager.createFolderAndMountAsVolume(firstContainer, "/data");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(dataMount);
+            }
             log.info(String.format(
                     "Starting first container as %s user and setting password", asDefaultUser ? "default" : "current"));
             // create a database with stuff in
@@ -228,7 +234,9 @@ public class TestAuthentication {
                     .withEnv("NEO4J_AUTH", "neo4j/" + password)
                     .waitingFor(WaitStrategies.waitForNeo4jReady(password));
             dataMount = temporaryFolderManager.createFolderAndMountAsVolume(firstContainer, "/data");
-
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(dataMount);
+            }
             // create a database with stuff in
             log.info(String.format(
                     "Starting first container as %s user and setting password", asDefaultUser ? "default" : "current"));
