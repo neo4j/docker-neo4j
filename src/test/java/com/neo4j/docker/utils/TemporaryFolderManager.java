@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -22,10 +21,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 /**JUnit extension to create temporary folders and compress them after each test class runs.
  * <p>
@@ -169,15 +165,18 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         log.debug(
                 "Re owning folders: {}",
                 toCompressAfterAll.stream().map(Path::toString).collect(Collectors.joining(", ")));
-        setFolderOwnerTo(
-                SetContainerUser.getNonRootUserString(),
-                toCompressAfterAll.toArray(new Path[toCompressAfterAll.size()]));
+        SetUserHelper.setFolderOwnerToCurrentUser(toCompressAfterAll.toArray(new Path[toCompressAfterAll.size()]));
 
         for (Path p : toCompressAfterAll) {
             log.debug("Deleting test output folder {}", p.getFileName().toString());
             FileUtils.deleteDirectory(p.toFile());
         }
         toCompressAfterAll.clear();
+    }
+
+    public static void mountHostFolderAsVolume(
+            GenericContainer container, Path hostFolder, String containerMountPoint) {
+        container.withFileSystemBind(hostFolder.toAbsolutePath().toString(), containerMountPoint, BindMode.READ_WRITE);
     }
 
     public Path createNamedFolderAndMountAsVolume(
@@ -192,28 +191,6 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         Path tempFolder = createFolder(getFolderNameFromMountPoint(containerMountPoint));
         mountHostFolderAsVolume(container, tempFolder, containerMountPoint);
         return tempFolder;
-    }
-
-    //    public Path createNamedFolderAndMountAsVolume( GenericContainer container, String hostFolderName,
-    //                                                   Path parentFolder, String containerMountPoint ) throws
-    // IOException
-    //    {
-    //        Path tempFolder = createFolder( hostFolderName, parentFolder );
-    //        mountHostFolderAsVolume( container, tempFolder, containerMountPoint );
-    //        return tempFolder;
-    //    }
-
-    //    public Path createFolderAndMountAsVolume( GenericContainer container, String containerMountPoint, Path
-    // parentFolder ) throws IOException
-    //    {
-    //        return null;
-    //        Path hostFolder = createTempFolder( hostFolderNamePrefix, parentFolder );
-    //        mountHostFolderAsVolume( container, hostFolder, containerMountPoint );
-    //        return hostFolder;
-    //    }
-
-    public void mountHostFolderAsVolume(GenericContainer container, Path hostFolder, String containerMountPoint) {
-        container.withFileSystemBind(hostFolder.toAbsolutePath().toString(), containerMountPoint, BindMode.READ_WRITE);
     }
 
     public Path createFolder(String folderName) throws IOException {
@@ -239,33 +216,7 @@ public class TemporaryFolderManager implements AfterAllCallback, BeforeEachCallb
         return hostFolder;
     }
 
-    public void setFolderOwnerToCurrentUser(Path file) throws Exception {
-        setFolderOwnerTo(SetContainerUser.getNonRootUserString(), file);
-    }
-
-    public void setFolderOwnerToNeo4j(Path file) throws Exception {
-        setFolderOwnerTo("7474:7474", file);
-    }
-
     protected String getFolderNameFromMountPoint(String containerMountPoint) {
         return containerMountPoint.substring(1).replace('/', '_').replace(' ', '_');
-    }
-
-    private void setFolderOwnerTo(String userAndGroup, Path... files) throws Exception {
-        // uses docker privileges to set file owner, since probably the current user is not a sudoer.
-
-        // Using nginx because it's easy to verify that the image started.
-        try (GenericContainer container = new GenericContainer(DockerImageName.parse("nginx:latest"))) {
-            container.withExposedPorts(80).waitingFor(Wait.forHttp("/").withStartupTimeout(Duration.ofSeconds(20)));
-            for (Path p : files) {
-                mountHostFolderAsVolume(container, p, p.toAbsolutePath().toString());
-            }
-            container.start();
-            for (Path p : files) {
-                Container.ExecResult x = container.execInContainer(
-                        "chown", "-R", userAndGroup, p.toAbsolutePath().toString());
-            }
-            container.stop();
-        }
     }
 }

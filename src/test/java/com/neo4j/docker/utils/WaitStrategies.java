@@ -16,8 +16,6 @@ public class WaitStrategies {
 
     private static final Duration STARTUP_TIMEOUT_SECONDS = Duration.ofSeconds(180);
 
-    private WaitStrategies() {}
-
     public static WaitStrategy waitForNeo4jReady(String username, String password, String database, Duration timeout) {
         if (TestSettings.EDITION == TestSettings.Edition.ENTERPRISE
                 && TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500)) {

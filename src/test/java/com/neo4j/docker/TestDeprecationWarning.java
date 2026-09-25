@@ -43,6 +43,11 @@ public class TestDeprecationWarning {
         Assumptions.assumeTrue(TestSettings.BASE_OS.isDeprecatedOs(), "Tests only valid for deprecated base images");
     }
 
+    @BeforeAll
+    static void skipRootless() {
+        Assumptions.assumeFalse(TestSettings.BASE_OS.isRootless());
+    }
+
     @BeforeEach
     void findDeprecatedInVersion() {
         if (TestSettings.NEO4J_VERSION.isCalver()) {

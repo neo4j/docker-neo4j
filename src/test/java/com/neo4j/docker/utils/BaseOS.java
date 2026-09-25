@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Assertions;
 public enum BaseOS {
     // debian
     TRIXIE("trixie", null, null),
+    TRIXIE_ROOTLESS("trixie-rootless", null, null),
     BULLSEYE("bullseye", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 24)),
     // redhat
     UBI10("ubi10", null, null),
+    UBI10_ROOTLESS("ubi10-rootless", null, null),
     UBI9("ubi9", new Neo4jVersion(2026, 4, 0), new Neo4jVersion(5, 26, 24)),
     UBI8("ubi8", new Neo4jVersion(2024, 1, 0), new Neo4jVersion(5, 20, 0)),
     ;
@@ -30,6 +32,13 @@ public enum BaseOS {
         };
     }
 
+    public boolean isRootless() {
+        return switch (this) {
+            case TRIXIE_ROOTLESS, UBI10_ROOTLESS -> true;
+            default -> false;
+        };
+    }
+
     public boolean hasDeprecationWarningUntil(Neo4jVersion other) {
         Neo4jVersion deprecatedIn;
         switch (other.major) {
@@ -45,10 +54,14 @@ public enum BaseOS {
         switch (name.toLowerCase()) {
             case "debian", "trixie":
                 return BaseOS.TRIXIE;
+            case "trixie-rootless":
+                return BaseOS.TRIXIE_ROOTLESS;
             case "bullseye":
                 return BaseOS.BULLSEYE;
             case "ubi10":
                 return BaseOS.UBI10;
+            case "ubi10-rootless":
+                return BaseOS.UBI10_ROOTLESS;
             case "ubi9":
                 return BaseOS.UBI9;
             case "ubi8":

@@ -4,7 +4,7 @@ import com.neo4j.docker.coredb.configurations.Configuration;
 import com.neo4j.docker.coredb.configurations.Setting;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -60,7 +60,7 @@ public class TestBackupRestore {
                 .withLogConsumer(new Slf4jLogConsumer(log))
                 .waitingFor(WaitStrategies.waitForNeo4jReady(password));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }
@@ -70,7 +70,7 @@ public class TestBackupRestore {
         container.withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes").withLogConsumer(new Slf4jLogConsumer(log));
         WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(180));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }
@@ -103,6 +103,9 @@ public class TestBackupRestore {
         // start a database and populate data
         try (GenericContainer neo4j = createDBContainer(asDefaultUser, password)) {
             Path dataDir = temporaryFolderManager.createFolderAndMountAsVolume(neo4j, "/data");
+            if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                SetUserHelper.setFolderOwnerToNeo4j(dataDir);
+            }
             neo4j.start();
             DatabaseIO dbio = new DatabaseIO(neo4j);
             dbio.putInitialDataIntoContainer(dbUser, password);
@@ -124,6 +127,9 @@ public class TestBackupRestore {
                                 "neo4j");
 
                 backupDir = temporaryFolderManager.createFolderAndMountAsVolume(adminBackup, "/backups");
+                if (TestSettings.BASE_OS.isRootless() && asDefaultUser) {
+                    SetUserHelper.setFolderOwnerToNeo4j(backupDir);
+                }
                 adminBackup.start();
 
                 Assertions.assertTrue(neo4j.isRunning(), "neo4j container should still be running");
@@ -157,8 +163,8 @@ public class TestBackupRestore {
                                 "--overwrite-destination=true",
                                 "--from-path=/backups/" + backupFile.getName(),
                                 "neo4j");
-                temporaryFolderManager.mountHostFolderAsVolume(adminRestore, backupDir, "/backups");
-                temporaryFolderManager.mountHostFolderAsVolume(adminRestore, dataDir, "/data");
+                TemporaryFolderManager.mountHostFolderAsVolume(adminRestore, backupDir, "/backups");
+                TemporaryFolderManager.mountHostFolderAsVolume(adminRestore, dataDir, "/data");
                 adminRestore.start();
                 dbio.runCypherQuery(dbUser, password, "START DATABASE neo4j", "system");
 

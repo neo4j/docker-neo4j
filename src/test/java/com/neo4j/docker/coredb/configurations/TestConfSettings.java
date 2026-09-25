@@ -3,7 +3,7 @@ package com.neo4j.docker.coredb.configurations;
 import com.neo4j.docker.coredb.plugins.Neo4jPluginEnv;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -56,7 +56,7 @@ public class TestConfSettings {
     }
 
     private GenericContainer makeContainerDumpConfig(GenericContainer container) {
-        SetContainerUser.nonRootUser(container);
+        SetUserHelper.containerAsNonRootUser(container);
         container.setCommand("dump-config");
         WaitStrategies.waitUntilContainerFinished(container, Duration.ofSeconds(30));
         return container;
@@ -160,7 +160,7 @@ public class TestConfSettings {
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             debugLog = logMount.resolve("debug.log");
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // Create ReadConf.conf file with the custom env variables
             Path confFile = confFolder.resolve("ReadConf.conf");
             Files.copy(confFile, confMount.resolve("neo4j.conf"));
@@ -177,7 +177,7 @@ public class TestConfSettings {
         try (GenericContainer container = createContainer().waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD))) {
             // Mount /logs
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // Start the container
             container.start();
             DatabaseIO dbio = new DatabaseIO(container);
@@ -216,7 +216,7 @@ public class TestConfSettings {
             // Mount /conf
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             conf = confMount.resolve("neo4j.conf").toFile();
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // Create ConfsReplaced.conf file in mounted folder
             Files.copy(confFolder.resolve("ConfsReplaced.conf"), conf.toPath());
             makeContainerDumpConfig(container);
@@ -241,7 +241,7 @@ public class TestConfSettings {
             // Mount /conf
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             conf = confMount.resolve("neo4j.conf").toFile();
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // Create ConfsNotOverridden.conf file
             Path confFile = confFolder.resolve("ConfsNotOverridden.conf");
             Files.copy(confFile, confMount.resolve("neo4j.conf"));
@@ -283,7 +283,7 @@ public class TestConfSettings {
 
         try (GenericContainer container = createContainer()) {
             logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // set configurations using old config names
             for (Setting s : expectedValues.keySet()) {
                 container.withEnv(oldConfMap.get(s).envName, expectedValues.get(s));
@@ -315,7 +315,7 @@ public class TestConfSettings {
             Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             debugLog = logMount.resolve("debug.log");
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // Create EnvVarsOverride.conf file
             Path confFile = confFolder.resolve("EnvVarsOverride.conf");
             Files.copy(confFile, confMount.resolve("neo4j.conf"));
@@ -339,7 +339,7 @@ public class TestConfSettings {
             Files.copy(confFile, confMount.resolve("neo4j.conf"));
 
             // Start the container
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             container.start();
             // Read debug.log to check that cluster confs are set successfully
             assertConfigurationPresentInDebugLog(
@@ -382,7 +382,7 @@ public class TestConfSettings {
             // Mount /logs
             Path logMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/logs");
             debugLog = logMount.resolve("debug.log");
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
             // Start the container
             container.start();
         }
