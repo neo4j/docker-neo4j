@@ -475,7 +475,6 @@ fi
 
 # ==== CHECK FILE PERMISSIONS ON MOUNTED FOLDERS ====
 
-
 if [ -d /conf ]; then
     check_mounted_folder_readable "/conf"
     rm -rf "${NEO4J_HOME}"/conf/*

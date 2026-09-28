@@ -455,7 +455,7 @@ class TemporaryFolderManagerTest {
         Path tempFolder = manager.createFolder("tozip");
         Files.writeString(tempFolder.resolve("testfile"), "words");
 
-        manager.setFolderOwnerToNeo4j(tempFolder);
+        SetUserHelper.setFolderOwnerToNeo4j(tempFolder);
         // verify expected folder owner
         Integer fileUID = (Integer) Files.getAttribute(tempFolder, "unix:uid");
         Assertions.assertEquals(7474, fileUID.intValue(), "Did not successfully set the owner of " + tempFolder);
@@ -475,7 +475,7 @@ class TemporaryFolderManagerTest {
         Files.writeString(tempFolder7474.resolve("testfile"), "words");
         Files.writeString(tempFolderNormal.resolve("testfile"), "words");
 
-        manager.setFolderOwnerToNeo4j(tempFolder7474);
+        SetUserHelper.setFolderOwnerToNeo4j(tempFolder7474);
         Integer fileUID = (Integer) Files.getAttribute(tempFolder7474, "unix:uid");
         Assertions.assertEquals(7474, fileUID.intValue(), "Did not successfully set the owner of " + tempFolder7474);
 

@@ -3,7 +3,7 @@ package com.neo4j.docker.neo4jadmin;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.neo4j.docker.utils.DatabaseIO;
 import com.neo4j.docker.utils.Neo4jVersion;
-import com.neo4j.docker.utils.SetContainerUser;
+import com.neo4j.docker.utils.SetUserHelper;
 import com.neo4j.docker.utils.TemporaryFolderManager;
 import com.neo4j.docker.utils.TestSettings;
 import com.neo4j.docker.utils.WaitStrategies;
@@ -57,7 +57,7 @@ public class TestDumpLoad44 {
                 .withCreateContainerCmdModifier((Consumer<CreateContainerCmd>)
                         cmd -> cmd.withStopSignal("SIGTERM").withStopTimeout(20));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }
@@ -71,7 +71,7 @@ public class TestDumpLoad44 {
                 .waitingFor(new LogMessageWaitStrategy().withRegEx("^Done: \\d+ files, [\\d\\.,]+[KMGi]*B processed.*"))
                 .withStartupCheckStrategy(new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(90)));
         if (!asDefaultUser) {
-            SetContainerUser.nonRootUser(container);
+            SetUserHelper.containerAsNonRootUser(container);
         }
         return container;
     }
