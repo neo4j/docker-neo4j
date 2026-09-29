@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -38,7 +37,7 @@ public class TestSemVerPluginMatching {
     StubPluginHelper stubPluginHelper = new StubPluginHelper(httpServer);
 
     private GenericContainer<?> createContainerWithTestPlugin() {
-        Testcontainers.exposeHostPorts(httpServer.PORT);
+        httpServer.exposeToContainers();
         GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID);
 
         container
