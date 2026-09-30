@@ -164,6 +164,11 @@ mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-enterprise) -Dadminimage
 mvn test -Dimage=$(cat build/<BASE OS>/coredb/.image-id-community) -Dadminimage=$(cat build/<BASE OS>/neo4j-admin/.image-id-community) -Dedition=community -Dversion=${NEO4JVERSION}
 ```
 
+### Running test classes in parallel
+Add `-DforkCount=<N>` to run test classes in N separate JVMs at once.
+Each fork runs one class at a time, so expect at least N Neo4j containers running concurrently, and size N to the machine's CPU and memory.
+Do not enable JUnit's in-JVM parallel execution as the test utilities are **not** thread safe.
+
 ## In Intellij
 
 1. Make sure the project SDK is java 21.

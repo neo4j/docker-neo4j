@@ -33,7 +33,7 @@ public class StubPluginHelper {
         VersionsJsonEntry(String neo4j, String jar) {
             this.neo4j = neo4j;
             this._testing = "SNAPSHOT";
-            this.jar = "http://host.testcontainers.internal:3000/" + jar;
+            this.jar = jar;
         }
     }
 
@@ -97,7 +97,7 @@ public class StubPluginHelper {
 
     private File createVersionsJson(Path destinationFolder, Map<String, String> versionAndJar) throws IOException {
         List<VersionsJsonEntry> jsonEntries = versionAndJar.keySet().stream()
-                .map(key -> new VersionsJsonEntry(key, versionAndJar.get(key)))
+                .map(key -> new VersionsJsonEntry(key, httpServer.getContainerAccessibleUrl() + versionAndJar.get(key)))
                 .collect(Collectors.toList());
         Gson jsonBuilder = new Gson();
         String jsonStr = jsonBuilder.toJson(jsonEntries);

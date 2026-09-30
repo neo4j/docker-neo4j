@@ -25,7 +25,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -47,7 +46,7 @@ public class TestPluginInstallation {
     StubPluginHelper stubPluginHelper = new StubPluginHelper(httpServer);
 
     private GenericContainer createContainerWithTestingPlugin(boolean asCurrentUser) {
-        Testcontainers.exposeHostPorts(httpServer.PORT);
+        httpServer.exposeToContainers();
         GenericContainer container = new GenericContainer(TestSettings.IMAGE_ID);
 
         container
@@ -203,8 +202,8 @@ public class TestPluginInstallation {
             container.start();
             String startupErrors = container.getLogs(OutputFrame.OutputType.STDERR);
             Assertions.assertTrue(
-                    startupErrors.contains(
-                            "could not query http://host.testcontainers.internal:3000/versions.json for plugin compatibility information"),
+                    startupErrors.contains("could not query " + httpServer.getContainerAccessibleUrl()
+                            + "versions.json for plugin compatibility information"),
                     "Did not error about missing versions.json. Actual errors:\n\"" + startupErrors + "\"");
             Assertions.assertFalse(
                     startupErrors.contains("No compatible \"_testing\" plugin found for Neo4j " + NEO4J_VERSION),
