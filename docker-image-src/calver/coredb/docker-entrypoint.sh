@@ -195,7 +195,7 @@ function apply_plugin_default_configuration
         debug_msg "${_plugin_name} requires setting ${_property}=${_value}"
 
         # the first grep strips out comments
-        if grep -o "^[^#]*" "${_reference_conf}" | grep -q --fixed-strings "${_property}=" ; then
+        if grep -o "^[^#]*" "${_reference_conf}" | grep -q "^[[:space:]]*${_property}[[:space:]]*=" ; then
             # property is already set in the user provided config. In this case we don't override what has been set explicitly by the user.
             echo "Skipping ${_property} for plugin ${_plugin_name} because it is already set."
             echo "You may need to add ${_value} to the ${_property} setting in your configuration file."
@@ -257,7 +257,7 @@ function add_docker_default_to_conf
     local _setting="${1}"
     local _value="${2}"
 
-    if [ ! -e "${NEO4J_HOME}"/conf/neo4j.conf ] || ! grep -q "^${_setting}=" "${NEO4J_HOME}"/conf/neo4j.conf
+    if [ ! -e "${NEO4J_HOME}"/conf/neo4j.conf ] || ! grep -q "^[[:space:]]*${_setting}[[:space:]]*=" "${NEO4J_HOME}"/conf/neo4j.conf
     then
         debug_msg "Appended ${_setting}=${_value} to ${NEO4J_HOME}/conf/neo4j.conf"
         echo -e "\n"${_setting}=${_value} >> "${NEO4J_HOME}"/conf/neo4j.conf
@@ -282,13 +282,13 @@ function add_env_setting_to_conf
         ;;
     esac
 
-    if [ -e "${_conf_file}" ] && grep -q -F "${_setting}=" "${_conf_file}"; then
+    if [ -e "${_conf_file}" ] && grep -q "^[[:space:]]*${_setting}[[:space:]]*=" "${_conf_file}"; then
         if containsElement "${_setting}" "${_append_not_replace_configs[@]}"; then
             debug_msg "${_setting} will be appended to ${_conf_file} without replacing existing settings."
         else
             # Remove any lines containing the setting already
             debug_msg "Removing existing setting for ${_setting} in ${_conf_file}"
-            sed --in-place "/^${_setting}=.*/d" "${_conf_file}"
+            sed --in-place "/^[[:space:]]*${_setting}[[:space:]]*=.*/d" "${_conf_file}"
         fi
     fi
     # Then always append setting to file
