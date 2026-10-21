@@ -440,6 +440,48 @@ public class TestConfSettings {
     }
 
     @Test
+    void testConfFileWithSpacesAroundEqualsNotOverriddenByDockerDefaults() throws Exception {
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500),
+                "test only applicable after 5.0.");
+        String expectedRetentionPolicy = "5M size";
+
+        try (GenericContainer container = createContainer()) {
+            Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
+            Files.copy(confFolder.resolve("SpacesAroundEquals.conf"), confMount.resolve("neo4j.conf"));
+            container
+                    .withEnv(confNames.get(Setting.TXLOG_RETENTION_POLICY).envName, expectedRetentionPolicy)
+                    .waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD));
+            // Start the container
+            container.start();
+            DatabaseIO dbio = new DatabaseIO(container);
+            dbio.verifyConfigurationSetting(
+                    "neo4j", PASSWORD, confNames.get(Setting.MEMORY_PAGECACHE_SIZE), "1000.00MiB");
+            dbio.verifyConfigurationSetting(
+                    "neo4j", PASSWORD, confNames.get(Setting.TXLOG_RETENTION_POLICY), expectedRetentionPolicy);
+        }
+    }
+
+    @Test
+    @Tag("BundleTest")
+    void testConfFileWithSpacesAroundEqualsNotOverriddenByPluginDefaults() throws Exception {
+        Assumptions.assumeTrue(
+                TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500),
+                "test only applicable after 5.0.");
+
+        try (GenericContainer container = createContainer().waitingFor(WaitStrategies.waitForNeo4jReady(PASSWORD))) {
+            Path confMount = temporaryFolderManager.createFolderAndMountAsVolume(container, "/conf");
+            Files.copy(confFolder.resolve("SpacesAroundEquals.conf"), confMount.resolve("neo4j.conf"));
+            container.withEnv(Neo4jPluginEnv.get(), "[\"apoc\"]");
+            // Start the container
+            container.start();
+            DatabaseIO dbio = new DatabaseIO(container);
+            dbio.verifyConfigurationSetting(
+                    "neo4j", PASSWORD, confNames.get(Setting.SECURITY_PROCEDURES_UNRESTRICTED), "foo.*");
+        }
+    }
+
+    @Test
     void testApocEnvVarsAreWrittenToApocConf() throws Exception {
         Assumptions.assumeTrue(
                 TestSettings.NEO4J_VERSION.isAtLeastVersion(new Neo4jVersion(5, 3, 0)),
