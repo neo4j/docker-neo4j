@@ -3,10 +3,10 @@ ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:11 $JAVA_HOME $JAVA_HOME
 # Stopgap for the eMudhra CA compromise (October 2026): stop trusting the three emSign roots
 # Mozilla removed in NSS 3.131.1 (emSign ECC Root CA - G3, emSign ECC Root CA - C3, emSign Root CA - C1).
+# Matched by certificate name, since alias naming differs between JDK versions.
 # Temurin builds from adoptium/temurin-build#4587 onwards no longer ship them; this is then a no-op.
 RUN "$JAVA_HOME/bin/keytool" -list -v -cacerts -storepass changeit \
-      | sed -n 's/^Alias name: //p' \
-      | grep -E 'emsign_(ecc_root_ca__g3|ecc_root_ca__c3|root_ca__c1)' \
+      | awk '/^Alias name: /{alias=substr($0, 13)} /^Owner: CN=emSign (ECC Root CA - G3|ECC Root CA - C3|Root CA - C1),/{print alias}' \
       | while read -r alias; do \
           "$JAVA_HOME/bin/keytool" -delete -cacerts -storepass changeit -alias "$alias"; \
         done
