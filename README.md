@@ -29,6 +29,15 @@ docker run \
 Mounting the `/data` and `/logs` folder is optional, 
 but it means that data can persist between closing and reopening Neo4j containers.
 
+# Using Easypanel
+
+[Easypanel](https://easypanel.io) is a self-hosted Docker deployment platform, and Neo4j has a one-click deployment template there:
+
+[![Deploy on Easypanel][easypanel-btn]][easypanel-deploy]
+
+[easypanel-btn]: https://easypanel.io/img/deploy-on-easypanel-40.svg
+[easypanel-deploy]: https://easypanel.io/templates/neo4j
+
 # Neo4j images for ARM64
 
 From 4.4.0 and onwards, Neo4j images have been available for ARM64 architectures through [Docker Hub](https://hub.docker.com/_/neo4j/).
