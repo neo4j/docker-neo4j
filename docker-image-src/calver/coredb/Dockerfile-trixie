@@ -13,7 +13,7 @@ COPY ./local-package/* /startup/
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -o Acquire::Retries=10 -y \
-      curl ca-certificates gcc libc-dev git jq make procps tini wget \
+      curl ca-certificates gcc libc-dev git jq libjemalloc2 make procps tini wget \
     && groupadd --gid 7474 --system neo4j \
     && useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
@@ -46,6 +46,7 @@ RUN apt-get update \
 
 
 ENV PATH="${NEO4J_HOME}"/bin:$PATH
+ENV LD_PRELOAD=libjemalloc.so.2
 
 WORKDIR "${NEO4J_HOME}"
 
