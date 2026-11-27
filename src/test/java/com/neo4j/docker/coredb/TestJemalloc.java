@@ -23,8 +23,8 @@ public class TestJemalloc {
                 TestSettings.NEO4J_VERSION.isAtLeastVersion(Neo4jVersion.NEO4J_VERSION_500),
                 "jemalloc is only added to 5.x and calver images");
         Assumptions.assumeTrue(
-                TestSettings.BASE_OS == BaseOS.TRIXIE,
-                "jemalloc is only added to the trixie images");
+                TestSettings.BASE_OS == BaseOS.TRIXIE || TestSettings.BASE_OS == BaseOS.UBI10,
+                "jemalloc is only added to the trixie and ubi10 images");
         try (GenericContainer<?> container = new GenericContainer<>(TestSettings.IMAGE_ID)) {
             container
                     .withEnv("NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes")

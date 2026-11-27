@@ -1,3 +1,22 @@
+# jemalloc is not available in the UBI repositories, so build it from a pinned release.
+# On aarch64 it is built for 64KiB pages, like the Debian and Fedora packages, so it also runs on 64K page kernels.
+FROM redhat/ubi10-minimal:latest AS jemalloc-builder
+RUN set -eux; \
+    microdnf install -y --nodocs bzip2 gcc make tar; \
+    case "$(uname -m)" in \
+        'aarch64') lg_page="--with-lg-page=16" ;; \
+        *) lg_page="" ;; \
+    esac; \
+    curl --fail --silent --show-error --location --output /tmp/jemalloc.tar.bz2 \
+        https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2; \
+    echo "2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa  /tmp/jemalloc.tar.bz2" | sha256sum -c --strict --quiet; \
+    mkdir /tmp/jemalloc; \
+    tar --extract --file /tmp/jemalloc.tar.bz2 --directory /tmp/jemalloc --strip-components=1; \
+    cd /tmp/jemalloc; \
+    ./configure --prefix=/usr/local --disable-cxx ${lg_page}; \
+    make -j"$(nproc)" build_lib_shared; \
+    make install_lib_shared
+
 FROM redhat/ubi10-minimal:latest
 
 # gather pre-requisite packages
@@ -76,6 +95,8 @@ RUN set -eux; \
     ln -s /logs "${NEO4J_HOME}"/logs
 
 ENV PATH="${NEO4J_HOME}"/bin:$PATH
+COPY --from=jemalloc-builder /usr/local/lib/libjemalloc.so.2 /usr/local/lib/libjemalloc.so.2
+ENV LD_PRELOAD=/usr/local/lib/libjemalloc.so.2
 
 WORKDIR "${NEO4J_HOME}"
 
