@@ -12,6 +12,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
@@ -30,6 +31,7 @@ public class TestBackupRestore {
     // with authentication
     // with non-default user
     private final Logger log = LoggerFactory.getLogger(TestBackupRestore.class);
+    private static final Neo4jVersion NEO4J_VERSION_202505 = new Neo4jVersion(2025, 5, 0);
 
     @RegisterExtension
     public static TemporaryFolderManager temporaryFolderManager = new TemporaryFolderManager();
@@ -110,18 +112,24 @@ public class TestBackupRestore {
 
             // start admin container to initiate backup
             String neoDBAddress = neo4j.getHost() + ":" + neo4j.getMappedPort(6362);
+            List<String> backupCommand = new ArrayList<>(List.of(
+                    "neo4j-admin",
+                    "database",
+                    "backup",
+                    "--to-path=/backups",
+                    "--include-metadata=all",
+                    "--from=" + neoDBAddress));
+            if (TestSettings.NEO4J_VERSION.isAtLeastVersion(NEO4J_VERSION_202505)) {
+                // The server advertises localhost:6362, which the admin container cannot reach
+                // through the docker port mapping, so backup must use the --from address as given.
+                backupCommand.add("--remote-address-resolution=false");
+            }
+            backupCommand.add("neo4j");
             try (GenericContainer adminBackup = createAdminContainer(asDefaultUser)) {
                 adminBackup
                         .withNetworkMode("host")
                         .waitingFor(new LogMessageWaitStrategy().withRegEx("^Backup command completed.*"))
-                        .withCommand(
-                                "neo4j-admin",
-                                "database",
-                                "backup",
-                                "--to-path=/backups",
-                                "--include-metadata=all",
-                                "--from=" + neoDBAddress,
-                                "neo4j");
+                        .withCommand(backupCommand.toArray(new String[0]));
 
                 backupDir = temporaryFolderManager.createFolderAndMountAsVolume(adminBackup, "/backups");
                 adminBackup.start();
